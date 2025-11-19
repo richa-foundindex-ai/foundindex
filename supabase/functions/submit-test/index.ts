@@ -347,17 +347,22 @@ serve(async (req) => {
     console.log(`[${testId}] Airtable config - Base ID exists: ${!!airtableBaseId}, API Key exists: ${!!airtableApiKey}`);
 
     // Store test record
-    const testRecordFields = {
+    // Only include industry if it's not "other" (Airtable doesn't have "other" as allowed option)
+    const testRecordFields: Record<string, any> = {
       test_id: testId,
       user_email: validatedEmail,
       website_url: validatedWebsite,
-      industry: validatedIndustry,
       test_date: testDate,
       foundindex_score: foundIndexScore,
       chatgpt_score: foundIndexScore,
       recommendations_count: totalRecommendations,
       recommendation_rate: recommendationRate
     };
+    
+    // Only add industry if it's a valid Airtable option (not "other")
+    if (validatedIndustry !== 'other') {
+      testRecordFields.industry = validatedIndustry;
+    }
     
     console.log(`[${testId}] Writing to Airtable Tests table with fields:`, testRecordFields);
 
