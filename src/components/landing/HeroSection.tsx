@@ -214,7 +214,7 @@ const HeroSection = () => {
             </Button>
 
             <p className="text-sm text-center text-muted-foreground">
-              Free beta • 3 tests/month • Results in 90 sec • No credit card
+              Free beta • 3 tests/month • Results in 2-3 min • Currently testing ChatGPT only (Claude & Perplexity coming soon) • No credit card
             </p>
           </form>
         </Card>

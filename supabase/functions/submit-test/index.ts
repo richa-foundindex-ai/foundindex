@@ -344,8 +344,19 @@ serve(async (req) => {
     const airtableApiKey = Deno.env.get('AIRTABLE_API_KEY');
     const airtableBaseId = Deno.env.get('AIRTABLE_BASE_ID');
 
+    console.log(`[${testId}] Airtable config - Base ID exists: ${!!airtableBaseId}, API Key exists: ${!!airtableApiKey}`);
+
     // Store test record
-    await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
+    console.log(`[${testId}] Attempting to write test record to Airtable Tests table...`, {
+      test_id: testId,
+      user_email: validatedEmail,
+      website_url: validatedWebsite,
+      industry: validatedIndustry,
+      foundindex_score: foundIndexScore,
+      recommendations_count: totalRecommendations
+    });
+
+    const testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${airtableApiKey}`,
@@ -368,11 +379,26 @@ serve(async (req) => {
       })
     });
 
+    console.log(`[${testId}] Airtable Tests write - Status: ${testRecordResponse.status}`);
+    
+    if (!testRecordResponse.ok) {
+      const errorText = await testRecordResponse.text();
+      console.error(`[${testId}] Airtable Tests write FAILED:`, errorText);
+      throw new Error(`Airtable Tests write failed: ${errorText}`);
+    }
+    
+    const testRecordData = await testRecordResponse.json();
+    console.log(`[${testId}] Airtable Tests write SUCCESS:`, testRecordData);
+
     // Store query results in batches
     const batchSize = 10;
+    console.log(`[${testId}] Writing ${queryResults.length} query results in batches of ${batchSize}...`);
+    
     for (let i = 0; i < queryResults.length; i += batchSize) {
       const batch = queryResults.slice(i, i + batchSize);
-      await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Query_Results`, {
+      console.log(`[${testId}] Writing batch ${Math.floor(i / batchSize) + 1} (${batch.length} records)...`);
+      
+      const batchResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Query_Results`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${airtableApiKey}`,
@@ -387,9 +413,20 @@ serve(async (req) => {
           }))
         })
       });
+
+      console.log(`[${testId}] Batch ${Math.floor(i / batchSize) + 1} - Status: ${batchResponse.status}`);
+      
+      if (!batchResponse.ok) {
+        const errorText = await batchResponse.text();
+        console.error(`[${testId}] Airtable Query_Results batch write FAILED:`, errorText);
+        throw new Error(`Airtable Query_Results write failed: ${errorText}`);
+      }
+      
+      const batchData = await batchResponse.json();
+      console.log(`[${testId}] Batch ${Math.floor(i / batchSize) + 1} SUCCESS - Wrote ${batchData.records?.length || 0} records`);
     }
 
-    console.log(`[${testId}] Results stored successfully in Airtable`);
+    console.log(`[${testId}] All ${queryResults.length} query results stored successfully in Airtable`);
 
     // Send email notification using service role key
     console.log(`[${testId}] Sending email notification to ${validatedEmail}...`);
