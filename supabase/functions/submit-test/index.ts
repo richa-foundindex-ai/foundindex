@@ -260,6 +260,7 @@ serve(async (req) => {
             'Authorization': `Bearer ${openaiApiKey}`,
             'Content-Type': 'application/json',
           },
+          signal: AbortSignal.timeout(10000),
           body: JSON.stringify({
             model: 'gpt-4o-mini',
             messages: [
@@ -272,7 +273,7 @@ serve(async (req) => {
                 content: query
               }
             ],
-            max_tokens: 500,
+            max_tokens: 300,
             temperature: 0.7,
           }),
         });
@@ -299,6 +300,9 @@ serve(async (req) => {
         });
 
         console.log(`[${testId}] Completed query ${i + 1}/${queries.length} - Recommended: ${wasRecommended}`);
+        if ((i + 1) % 5 === 0 || i + 1 === queries.length) {
+          console.log(`[${testId}] Progress: ${i + 1}/${queries.length} queries complete`);
+        }
       } catch (error) {
         console.error(`[${testId}] Error processing query ${i + 1}:`, error);
         queryResults.push({

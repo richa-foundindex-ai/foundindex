@@ -2,6 +2,7 @@ project_id = "nvpoprqufydeozwpzbpm"
 
 [functions.submit-test]
 verify_jwt = false
+timeout = 180
 
 [functions.send-email]
 verify_jwt = false
