@@ -283,12 +283,19 @@ serve(async (req) => {
         
         // Check if website is mentioned (domain matching)
         const domain = validatedWebsite.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+        console.log('[DOMAIN] Extracted domain:', domain);
+
         const wasRecommended = aiResponse.toLowerCase().includes(domain.toLowerCase());
         
         if (wasRecommended) {
           totalRecommendations++;
         }
 
+        console.log(`[Query ${i + 1}] Testing:`, query);
+        console.log(`[Query ${i + 1}] AI Response:`, aiResponse.substring(0, 200));
+        console.log(`[Query ${i + 1}] Looking for domain:`, domain);
+        console.log(`[Query ${i + 1}] Was recommended:`, wasRecommended);
+        console.log(`[Query ${i + 1}] Total recommendations so far:`, totalRecommendations);
         queryResults.push({
           query_number: i + 1,
           query_text: query,
@@ -326,6 +333,11 @@ serve(async (req) => {
     console.log('[SCORE] Recommendation rate:', recommendationRate);
     const foundIndexScore = Math.round(recommendationRate);
     console.log('[SCORE] FoundIndex score:', foundIndexScore);
+
+    console.log('[FINAL] Total recommendations:', totalRecommendations);
+    console.log('[FINAL] Total queries:', queries.length);
+    console.log('[FINAL] Recommendation rate:', recommendationRate);
+    console.log('[FINAL] FoundIndex score:', foundIndexScore);
 
     console.log(`[${testId}] Test complete: ${totalRecommendations}/${queries.length} recommendations`);
 
