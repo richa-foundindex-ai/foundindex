@@ -11,10 +11,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CoffeeBrewingLoader } from "./CoffeeBrewingLoader";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const HeroSection = () => {
   const navigate = useNavigate();
@@ -25,6 +35,12 @@ const HeroSection = () => {
     website: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showMismatchDialog, setShowMismatchDialog] = useState(false);
+  const [mismatchInfo, setMismatchInfo] = useState<{
+    detectedType: string;
+    chosenIndustry: string;
+    exampleQueries: string[];
+  } | null>(null);
 
   const mapIndustryToAirtable = (displayValue: string): string => {
     const mapping: Record<string, string> = {
@@ -36,6 +52,62 @@ const HeroSection = () => {
       'Other': 'other',
     };
     return mapping[displayValue] || displayValue.toLowerCase();
+  };
+
+  const getExampleQueries = (industry: string): string[] => {
+    const queries: Record<string, string[]> = {
+      'SaaS/Technology': [
+        'What are the best project management tools for remote teams?',
+        'Which CRM software is best for small businesses?'
+      ],
+      'E-commerce': [
+        'Where can I buy organic coffee beans online?',
+        'Best online stores for sustainable fashion?'
+      ],
+      'Healthcare': [
+        'What are the best telemedicine platforms?',
+        'Which health tracking apps are most accurate?'
+      ],
+      'Financial Services': [
+        'What are the best investment platforms for beginners?',
+        'Which banks offer the best business checking accounts?'
+      ],
+      'Professional Services': [
+        'How to find a good business consultant?',
+        'Best accounting firms for small businesses?'
+      ],
+    };
+    return queries[industry] || ['Example query 1', 'Example query 2'];
+  };
+
+  const detectMismatch = (website: string, industry: string): { isMismatch: boolean; detectedType: string } => {
+    const url = website.toLowerCase();
+    
+    // SaaS/Technology mismatches
+    if (industry === 'SaaS/Technology') {
+      if (url.includes('coffee') || url.includes('restaurant') || url.includes('food') || 
+          url.includes('shop') || url.includes('retail') || url.includes('store')) {
+        return { isMismatch: true, detectedType: 'retail/food service' };
+      }
+    }
+    
+    // E-commerce mismatches
+    if (industry === 'E-commerce') {
+      if (url.includes('consulting') || url.includes('services') || url.includes('law') || 
+          url.includes('accounting') || url.includes('advisory')) {
+        return { isMismatch: true, detectedType: 'professional services' };
+      }
+    }
+    
+    // Healthcare mismatches
+    if (industry === 'Healthcare') {
+      if ((url.includes('software') || url.includes('app') || url.includes('tool')) && 
+          !url.includes('health') && !url.includes('medical') && !url.includes('care')) {
+        return { isMismatch: true, detectedType: 'software/technology' };
+      }
+    }
+    
+    return { isMismatch: false, detectedType: '' };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,6 +129,23 @@ const HeroSection = () => {
       formattedWebsite = 'https://' + formattedWebsite;
     }
 
+    // Check for industry mismatch
+    const mismatch = detectMismatch(formattedWebsite, formData.industry);
+    if (mismatch.isMismatch) {
+      setMismatchInfo({
+        detectedType: mismatch.detectedType,
+        chosenIndustry: formData.industry,
+        exampleQueries: getExampleQueries(formData.industry),
+      });
+      setShowMismatchDialog(true);
+      return;
+    }
+
+    // Proceed with submission
+    await submitTest(formattedWebsite);
+  };
+
+  const submitTest = async (formattedWebsite: string) => {
     setIsSubmitting(true);
 
     // Create timeout promise (180 seconds = 3 minutes)
@@ -151,8 +240,48 @@ const HeroSection = () => {
     }
   };
 
+  const handleContinueAnyway = async () => {
+    setShowMismatchDialog(false);
+    let formattedWebsite = formData.website.trim();
+    if (!formattedWebsite.startsWith('http://') && !formattedWebsite.startsWith('https://')) {
+      formattedWebsite = 'https://' + formattedWebsite;
+    }
+    await submitTest(formattedWebsite);
+  };
+
   return (
     <>
+      <AlertDialog open={showMismatchDialog} onOpenChange={setShowMismatchDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Industry Mismatch Detected
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-left space-y-3">
+              <p>
+                Your website appears to be <strong>{mismatchInfo?.detectedType}</strong> but you selected{' '}
+                <strong>{mismatchInfo?.chosenIndustry}</strong>.
+              </p>
+              <p>
+                This may result in a low score because we'll test with questions like:
+              </p>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                {mismatchInfo?.exampleQueries.map((query, i) => (
+                  <li key={i}>{query}</li>
+                ))}
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, let me change</AlertDialogCancel>
+            <AlertDialogAction onClick={handleContinueAnyway}>
+              Continue anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {isSubmitting && <CoffeeBrewingLoader />}
       
       <section className="py-20 px-4">
@@ -209,14 +338,14 @@ const HeroSection = () => {
                   <SelectValue placeholder="Select your industry" />
                 </SelectTrigger>
                 <SelectContent className="bg-background z-50">
-                  <SelectItem value="saas">SaaS/Technology</SelectItem>
-                  <SelectItem value="financial">Financial Services</SelectItem>
-                  <SelectItem value="ecommerce">E-commerce</SelectItem>
-                  <SelectItem value="professional">
+                  <SelectItem value="SaaS/Technology">SaaS/Technology</SelectItem>
+                  <SelectItem value="Financial Services">Financial Services</SelectItem>
+                  <SelectItem value="E-commerce">E-commerce</SelectItem>
+                  <SelectItem value="Professional Services">
                     Professional Services
                   </SelectItem>
-                  <SelectItem value="healthcare">Healthcare</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="Healthcare">Healthcare</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
             </div>
