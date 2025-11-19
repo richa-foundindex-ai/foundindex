@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.83.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,50 @@ interface TestSubmission {
   website: string;
   industry: string;
 }
+
+// Input validation schemas
+const ALLOWED_INDUSTRIES = ['saas', 'financial', 'ecommerce', 'professional', 'healthcare', 'other'];
+
+const validateEmail = (email: string): string => {
+  const trimmed = email.trim().toLowerCase();
+  if (trimmed.length > 255) {
+    throw new Error('Email must be less than 255 characters');
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(trimmed)) {
+    throw new Error('Invalid email format');
+  }
+  return trimmed;
+};
+
+const validateWebsite = (website: string): string => {
+  const trimmed = website.trim();
+  if (trimmed.length > 500) {
+    throw new Error('Website URL must be less than 500 characters');
+  }
+  
+  let normalized = trimmed;
+  if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
+    normalized = 'https://' + normalized;
+  }
+  
+  try {
+    const url = new URL(normalized);
+    if (!url.hostname || url.hostname.length < 3) {
+      throw new Error('Invalid domain');
+    }
+    return normalized;
+  } catch {
+    throw new Error('Invalid website URL format');
+  }
+};
+
+const validateIndustry = (industry: string): string => {
+  if (!ALLOWED_INDUSTRIES.includes(industry)) {
+    throw new Error('Invalid industry. Must be one of: ' + ALLOWED_INDUSTRIES.join(', '));
+  }
+  return industry;
+};
 
 const industryQueries: Record<string, string[]> = {
   saas: [
@@ -124,18 +169,70 @@ serve(async (req) => {
 
   try {
     const { email, website, industry }: TestSubmission = await req.json();
-    console.log('Test submission received:', { email, website, industry });
 
     // Validate inputs
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      throw new Error('Invalid email format');
+    const validatedEmail = validateEmail(email);
+    const validatedWebsite = validateWebsite(website);
+    const validatedIndustry = validateIndustry(industry);
+
+    console.log('Processing test for industry:', validatedIndustry);
+
+    // Initialize Supabase client with service role for rate limiting
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    // Check rate limit: 3 tests per email per month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const { count: emailCount, error: emailCountError } = await supabaseAdmin
+      .from('test_submissions')
+      .select('*', { count: 'exact', head: true })
+      .eq('email', validatedEmail)
+      .gte('created_at', startOfMonth.toISOString());
+
+    if (emailCountError) {
+      console.error('Rate limit check error:', emailCountError);
+      throw new Error('Unable to process request');
     }
 
-    // Normalize website URL
-    let normalizedUrl = website.trim();
-    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
-      normalizedUrl = 'https://' + normalizedUrl;
+    if (emailCount !== null && emailCount >= 3) {
+      return new Response(JSON.stringify({ 
+        error: 'Rate limit exceeded. You can test 3 websites per month. Please try again next month.' 
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check IP-based rate limit: 10 tests per IP per day
+    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+    
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    const { count: ipCount, error: ipCountError } = await supabaseAdmin
+      .from('test_submissions')
+      .select('*', { count: 'exact', head: true })
+      .eq('ip_address', clientIP)
+      .gte('created_at', oneDayAgo.toISOString());
+
+    if (ipCountError) {
+      console.error('IP rate limit check error:', ipCountError);
+      throw new Error('Unable to process request');
+    }
+
+    if (ipCount !== null && ipCount >= 10) {
+      return new Response(JSON.stringify({ 
+        error: 'Rate limit exceeded. Too many requests from your network. Please try again later.' 
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // Generate test ID
@@ -143,18 +240,18 @@ serve(async (req) => {
     const testDate = new Date().toISOString();
 
     // Get queries for industry
-    const queries = industryQueries[industry] || industryQueries.other;
+    const queries = industryQueries[validatedIndustry] || industryQueries.other;
     
     // Test with OpenAI
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     let totalRecommendations = 0;
     const queryResults = [];
 
-    console.log(`Testing ${queries.length} queries...`);
+    console.log(`Testing ${queries.length} queries for test ${testId}`);
 
     for (let i = 0; i < queries.length; i++) {
       const query = queries[i];
-      console.log(`Query ${i + 1}/${queries.length}: ${query}`);
+      console.log(`Query ${i + 1}/${queries.length}`);
 
       try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -184,7 +281,7 @@ serve(async (req) => {
         const aiResponse = data.choices[0].message.content;
         
         // Check if website is mentioned (domain matching)
-        const domain = normalizedUrl.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+        const domain = validatedWebsite.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
         const wasRecommended = aiResponse.toLowerCase().includes(domain.toLowerCase());
         
         if (wasRecommended) {
@@ -203,7 +300,7 @@ serve(async (req) => {
 
         console.log(`Query ${i + 1}: ${wasRecommended ? 'Found' : 'Not found'}`);
       } catch (error) {
-        console.error(`Error testing query ${i + 1}:`, error);
+        console.error(`Error testing query ${i + 1}`);
         queryResults.push({
           query_number: i + 1,
           query_text: query,
@@ -220,7 +317,21 @@ serve(async (req) => {
     const recommendationRate = (totalRecommendations / queries.length) * 100;
     const foundIndexScore = Math.round(recommendationRate);
 
-    console.log(`Test complete: ${totalRecommendations}/${queries.length} recommendations (${foundIndexScore}%)`);
+    console.log(`Test complete: ${totalRecommendations}/${queries.length} recommendations`);
+
+    // Record submission in database for rate limiting
+    const { error: insertError } = await supabaseAdmin
+      .from('test_submissions')
+      .insert({
+        email: validatedEmail,
+        ip_address: clientIP,
+        test_id: testId,
+        created_at: testDate
+      });
+
+    if (insertError) {
+      console.error('Failed to record submission:', insertError);
+    }
 
     // Store in Airtable
     const airtableApiKey = Deno.env.get('AIRTABLE_API_KEY');
@@ -236,9 +347,9 @@ serve(async (req) => {
       body: JSON.stringify({
         fields: {
           test_id: testId,
-          user_email: email,
-          website_url: normalizedUrl,
-          industry: industry,
+          user_email: validatedEmail,
+          website_url: validatedWebsite,
+          industry: validatedIndustry,
           test_date: testDate,
           foundindex_score: foundIndexScore,
           chatgpt_score: foundIndexScore,
@@ -271,25 +382,28 @@ serve(async (req) => {
       });
     }
 
-    console.log('Results stored in Airtable');
+    console.log('Results stored successfully');
 
-    // Send email notification
+    // Send email notification using service role key
     try {
-      await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-email`, {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      await fetch(`${supabaseUrl}/functions/v1/send-email`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          'Authorization': `Bearer ${serviceRoleKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          to: email,
+          to: validatedEmail,
           testId: testId,
           score: foundIndexScore,
-          website: normalizedUrl
+          website: validatedWebsite
         })
       });
     } catch (emailError) {
-      console.error('Email send failed:', emailError);
+      console.error('Email send failed');
     }
 
     return new Response(JSON.stringify({
@@ -303,9 +417,25 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in submit-test:', error);
+    console.error('Request processing error');
+    
+    // Return specific validation errors
+    if (error instanceof Error && 
+        (error.message.includes('Email') || 
+         error.message.includes('Website') || 
+         error.message.includes('Industry') ||
+         error.message.includes('Rate limit'))) {
+      return new Response(JSON.stringify({ 
+        error: error.message
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
+    // Generic error for everything else
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: 'An error occurred processing your request. Please try again.'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
