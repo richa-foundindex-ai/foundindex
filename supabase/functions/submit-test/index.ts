@@ -292,7 +292,7 @@ serve(async (req) => {
         queryResults.push({
           query_number: i + 1,
           query_text: query,
-          ai_engine: 'ChatGPT',
+          engine: 'ChatGPT',
           was_recommended: wasRecommended,
           context_snippet: aiResponse.substring(0, 200),
           recommendation_position: wasRecommended ? 1 : null,
@@ -308,7 +308,7 @@ serve(async (req) => {
         queryResults.push({
           query_number: i + 1,
           query_text: query,
-          ai_engine: 'ChatGPT',
+          engine: 'ChatGPT',
           was_recommended: false,
           context_snippet: 'Error occurred during testing',
           recommendation_position: null,
@@ -399,7 +399,7 @@ serve(async (req) => {
         test_id: testId,
         query_number: batch[0].query_number,
         query_text: batch[0].query_text.substring(0, 50) + '...',
-        ai_engine: batch[0].ai_engine,
+        engine: batch[0].engine,
         was_recommended: batch[0].was_recommended,
         quality_rating: batch[0].quality_rating
       }, null, 2));

@@ -26,6 +26,18 @@ const HeroSection = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const mapIndustryToAirtable = (displayValue: string): string => {
+    const mapping: Record<string, string> = {
+      'SaaS/Technology': 'saas',
+      'Financial Services': 'financial',
+      'E-commerce': 'ecommerce',
+      'Professional Services': 'professional',
+      'Healthcare': 'healthcare',
+      'Other': 'other',
+    };
+    return mapping[displayValue] || displayValue.toLowerCase();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -57,7 +69,7 @@ const HeroSection = () => {
         body: {
           email: formData.email,
           website: formattedWebsite,
-          industry: formData.industry,
+          industry: mapIndustryToAirtable(formData.industry),
         }
       });
 
