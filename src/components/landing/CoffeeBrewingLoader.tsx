@@ -13,23 +13,30 @@ interface CoffeeBrewingLoaderProps {
 }
 
 const STAGES = [
-  { threshold: 0, label: "Grinding fresh beans...", description: "Preparing 15 AI queries for your industry" },
-  { threshold: 15, label: "Heating water to perfect temperature...", description: "Connecting to ChatGPT API" },
-  { threshold: 30, label: "Brewing your first cup...", description: "Testing queries 1-5" },
-  { threshold: 50, label: "Brewing your second cup...", description: "Testing queries 6-10" },
-  { threshold: 70, label: "Brewing your third cup...", description: "Testing queries 11-15" },
-  { threshold: 90, label: "Pouring your results...", description: "Calculating FoundIndex score" },
+  { threshold: 0, label: "Grinding beans...", description: "Initializing AI queries..." },
+  { threshold: 13, label: "Heating water...", description: "Warming up OpenAI..." },
+  { threshold: 27, label: "Brewing first 5 queries...", description: "Testing AI visibility (1-5)..." },
+  { threshold: 47, label: "Brewing next 5 queries...", description: "Testing AI visibility (6-10)..." },
+  { threshold: 67, label: "Brewing final 5 queries...", description: "Testing AI visibility (11-15)..." },
+  { threshold: 87, label: "Pouring results...", description: "Calculating your FoundIndex score..." },
+  { threshold: 97, label: "Ready to serve...", description: "Redirecting to results..." },
 ];
 
 export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) => {
   const [progress, setProgress] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [showWarning, setShowWarning] = useState(false);
 
   useEffect(() => {
-    // Update progress every 11 seconds to reach 100% in ~88 seconds (8 stages)
+    // Show warning banner after 60 seconds
+    const warningTimeout = setTimeout(() => {
+      setShowWarning(true);
+    }, 60000);
+
+    // Update progress every 1.5 seconds to reach 100% in ~150 seconds
     const interval = setInterval(() => {
       setProgress((prev) => {
-        const next = prev + 12.5; // 100 / 8 stages = 12.5% per stage
+        const next = prev + 0.67; // ~150 seconds total
         if (next >= 100) {
           clearInterval(interval);
           onComplete?.();
@@ -37,9 +44,12 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
         }
         return next;
       });
-    }, 11000);
+    }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(warningTimeout);
+    };
   }, [onComplete]);
 
   const currentStage = STAGES.slice().reverse().find(stage => progress >= stage.threshold) || STAGES[0];
@@ -47,6 +57,23 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
   return (
     <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <Card className="max-w-2xl w-full p-8 space-y-6">
+        {/* Warning Banner */}
+        {showWarning && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg p-4 animate-fade-in">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">
+                  Still brewing your perfect FoundIndex...
+                </p>
+                <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
+                  This can take up to 2 minutes. Please don't close this window!
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className="text-center space-y-2">
           <h2 className="text-3xl font-bold">Brewing Your Results ☕</h2>
@@ -98,7 +125,7 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>{Math.round(progress)}%</span>
-            <span>~{Math.max(10, Math.round(90 - (progress * 0.9)))} seconds remaining</span>
+            <span>~{Math.max(0, Math.round((100 - progress) * 1.5))} seconds remaining</span>
           </div>
           <div className="h-3 bg-secondary rounded-full overflow-hidden">
             <div
