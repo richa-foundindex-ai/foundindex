@@ -83,36 +83,52 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
         </div>
 
         {/* Coffee Cup Animation */}
-        <div className="relative w-48 h-48 mx-auto">
+        <div className="relative w-64 h-64 mx-auto">
           {/* Cup */}
           <div className="absolute inset-0 flex items-end justify-center">
-            <div className="relative w-40 h-40 border-8 border-[#8B4513] rounded-b-3xl overflow-hidden bg-background">
+            <div className="relative w-48 h-48 border-8 border-[#8B4513] rounded-b-3xl overflow-hidden bg-gradient-to-b from-white to-gray-50">
+              {/* Rim shine/highlight */}
+              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-white/60 to-transparent" />
+              
               {/* Coffee Fill */}
               <div
-                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#6F4E37] to-[#8B4513] transition-all duration-1000 ease-out"
+                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#6F4E37] via-[#8B6F47] to-[#6F4E37] transition-all duration-1000 ease-in-out"
                 style={{ height: `${progress}%` }}
               >
-                {/* Coffee Surface Bubbles */}
+                {/* Coffee Surface Bubbles with percolation animation */}
                 {progress > 0 && (
                   <>
-                    <div className="absolute top-2 left-4 w-3 h-3 bg-[#A0826D] rounded-full animate-pulse" />
-                    <div className="absolute top-1 right-6 w-2 h-2 bg-[#A0826D] rounded-full animate-pulse delay-300" />
-                    <div className="absolute top-3 right-10 w-2 h-2 bg-[#A0826D] rounded-full animate-pulse delay-700" />
+                    <div className="absolute top-2 left-6 w-3 h-3 bg-[#A0826D] rounded-full animate-[pulse_1.5s_ease-in-out_infinite]" />
+                    <div className="absolute top-3 right-8 w-2 h-2 bg-[#A0826D] rounded-full animate-[pulse_1.8s_ease-in-out_infinite_0.3s]" />
+                    <div className="absolute top-4 left-10 w-2.5 h-2.5 bg-[#A0826D] rounded-full animate-[pulse_2s_ease-in-out_infinite_0.6s]" />
+                    <div className="absolute top-5 right-12 w-2 h-2 bg-[#A0826D] rounded-full animate-[pulse_1.6s_ease-in-out_infinite_0.9s]" />
+                    <div className="absolute top-2 left-14 w-2.5 h-2.5 bg-[#A0826D] rounded-full animate-[pulse_2.2s_ease-in-out_infinite_1.2s]" />
                   </>
                 )}
               </div>
               
-              {/* Cup Handle */}
-              <div className="absolute right-[-20px] top-1/2 -translate-y-1/2 w-12 h-16 border-8 border-[#8B4513] border-l-0 rounded-r-full" />
+              {/* Cup Handle - positioned outside on the right */}
+              <div className="absolute right-[-28px] top-1/2 -translate-y-1/2 w-14 h-20 border-8 border-[#8B4513] border-l-0 rounded-r-full" />
             </div>
           </div>
 
-          {/* Steam Animation */}
-          {progress > 15 && (
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 space-y-2">
-              <div className="w-2 h-12 bg-gradient-to-t from-muted/80 to-transparent rounded-full animate-[fade-in_2s_ease-in-out_infinite]" />
-              <div className="w-2 h-10 bg-gradient-to-t from-muted/60 to-transparent rounded-full animate-[fade-in_2s_ease-in-out_infinite_0.5s] ml-4" />
-              <div className="w-2 h-8 bg-gradient-to-t from-muted/40 to-transparent rounded-full animate-[fade-in_2s_ease-in-out_infinite_1s] -ml-2" />
+          {/* Steam Animation - more prominent and animated */}
+          {progress > 10 && (
+            <div className="absolute top-0 left-1/2 -translate-x-1/2">
+              <div className="relative">
+                {/* Steam wisp 1 */}
+                <div className="absolute w-2 h-12 bg-gradient-to-t from-gray-400 to-transparent opacity-70 rounded-full blur-sm" 
+                     style={{ left: "-12px", animation: "float-up 3s ease-in-out infinite" }} />
+                {/* Steam wisp 2 */}
+                <div className="absolute w-2.5 h-16 bg-gradient-to-t from-gray-300 to-transparent opacity-60 rounded-full blur-sm" 
+                     style={{ left: "0px", animation: "float-up 3.5s ease-in-out infinite 0.7s" }} />
+                {/* Steam wisp 3 */}
+                <div className="absolute w-2 h-14 bg-gradient-to-t from-gray-400 to-transparent opacity-75 rounded-full blur-sm" 
+                     style={{ left: "12px", animation: "float-up 3.2s ease-in-out infinite 1.4s" }} />
+                {/* Steam wisp 4 */}
+                <div className="absolute w-1.5 h-10 bg-gradient-to-t from-gray-300 to-transparent opacity-65 rounded-full blur-sm" 
+                     style={{ left: "-6px", animation: "float-up 3.8s ease-in-out infinite 2s" }} />
+              </div>
             </div>
           )}
 
@@ -120,6 +136,23 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
           <div className="absolute top-2 left-2 text-2xl animate-bounce">🫘</div>
           <div className="absolute top-4 right-2 text-xl animate-bounce delay-300">🫘</div>
         </div>
+        
+        <style>{`
+          @keyframes float-up {
+            0% {
+              transform: translateY(0) translateX(0);
+              opacity: 0.7;
+            }
+            50% {
+              transform: translateY(-20px) translateX(5px);
+              opacity: 0.5;
+            }
+            100% {
+              transform: translateY(-40px) translateX(-3px);
+              opacity: 0;
+            }
+          }
+        `}</style>
 
         {/* Progress Bar */}
         <div className="space-y-2">
