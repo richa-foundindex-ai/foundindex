@@ -319,9 +319,13 @@ serve(async (req) => {
 
     console.log(`[${testId}] All queries completed. Total recommendations: ${totalRecommendations}/${queries.length}`);
 
-    // Calculate scores
+    // Calculate scores with detailed logging
+    console.log('[SCORE] Total recommendations:', totalRecommendations);
+    console.log('[SCORE] Total queries:', queries.length);
     const recommendationRate = (totalRecommendations / queries.length) * 100;
+    console.log('[SCORE] Recommendation rate:', recommendationRate);
     const foundIndexScore = Math.round(recommendationRate);
+    console.log('[SCORE] FoundIndex score:', foundIndexScore);
 
     console.log(`[${testId}] Test complete: ${totalRecommendations}/${queries.length} recommendations`);
 
@@ -361,7 +365,13 @@ serve(async (req) => {
       recommendation_rate: parseFloat(recommendationRate.toFixed(2))
     };
     
-    console.log('[Airtable] Writing Tests record:', JSON.stringify(testRecordFields, null, 2));
+    console.log('[AIRTABLE] Writing Tests record with scores:', JSON.stringify({
+      foundindex_score: foundIndexScore,
+      chatgpt_score: foundIndexScore,
+      recommendations_count: totalRecommendations,
+      recommendation_rate: parseFloat(recommendationRate.toFixed(2))
+    }, null, 2));
+    console.log('[Airtable] Full Tests record:', JSON.stringify(testRecordFields, null, 2));
 
     const testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
       method: 'POST',
