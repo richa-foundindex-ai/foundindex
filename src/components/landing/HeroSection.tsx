@@ -11,9 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { CoffeeBrewingLoader } from "./CoffeeBrewingLoader";
 
 const HeroSection = () => {
   const navigate = useNavigate();
@@ -39,8 +40,13 @@ const HeroSection = () => {
 
     setIsSubmitting(true);
 
+    // Create timeout promise (180 seconds = 3 minutes)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Request timed out after 3 minutes")), 180000);
+    });
+
     try {
-      const { data, error } = await supabase.functions.invoke('submit-test', {
+      const submissionPromise = supabase.functions.invoke('submit-test', {
         body: {
           email: formData.email,
           website: formData.website,
@@ -48,33 +54,61 @@ const HeroSection = () => {
         }
       });
 
-      if (error) throw error;
+      // Race between submission and timeout
+      const { data, error } = await Promise.race([
+        submissionPromise,
+        timeoutPromise
+      ]) as { data: any; error: any };
 
-      toast({
-        title: "Test Started!",
-        description: "Testing your website across AI engines. Results in 90 seconds...",
-      });
+      if (error) {
+        console.error('Edge function error:', error);
+        throw new Error(error.message || "Failed to send request to Edge Function");
+      }
+
+      if (!data || !data.testId) {
+        console.error('Invalid response from edge function:', data);
+        throw new Error("Invalid response from server");
+      }
 
       // Navigate to results page with test ID
-      setTimeout(() => {
-        navigate(`/results?testId=${data.testId}`);
-      }, 1500);
+      navigate(`/results?testId=${data.testId}`);
 
     } catch (error) {
       console.error('Submission error:', error);
+      setIsSubmitting(false);
+      
+      let errorMessage = "Please try again";
+      let errorTitle = "Submission failed";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("timed out")) {
+          errorTitle = "Request timed out";
+          errorMessage = "The test took longer than expected. Please try again with a different website.";
+        } else if (error.message.includes("Failed to send request")) {
+          errorTitle = "Connection failed";
+          errorMessage = "Unable to connect to the testing service. Please check your internet connection and try again.";
+        } else if (error.message.includes("rate limit")) {
+          errorTitle = "Rate limit exceeded";
+          errorMessage = error.message;
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
-        title: "Submission failed",
-        description: error instanceof Error ? error.message : "Please try again",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
-    <section className="py-20 px-4">
-      <div className="container mx-auto max-w-7xl">
+    <>
+      {isSubmitting && <CoffeeBrewingLoader />}
+      
+      <section className="py-20 px-4">
+        <div className="container mx-auto max-w-7xl">
         {/* Headline */}
         <h1 className="text-editorial-xl text-center mb-6">
           Are You Found When It Matters?
@@ -172,17 +206,8 @@ const HeroSection = () => {
               disabled={isSubmitting}
               className="w-full bg-primary hover:bg-primary-hover text-primary-foreground text-lg py-6"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Testing Your Website...
-                </>
-              ) : (
-                <>
-                  Calculate My FoundIndex
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </>
-              )}
+              Calculate My FoundIndex
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
 
             <p className="text-sm text-center text-muted-foreground">
@@ -190,8 +215,9 @@ const HeroSection = () => {
             </p>
           </form>
         </Card>
-      </div>
-    </section>
+        </div>
+      </section>
+    </>
   );
 };
 
