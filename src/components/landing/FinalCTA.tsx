@@ -3,6 +3,10 @@ import { Card } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 
 const FinalCTA = () => {
+  const handleClick = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <section className="py-20 px-4 bg-background">
       <div className="container mx-auto max-w-3xl">
@@ -14,6 +18,7 @@ const FinalCTA = () => {
           <div className="text-center">
             <Button
               size="lg"
+              onClick={handleClick}
               className="bg-primary hover:bg-primary-hover text-primary-foreground text-xl px-12 py-7 mb-6"
             >
               Calculate My FoundIndex
