@@ -126,7 +126,7 @@ serve(async (req) => {
       `
     };
 
-    console.log('Email prepared for:', to);
+    console.log('Email prepared for test:', testId);
 
     return new Response(JSON.stringify({
       success: true,
