@@ -466,7 +466,13 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Request processing error');
+    console.error('Request processing error:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace',
+      type: typeof error,
+      raw: error
+    });
     
     // Return specific validation errors
     if (error instanceof Error && 
@@ -482,9 +488,10 @@ serve(async (req) => {
       });
     }
     
-    // Generic error for everything else
+    // Return more detailed error for debugging
     return new Response(JSON.stringify({ 
-      error: 'An error occurred processing your request. Please try again.'
+      error: 'An error occurred processing your request. Please try again.',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
