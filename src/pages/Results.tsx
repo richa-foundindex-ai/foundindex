@@ -4,15 +4,31 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle2, XCircle, Share2, Download } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface QueryResult {
+  queryNumber: number;
+  queryText: string;
+  engine: string;
+  wasRecommended: boolean;
+  contextSnippet: string;
+  recommendationPosition: number | null;
+  qualityRating: string;
+}
 
 interface TestResult {
   testId: string;
   foundIndexScore: number;
-  totalRecommendations: number;
-  totalQueries: number;
+  chatgptScore: number;
+  claudeScore: number;
+  perplexityScore: number;
+  recommendationsCount: number;
+  recommendationRate: number;
   website?: string;
   industry?: string;
   testDate?: string;
+  queryResults?: QueryResult[];
 }
 
 const Results = () => {
@@ -20,25 +36,45 @@ const Results = () => {
   const testId = searchParams.get("testId");
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<TestResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate loading and then show results
-    // In production, you would fetch results from Airtable using the testId
-    const timer = setTimeout(() => {
-      // Mock data for now - in production, fetch from Airtable
-      setResult({
-        testId: testId || "test-123",
-        foundIndexScore: 47,
-        totalRecommendations: 7,
-        totalQueries: 15,
-        website: "example.com",
-        industry: "SaaS/Technology",
-        testDate: new Date().toISOString(),
-      });
-      setLoading(false);
-    }, 3000);
+    const fetchResults = async () => {
+      if (!testId) {
+        setError("No test ID provided");
+        setLoading(false);
+        return;
+      }
 
-    return () => clearTimeout(timer);
+      try {
+        console.log('[Results] Fetching results for test ID:', testId);
+        
+        const { data, error: fetchError } = await supabase.functions.invoke('fetch-results', {
+          body: { testId }
+        });
+
+        if (fetchError) {
+          console.error('[Results] Error fetching results:', fetchError);
+          throw new Error(fetchError.message);
+        }
+
+        if (data.error) {
+          console.error('[Results] API returned error:', data.error);
+          throw new Error(data.error);
+        }
+
+        console.log('[Results] Successfully fetched results:', data);
+        setResult(data);
+      } catch (err) {
+        console.error('[Results] Failed to fetch results:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch results');
+        toast.error('Failed to load test results');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResults();
   }, [testId]);
 
   if (loading) {
@@ -61,13 +97,15 @@ const Results = () => {
     );
   }
 
-  if (!result) {
+  if (error || !result) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-20 text-center">
-          <h1 className="text-4xl font-bold mb-4">Test Not Found</h1>
+          <h1 className="text-4xl font-bold mb-4">
+            {error === 'Test not found' ? 'Test Not Found' : 'Error Loading Results'}
+          </h1>
           <p className="text-muted-foreground">
-            Unable to load test results. Please try again.
+            {error || 'Unable to load test results. Please try again.'}
           </p>
         </div>
       </div>
@@ -126,16 +164,16 @@ const Results = () => {
             <div className="grid grid-cols-3 gap-4 text-left">
               <div>
                 <p className="text-sm text-muted-foreground">Queries tested</p>
-                <p className="text-2xl font-bold">{result.totalQueries}</p>
+                <p className="text-2xl font-bold">{result.queryResults?.length || 15}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Recommendations</p>
-                <p className="text-2xl font-bold">{result.totalRecommendations}</p>
+                <p className="text-2xl font-bold">{result.recommendationsCount}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Success rate</p>
                 <p className="text-2xl font-bold">
-                  {Math.round((result.totalRecommendations / result.totalQueries) * 100)}%
+                  {Math.round(result.recommendationRate)}%
                 </p>
               </div>
             </div>
@@ -169,7 +207,7 @@ const Results = () => {
                 />
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Recommended in {result.totalRecommendations} of {result.totalQueries} queries
+                Recommended in {result.recommendationsCount} of {result.queryResults?.length || 15} queries
               </p>
             </div>
             <div className="opacity-50">

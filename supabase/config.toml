@@ -6,3 +6,6 @@ timeout = 180
 
 [functions.send-email]
 verify_jwt = false
+
+[functions.fetch-results]
+verify_jwt = false
