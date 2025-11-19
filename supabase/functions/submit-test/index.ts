@@ -247,11 +247,11 @@ serve(async (req) => {
     let totalRecommendations = 0;
     const queryResults = [];
 
-    console.log(`Testing ${queries.length} queries for test ${testId}`);
+    console.log(`[${testId}] Starting OpenAI calls for ${queries.length} queries...`);
 
     for (let i = 0; i < queries.length; i++) {
       const query = queries[i];
-      console.log(`Query ${i + 1}/${queries.length}`);
+      console.log(`[${testId}] Processing query ${i + 1}/${queries.length}...`);
 
       try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -298,9 +298,9 @@ serve(async (req) => {
           quality_rating: wasRecommended ? 'high' : 'none'
         });
 
-        console.log(`Query ${i + 1}: ${wasRecommended ? 'Found' : 'Not found'}`);
+        console.log(`[${testId}] Completed query ${i + 1}/${queries.length} - Recommended: ${wasRecommended}`);
       } catch (error) {
-        console.error(`Error testing query ${i + 1}`);
+        console.error(`[${testId}] Error processing query ${i + 1}:`, error);
         queryResults.push({
           query_number: i + 1,
           query_text: query,
@@ -313,11 +313,13 @@ serve(async (req) => {
       }
     }
 
+    console.log(`[${testId}] All queries completed. Total recommendations: ${totalRecommendations}/${queries.length}`);
+
     // Calculate scores
     const recommendationRate = (totalRecommendations / queries.length) * 100;
     const foundIndexScore = Math.round(recommendationRate);
 
-    console.log(`Test complete: ${totalRecommendations}/${queries.length} recommendations`);
+    console.log(`[${testId}] Test complete: ${totalRecommendations}/${queries.length} recommendations`);
 
     // Record submission in database for rate limiting
     const { error: insertError } = await supabaseAdmin
@@ -330,10 +332,11 @@ serve(async (req) => {
       });
 
     if (insertError) {
-      console.error('Failed to record submission:', insertError);
+      console.error(`[${testId}] Failed to record submission:`, insertError);
     }
 
     // Store in Airtable
+    console.log(`[${testId}] Writing results to Airtable...`);
     const airtableApiKey = Deno.env.get('AIRTABLE_API_KEY');
     const airtableBaseId = Deno.env.get('AIRTABLE_BASE_ID');
 
@@ -382,9 +385,10 @@ serve(async (req) => {
       });
     }
 
-    console.log('Results stored successfully');
+    console.log(`[${testId}] Results stored successfully in Airtable`);
 
     // Send email notification using service role key
+    console.log(`[${testId}] Sending email notification to ${validatedEmail}...`);
     try {
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
       const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -402,9 +406,13 @@ serve(async (req) => {
           website: validatedWebsite
         })
       });
+      
+      console.log(`[${testId}] Email sent successfully`);
     } catch (emailError) {
-      console.error('Email send failed');
+      console.error(`[${testId}] Email send failed:`, emailError);
     }
+
+    console.log(`[${testId}] SUCCESS! Test ID: ${testId}, FoundIndex Score: ${foundIndexScore}`);
 
     return new Response(JSON.stringify({
       success: true,

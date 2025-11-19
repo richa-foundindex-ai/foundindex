@@ -83,13 +83,16 @@ const HeroSection = () => {
       if (error instanceof Error) {
         if (error.message.includes("timed out")) {
           errorTitle = "Request timed out";
-          errorMessage = "The test took longer than expected. Please try again with a different website.";
+          errorMessage = "The test took longer than 3 minutes. This may indicate an issue with the testing service. Please try again in a few minutes.";
         } else if (error.message.includes("Failed to send request")) {
           errorTitle = "Connection failed";
           errorMessage = "Unable to connect to the testing service. Please check your internet connection and try again.";
         } else if (error.message.includes("rate limit")) {
           errorTitle = "Rate limit exceeded";
           errorMessage = error.message;
+        } else if (error.message.includes("AUTHENTICATION")) {
+          errorTitle = "Authentication error";
+          errorMessage = "There was an authentication issue. Please try again or contact support if the problem persists.";
         } else {
           errorMessage = error.message;
         }
