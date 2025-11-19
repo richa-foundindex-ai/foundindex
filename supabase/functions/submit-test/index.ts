@@ -346,25 +346,22 @@ serve(async (req) => {
 
     console.log(`[${testId}] Airtable config - Base ID exists: ${!!airtableBaseId}, API Key exists: ${!!airtableApiKey}`);
 
-    // Store test record
-    // Only include industry if it's not "other" (Airtable doesn't have "other" as allowed option)
+    // Store test record - Airtable field mapping
     const testRecordFields: Record<string, any> = {
       test_id: testId,
       user_email: validatedEmail,
       website_url: validatedWebsite,
+      industry: validatedIndustry, // Maps to single-select: "saas", "financial", "ecommerce", "professional", "healthcare", "other"
       test_date: testDate,
       foundindex_score: foundIndexScore,
       chatgpt_score: foundIndexScore,
+      claude_score: 0, // Not yet implemented
+      perplexity_score: 0, // Not yet implemented
       recommendations_count: totalRecommendations,
-      recommendation_rate: recommendationRate
+      recommendation_rate: parseFloat(recommendationRate.toFixed(2))
     };
     
-    // Only add industry if it's a valid Airtable option (not "other")
-    if (validatedIndustry !== 'other') {
-      testRecordFields.industry = validatedIndustry;
-    }
-    
-    console.log(`[${testId}] Writing to Airtable Tests table with fields:`, testRecordFields);
+    console.log('[Airtable] Writing Tests record:', JSON.stringify(testRecordFields, null, 2));
 
     const testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
       method: 'POST',
@@ -386,7 +383,8 @@ serve(async (req) => {
     }
     
     const testRecordData = await testRecordResponse.json();
-    console.log(`[${testId}] Airtable Tests write SUCCESS - Status: ${testRecordResponse.status}, Response:`, JSON.stringify(testRecordData));
+    const airtableRecordId = testRecordData.id;
+    console.log(`[Airtable] Tests write successful, record ID: ${airtableRecordId}`);
 
     // Store query results in batches
     const batchSize = 10;
@@ -395,8 +393,16 @@ serve(async (req) => {
     for (let i = 0; i < queryResults.length; i += batchSize) {
       const batch = queryResults.slice(i, i + batchSize);
       const batchNumber = Math.floor(i / batchSize) + 1;
-      console.log(`[${testId}] Writing batch ${batchNumber} (${batch.length} records)...`);
-      console.log(`[${testId}] Batch ${batchNumber} sample fields:`, batch[0]);
+      const totalBatches = Math.ceil(queryResults.length / batchSize);
+      console.log(`[Airtable] Writing Query_Results batch: ${batchNumber} of ${totalBatches} (${batch.length} records)`);
+      console.log(`[Airtable] Batch ${batchNumber} sample record:`, JSON.stringify({
+        test_id: testId,
+        query_number: batch[0].query_number,
+        query_text: batch[0].query_text.substring(0, 50) + '...',
+        ai_engine: batch[0].ai_engine,
+        was_recommended: batch[0].was_recommended,
+        quality_rating: batch[0].quality_rating
+      }, null, 2));
       
       const batchResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Query_Results`, {
         method: 'POST',
@@ -423,7 +429,7 @@ serve(async (req) => {
       }
       
       const batchData = await batchResponse.json();
-      console.log(`[${testId}] Batch ${batchNumber} SUCCESS - Status: ${batchResponse.status}, Wrote ${batchData.records?.length || 0} records`);
+      console.log(`[Airtable] Query_Results batch ${batchNumber} of ${totalBatches} successful - Wrote ${batchData.records?.length || 0} records`);
     }
 
     console.log(`[${testId}] All ${queryResults.length} query results stored successfully in Airtable`);
