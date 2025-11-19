@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,19 +11,65 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     industry: "",
     email: "",
     website: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    // Handle form submission - will integrate with backend later
+    
+    if (!formData.industry || !formData.email || !formData.website) {
+      toast({
+        title: "Missing fields",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('submit-test', {
+        body: {
+          email: formData.email,
+          website: formData.website,
+          industry: formData.industry,
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Test Started!",
+        description: "Testing your website across AI engines. Results in 90 seconds...",
+      });
+
+      // Navigate to results page with test ID
+      setTimeout(() => {
+        navigate(`/results?testId=${data.testId}`);
+      }, 1500);
+
+    } catch (error) {
+      console.error('Submission error:', error);
+      toast({
+        title: "Submission failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -122,10 +169,20 @@ const HeroSection = () => {
 
             <Button
               type="submit"
+              disabled={isSubmitting}
               className="w-full bg-primary hover:bg-primary-hover text-primary-foreground text-lg py-6"
             >
-              Calculate My FoundIndex
-              <ArrowRight className="ml-2 h-5 w-5" />
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Testing Your Website...
+                </>
+              ) : (
+                <>
+                  Calculate My FoundIndex
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </>
+              )}
             </Button>
 
             <p className="text-sm text-center text-muted-foreground">
