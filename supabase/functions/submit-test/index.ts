@@ -292,6 +292,7 @@ serve(async (req) => {
         queryResults.push({
           query_number: i + 1,
           query_text: query,
+          ai_engine: 'ChatGPT',
           was_recommended: wasRecommended,
           context_snippet: aiResponse.substring(0, 200),
           recommendation_position: wasRecommended ? 1 : null,
@@ -307,6 +308,7 @@ serve(async (req) => {
         queryResults.push({
           query_number: i + 1,
           query_text: query,
+          ai_engine: 'ChatGPT',
           was_recommended: false,
           context_snippet: 'Error occurred during testing',
           recommendation_position: null,
@@ -345,14 +347,19 @@ serve(async (req) => {
     console.log(`[${testId}] Airtable config - Base ID exists: ${!!airtableBaseId}, API Key exists: ${!!airtableApiKey}`);
 
     // Store test record
-    console.log(`[${testId}] Attempting to write test record to Airtable Tests table...`, {
+    const testRecordFields = {
       test_id: testId,
       user_email: validatedEmail,
       website_url: validatedWebsite,
       industry: validatedIndustry,
+      test_date: testDate,
       foundindex_score: foundIndexScore,
-      recommendations_count: totalRecommendations
-    });
+      chatgpt_score: foundIndexScore,
+      recommendations_count: totalRecommendations,
+      recommendation_rate: recommendationRate
+    };
+    
+    console.log(`[${testId}] Writing to Airtable Tests table with fields:`, testRecordFields);
 
     const testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
       method: 'POST',
@@ -361,18 +368,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        fields: {
-          test_id: testId,
-          user_email: validatedEmail,
-          website_url: validatedWebsite,
-          test_date: testDate,
-          foundindex_score: foundIndexScore,
-          chatgpt_score: foundIndexScore,
-          claude_score: 0,
-          perplexity_score: 0,
-          recommendations_count: totalRecommendations,
-          recommendation_rate: recommendationRate
-        }
+        fields: testRecordFields
       })
     });
 
@@ -380,12 +376,12 @@ serve(async (req) => {
     
     if (!testRecordResponse.ok) {
       const errorText = await testRecordResponse.text();
-      console.error(`[${testId}] Airtable Tests write FAILED:`, errorText);
+      console.error(`[${testId}] Airtable Tests write FAILED - Status: ${testRecordResponse.status}, Response:`, errorText);
       throw new Error(`Airtable Tests write failed: ${errorText}`);
     }
     
     const testRecordData = await testRecordResponse.json();
-    console.log(`[${testId}] Airtable Tests write SUCCESS:`, testRecordData);
+    console.log(`[${testId}] Airtable Tests write SUCCESS - Status: ${testRecordResponse.status}, Response:`, JSON.stringify(testRecordData));
 
     // Store query results in batches
     const batchSize = 10;
@@ -393,7 +389,9 @@ serve(async (req) => {
     
     for (let i = 0; i < queryResults.length; i += batchSize) {
       const batch = queryResults.slice(i, i + batchSize);
-      console.log(`[${testId}] Writing batch ${Math.floor(i / batchSize) + 1} (${batch.length} records)...`);
+      const batchNumber = Math.floor(i / batchSize) + 1;
+      console.log(`[${testId}] Writing batch ${batchNumber} (${batch.length} records)...`);
+      console.log(`[${testId}] Batch ${batchNumber} sample fields:`, batch[0]);
       
       const batchResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Query_Results`, {
         method: 'POST',
@@ -411,16 +409,16 @@ serve(async (req) => {
         })
       });
 
-      console.log(`[${testId}] Batch ${Math.floor(i / batchSize) + 1} - Status: ${batchResponse.status}`);
+      console.log(`[${testId}] Batch ${batchNumber} - Status: ${batchResponse.status}`);
       
       if (!batchResponse.ok) {
         const errorText = await batchResponse.text();
-        console.error(`[${testId}] Airtable Query_Results batch write FAILED:`, errorText);
+        console.error(`[${testId}] Airtable Query_Results batch ${batchNumber} write FAILED - Status: ${batchResponse.status}, Response:`, errorText);
         throw new Error(`Airtable Query_Results write failed: ${errorText}`);
       }
       
       const batchData = await batchResponse.json();
-      console.log(`[${testId}] Batch ${Math.floor(i / batchSize) + 1} SUCCESS - Wrote ${batchData.records?.length || 0} records`);
+      console.log(`[${testId}] Batch ${batchNumber} SUCCESS - Status: ${batchResponse.status}, Wrote ${batchData.records?.length || 0} records`);
     }
 
     console.log(`[${testId}] All ${queryResults.length} query results stored successfully in Airtable`);

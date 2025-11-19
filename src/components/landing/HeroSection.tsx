@@ -34,8 +34,15 @@ const HeroSection = () => {
         title: "Missing fields",
         description: "Please fill in all required fields",
         variant: "destructive",
+        duration: Infinity,
       });
       return;
+    }
+
+    // Auto-format website URL
+    let formattedWebsite = formData.website.trim();
+    if (!formattedWebsite.startsWith('http://') && !formattedWebsite.startsWith('https://')) {
+      formattedWebsite = 'https://' + formattedWebsite;
     }
 
     setIsSubmitting(true);
@@ -49,7 +56,7 @@ const HeroSection = () => {
       const submissionPromise = supabase.functions.invoke('submit-test', {
         body: {
           email: formData.email,
-          website: formData.website,
+          website: formattedWebsite,
           industry: formData.industry,
         }
       });
@@ -77,31 +84,57 @@ const HeroSection = () => {
       console.error('Submission error:', error);
       setIsSubmitting(false);
       
-      let errorMessage = "Please try again";
-      let errorTitle = "Submission failed";
+      let userMessage = "";
+      let technicalDetails = "";
       
       if (error instanceof Error) {
         if (error.message.includes("timed out")) {
-          errorTitle = "Request timed out";
-          errorMessage = "The test took longer than 3 minutes. This may indicate an issue with the testing service. Please try again in a few minutes.";
-        } else if (error.message.includes("Failed to send request")) {
-          errorTitle = "Connection failed";
-          errorMessage = "Unable to connect to the testing service. Please check your internet connection and try again.";
-        } else if (error.message.includes("rate limit")) {
-          errorTitle = "Rate limit exceeded";
-          errorMessage = error.message;
-        } else if (error.message.includes("AUTHENTICATION")) {
-          errorTitle = "Authentication error";
-          errorMessage = "There was an authentication issue. Please try again or contact support if the problem persists.";
+          userMessage = "The test took longer than expected. This may indicate a temporary service issue.";
+          technicalDetails = error.message;
+        } else if (error.message.includes("rate limit") || error.message.includes("Rate limit")) {
+          userMessage = "You've reached the testing limit (3 tests per month). Please try again next month.";
+          technicalDetails = error.message;
+        } else if (error.message.includes("Invalid") || error.message.includes("invalid")) {
+          userMessage = "Please check your website URL and make sure it's valid (e.g., slack.com or https://yoursite.com)";
+          technicalDetails = error.message;
+        } else if (error.message.includes("500") || error.message.includes("Edge function")) {
+          userMessage = "We're experiencing a temporary server issue. Please wait a moment and try again.";
+          technicalDetails = error.message;
         } else {
-          errorMessage = error.message;
+          userMessage = "An unexpected error occurred. Please try again in a moment.";
+          technicalDetails = error.message;
         }
+      } else {
+        userMessage = "An unexpected error occurred. Please try again in a moment.";
+        technicalDetails = String(error);
       }
       
       toast({
-        title: errorTitle,
-        description: errorMessage,
+        title: "Test Failed",
+        description: (
+          <div className="space-y-3">
+            <p>{userMessage}</p>
+            <div className="text-sm space-y-2">
+              <p className="font-semibold">Common causes:</p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <li>Daily limit reached (3 free tests/month)</li>
+                <li>Invalid website URL</li>
+                <li>Temporary server issue</li>
+              </ul>
+              <p className="mt-2">Please wait a moment and try again, or contact support.</p>
+            </div>
+            <details className="mt-3">
+              <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+                <span>▶</span> Show technical details
+              </summary>
+              <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-x-auto">
+                {technicalDetails}
+              </pre>
+            </details>
+          </div>
+        ),
         variant: "destructive",
+        duration: Infinity,
       });
     }
   };
@@ -194,8 +227,8 @@ const HeroSection = () => {
               <Label htmlFor="website">Website URL *</Label>
               <Input
                 id="website"
-                type="url"
-                placeholder="yourcompany.com"
+                type="text"
+                placeholder="https://example.com or just example.com"
                 value={formData.website}
                 onChange={(e) =>
                   setFormData({ ...formData, website: e.target.value })
