@@ -367,7 +367,6 @@ serve(async (req) => {
           test_id: testId,
           user_email: validatedEmail,
           website_url: validatedWebsite,
-          industry: validatedIndustry,
           test_date: testDate,
           foundindex_score: foundIndexScore,
           chatgpt_score: foundIndexScore,
