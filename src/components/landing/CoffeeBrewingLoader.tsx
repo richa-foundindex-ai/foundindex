@@ -105,11 +105,25 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
                     <div className="absolute top-2 left-14 w-2.5 h-2.5 bg-[#A0826D] rounded-full animate-[pulse_2.2s_ease-in-out_infinite_1.2s]" />
                   </>
                 )}
+                
+                {/* Jumping Coffee Beans - appear when coffee reaches 50% */}
+                {progress >= 50 && (
+                  <>
+                    {/* Bean 1 */}
+                    <div className="absolute bottom-8 left-8 w-3 h-4 bg-[#5C4033] rounded-full animate-bean-jump" />
+                    {/* Bean 2 */}
+                    <div className="absolute bottom-12 right-10 w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-jump-delayed-1" />
+                    {/* Bean 3 */}
+                    <div className="absolute bottom-6 left-16 w-3 h-4 bg-[#5C4033] rounded-full animate-bean-jump-delayed-2" />
+                    {/* Bean 4 */}
+                    <div className="absolute bottom-10 right-16 w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-jump-delayed-3" />
+                  </>
+                )}
               </div>
-              
-              {/* Cup Handle - positioned outside on the right */}
-              <div className="absolute right-[-28px] top-1/2 -translate-y-1/2 w-14 h-20 border-8 border-[#8B4513] border-l-0 rounded-r-full" />
             </div>
+            
+            {/* Cup Handle - OUTSIDE the overflow-hidden container */}
+            <div className="absolute right-[20px] top-[calc(50%+12px)] -translate-y-1/2 w-14 h-20 border-8 border-[#8B4513] border-l-0 rounded-r-full" />
           </div>
 
           {/* Steam Animation - more prominent and animated */}
@@ -151,6 +165,27 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
               transform: translateY(-40px) translateX(-3px);
               opacity: 0;
             }
+          }
+          
+          @keyframes bean-jump {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+          }
+          
+          .animate-bean-jump {
+            animation: bean-jump 1.2s ease-in-out infinite;
+          }
+          
+          .animate-bean-jump-delayed-1 {
+            animation: bean-jump 1.4s ease-in-out infinite 0.3s;
+          }
+          
+          .animate-bean-jump-delayed-2 {
+            animation: bean-jump 1.3s ease-in-out infinite 0.6s;
+          }
+          
+          .animate-bean-jump-delayed-3 {
+            animation: bean-jump 1.5s ease-in-out infinite 0.9s;
           }
         `}</style>
 
