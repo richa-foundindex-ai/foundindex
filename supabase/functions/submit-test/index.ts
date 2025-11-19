@@ -281,14 +281,29 @@ serve(async (req) => {
         const data = await response.json();
         const aiResponse = data.choices[0].message.content;
         
-        // Check if website is mentioned (domain matching)
-        const domain = validatedWebsite.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
-        console.log('[DOMAIN] Extracted domain:', domain);
+        // Check if website is mentioned (domain + brand matching)
+        let domain = validatedWebsite;
+        try {
+          const url = new URL(validatedWebsite);
+          domain = url.hostname.replace(/^www\./, '');
+        } catch (e) {
+          domain = validatedWebsite.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+        }
 
-        const wasRecommended = aiResponse.toLowerCase().includes(domain.toLowerCase());
+        const brandName = domain.split('.')[0];
+        const responseText = aiResponse.toLowerCase();
+        const domainFound = responseText.includes(domain.toLowerCase());
+        const brandFound = responseText.includes(brandName.toLowerCase());
+        const wasRecommended = domainFound || brandFound;
+
+        console.log('[DOMAIN] Testing for domain:', domain);
+        console.log('[MATCH] Domain:', domain, '| Brand:', brandName);
+        console.log('[MATCH] Domain found?', domainFound, '| Brand found?', brandFound);
+        console.log('[MATCH] Final result:', wasRecommended);
         
         if (wasRecommended) {
           totalRecommendations++;
+          console.log('[COUNTER] Recommendation found! Total now:', totalRecommendations);
         }
 
         console.log(`[Query ${i + 1}] Testing:`, query);
@@ -326,13 +341,15 @@ serve(async (req) => {
 
     console.log(`[${testId}] All queries completed. Total recommendations: ${totalRecommendations}/${queries.length}`);
 
-    // Calculate scores with detailed logging
-    console.log('[SCORE] Total recommendations:', totalRecommendations);
+    console.log('[LOOP] All queries complete');
+    console.log('[SCORE] Final totalRecommendations:', totalRecommendations);
     console.log('[SCORE] Total queries:', queries.length);
+
     const recommendationRate = (totalRecommendations / queries.length) * 100;
-    console.log('[SCORE] Recommendation rate:', recommendationRate);
     const foundIndexScore = Math.round(recommendationRate);
-    console.log('[SCORE] FoundIndex score:', foundIndexScore);
+
+    console.log('[SCORE] Recommendation rate:', recommendationRate);
+    console.log('[SCORE] Calculated score:', foundIndexScore);
 
     console.log('[FINAL] Total recommendations:', totalRecommendations);
     console.log('[FINAL] Total queries:', queries.length);
