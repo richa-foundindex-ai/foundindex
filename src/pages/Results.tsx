@@ -20,6 +20,23 @@ interface QueryResult {
 interface TestResult {
   testId: string;
   foundIndexScore: number;
+  
+  // AI Readiness Scores
+  contentClarityScore?: number;
+  structuredDataScore?: number;
+  authorityScore?: number;
+  discoverabilityScore?: number;
+  comparisonScore?: number;
+  analysisDetails?: {
+    content_clarity?: string;
+    structured_data?: string;
+    authority?: string;
+    discoverability?: string;
+    comparison?: string;
+  };
+  recommendations?: string[];
+  
+  // Query-Based Visibility
   chatgptScore: number;
   claudeScore: number;
   perplexityScore: number;
@@ -27,8 +44,8 @@ interface TestResult {
   recommendationRate: number;
   website?: string;
   industry?: string;
-  businessType?: string; // AI-identified business type
-  generatedQueries?: string[]; // Custom AI-generated queries
+  businessType?: string;
+  generatedQueries?: string[];
   testDate?: string;
   queryResults?: QueryResult[];
 }
@@ -86,13 +103,15 @@ const Results = () => {
           <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto mb-6" />
           <h2 className="text-2xl font-bold mb-4">Testing Your Website</h2>
           <div className="space-y-2 text-muted-foreground">
-            <p>📊 Analyzing your business model...</p>
-            <p>🎯 Generating custom buyer queries...</p>
-            <p>🤖 Testing with ChatGPT (15 queries)...</p>
-            <p>📈 Calculating your FoundIndex score...</p>
+            <p>🌐 Fetching your website...</p>
+            <p>🔍 Analyzing AI-readiness factors...</p>
+            <p>📊 Evaluating structured data...</p>
+            <p>✅ Checking authority signals...</p>
+            <p>💡 Generating improvement recommendations...</p>
+            <p>🎯 Testing visibility with sample queries...</p>
           </div>
           <p className="mt-6 text-sm text-muted-foreground">
-            Usually 60-90 seconds
+            Usually 90-120 seconds
           </p>
         </div>
       </div>
@@ -193,13 +212,13 @@ const Results = () => {
 
   return (
     <div className="min-h-screen bg-background py-12 px-4">
-      <div className="container mx-auto max-w-4xl">
+      <div className="container mx-auto max-w-4xl" id="results-content">
         {/* Header */}
         <div className="mb-8">
           <Badge variant="secondary" className="mb-4">
             Test Complete
           </Badge>
-          <h1 className="text-4xl font-bold mb-2">Your FoundIndex Report</h1>
+          <h1 className="text-4xl font-bold mb-2">Your AI-Readiness Report</h1>
           <p className="text-muted-foreground">
             Results for: {result.website}
             {result.businessType && result.businessType !== result.industry && (
@@ -210,31 +229,55 @@ const Results = () => {
           </p>
         </div>
 
-        {/* Main Score Card */}
+        {/* Main Score Card - AI-Readiness Score */}
         <Card className="p-8 mb-8 border-2 border-primary">
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Your FoundIndex Score</h2>
+            <h2 className="text-2xl font-bold mb-4">Your AI-Readiness Score</h2>
             <div className={`text-8xl font-bold mb-4 ${getScoreColor(result.foundIndexScore)}`}>
               {result.foundIndexScore}
               <span className="text-4xl text-muted-foreground">/100</span>
             </div>
-            <p className="text-xl mb-6">{getScoreInterpretation(result.foundIndexScore)}</p>
+            <p className="text-xl mb-6 text-muted-foreground">
+              This measures how well your website is optimized for AI recommendation engines like ChatGPT, Claude, and Perplexity.
+            </p>
 
 
-            <div className="grid grid-cols-3 gap-4 text-left">
+            {/* Score Breakdown */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
               <div>
-                <p className="text-sm text-muted-foreground">Queries tested</p>
-                <p className="text-2xl font-bold">{result.queryResults?.length || 15}</p>
+                <div className={`text-3xl font-bold ${getScoreColor((result.contentClarityScore || 0) * 4)}`}>
+                  {result.contentClarityScore || 0}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Content Clarity</div>
+                <div className="text-xs text-muted-foreground">/25</div>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Recommendations</p>
-                <p className="text-2xl font-bold">{result.recommendationsCount}</p>
+                <div className={`text-3xl font-bold ${getScoreColor((result.structuredDataScore || 0) * 5)}`}>
+                  {result.structuredDataScore || 0}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Structured Data</div>
+                <div className="text-xs text-muted-foreground">/20</div>
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Success rate</p>
-                <p className="text-2xl font-bold">
-                  {Math.round(result.recommendationRate)}%
-                </p>
+                <div className={`text-3xl font-bold ${getScoreColor((result.authorityScore || 0) * 5)}`}>
+                  {result.authorityScore || 0}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Authority</div>
+                <div className="text-xs text-muted-foreground">/20</div>
+              </div>
+              <div>
+                <div className={`text-3xl font-bold ${getScoreColor((result.discoverabilityScore || 0) * 5)}`}>
+                  {result.discoverabilityScore || 0}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Discoverability</div>
+                <div className="text-xs text-muted-foreground">/20</div>
+              </div>
+              <div>
+                <div className={`text-3xl font-bold ${getScoreColor((result.comparisonScore || 0) * 6.67)}`}>
+                  {result.comparisonScore || 0}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Comparison</div>
+                <div className="text-xs text-muted-foreground">/15</div>
               </div>
             </div>
 
@@ -255,9 +298,104 @@ const Results = () => {
           </div>
         </Card>
 
+        {/* Analysis Details */}
+        {result.analysisDetails && Object.keys(result.analysisDetails).length > 0 && (
+          <Card className="p-6 mb-8">
+            <h3 className="text-xl font-bold mb-4">Detailed Analysis</h3>
+            <div className="space-y-4">
+              {result.analysisDetails.content_clarity && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
+                    📝 Content Clarity
+                    <Badge variant="secondary">{result.contentClarityScore}/25</Badge>
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{result.analysisDetails.content_clarity}</p>
+                </div>
+              )}
+              {result.analysisDetails.structured_data && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
+                    🏗️ Structured Data
+                    <Badge variant="secondary">{result.structuredDataScore}/20</Badge>
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{result.analysisDetails.structured_data}</p>
+                </div>
+              )}
+              {result.analysisDetails.authority && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
+                    ⭐ Authority Signals
+                    <Badge variant="secondary">{result.authorityScore}/20</Badge>
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{result.analysisDetails.authority}</p>
+                </div>
+              )}
+              {result.analysisDetails.discoverability && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
+                    🔍 Discoverability
+                    <Badge variant="secondary">{result.discoverabilityScore}/20</Badge>
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{result.analysisDetails.discoverability}</p>
+                </div>
+              )}
+              {result.analysisDetails.comparison && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
+                    ⚖️ Comparison Content
+                    <Badge variant="secondary">{result.comparisonScore}/15</Badge>
+                  </h4>
+                  <p className="text-sm text-muted-foreground">{result.analysisDetails.comparison}</p>
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
+
+        {/* Recommendations */}
+        {result.recommendations && result.recommendations.length > 0 && (
+          <Card className="p-6 mb-8 border-primary/50">
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              💡 Recommended Improvements
+            </h3>
+            <ul className="space-y-3">
+              {result.recommendations.map((rec, idx) => (
+                <li key={idx} className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">{rec}</span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
+        {/* Query-Based Visibility (Secondary) */}
+        <Card className="p-6 mb-8">
+          <h3 className="text-xl font-bold mb-4">Query-Based Visibility Test</h3>
+          <p className="text-sm text-muted-foreground mb-6">
+            We tested {result.generatedQueries?.length || 15} buyer-intent queries to see how often AI mentions your website.
+          </p>
+          <div className="grid grid-cols-3 gap-4 text-center mb-6">
+            <div>
+              <p className="text-sm text-muted-foreground">Queries tested</p>
+              <p className="text-2xl font-bold">{result.queryResults?.length || 15}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Recommendations</p>
+              <p className="text-2xl font-bold">{result.recommendationsCount}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Success rate</p>
+              <p className="text-2xl font-bold">
+                {Math.round(result.recommendationRate)}%
+              </p>
+            </div>
+          </div>
+        </Card>
+
         {/* Engine Breakdown */}
         <Card className="p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Engine Breakdown</h2>
+          <h2 className="text-2xl font-bold mb-6">Engine Performance</h2>
           <div className="space-y-4">
             <div>
               <div className="flex justify-between mb-2">
@@ -271,7 +409,7 @@ const Results = () => {
                 />
               </div>
               <p className="text-sm text-muted-foreground mt-1">
-                Recommended in {result.recommendationsCount} of {result.queryResults?.length || 15} queries
+                Recommended in {result.recommendationsCount} of {result.queryResults?.length || 15} queries ({Math.round(result.recommendationRate)}% success)
               </p>
             </div>
             <div className="opacity-50">

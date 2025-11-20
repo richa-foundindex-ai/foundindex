@@ -419,9 +419,143 @@ serve(async (req) => {
     // Test with OpenAI
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
     
-    console.log(`[${testId}] Step 1: Analyzing website and generating custom queries...`);
+    console.log(`[${testId}] ===================`);
+    console.log(`[${testId}] STEP 1: Fetching website content for AI-readiness audit...`);
+    console.log(`[${testId}] ===================`);
+
+    // Fetch the user's website
+    let websiteHtml = '';
+    let fetchSuccess = false;
     
-    // Step 1: Analyze website and generate custom queries
+    try {
+      const websiteResponse = await fetch(validatedWebsite, {
+        headers: {
+          'User-Agent': 'FoundIndex-Bot/1.0 (AI Recommendation Analyzer)'
+        },
+        redirect: 'follow',
+      });
+      
+      if (websiteResponse.ok) {
+        websiteHtml = await websiteResponse.text();
+        fetchSuccess = true;
+        console.log(`[${testId}] Website content fetched successfully (${websiteHtml.length} chars)`);
+      } else {
+        console.warn(`[${testId}] Website fetch returned ${websiteResponse.status}`);
+      }
+    } catch (fetchError) {
+      console.error(`[${testId}] Failed to fetch website:`, fetchError);
+    }
+
+    console.log(`[${testId}] ===================`);
+    console.log(`[${testId}] STEP 2: AI-Readiness Audit Analysis...`);
+    console.log(`[${testId}] ===================`);
+
+    // AI-Readiness Audit
+    const auditPrompt = `Analyze this website for AI-readiness (how easy it is for AI like ChatGPT to recommend this business).
+
+Website URL: ${validatedWebsite}
+HTML Content: ${websiteHtml.substring(0, 50000)}
+
+Score these factors:
+
+1. CONTENT CLARITY (0-25): 
+   - Does the site clearly explain what they do/sell?
+   - Is it written in natural language (not just keywords)?
+   - Are there clear benefit statements?
+
+2. STRUCTURED DATA (0-20):
+   - Does it have Schema.org markup?
+   - Are there proper headings (H1, H2)?
+   - Is navigation clear?
+
+3. AUTHORITY SIGNALS (0-20):
+   - Customer reviews/testimonials?
+   - Case studies or success stories?
+   - Trust badges, certifications?
+   - Media mentions?
+
+4. DISCOVERABILITY (0-20):
+   - FAQ section present?
+   - Problem-solution framing?
+   - "How to" or educational content?
+
+5. COMPARISON CONTENT (0-15):
+   - Compares to alternatives/competitors?
+   - "Why choose us" content?
+   - Feature comparison tables?
+
+Return ONLY valid JSON (no markdown):
+{
+  "content_clarity_score": 18,
+  "structured_data_score": 12,
+  "authority_score": 15,
+  "discoverability_score": 14,
+  "comparison_score": 8,
+  "total_score": 67,
+  "analysis_details": {
+    "content_clarity": "Clear product description on homepage...",
+    "structured_data": "Has proper H1/H2 tags but missing Schema.org...",
+    "authority": "3 customer testimonials found...",
+    "discoverability": "Has FAQ section with 8 questions...",
+    "comparison": "No competitor comparison found..."
+  },
+  "recommendations": [
+    "Add Schema.org Product markup to improve AI understanding",
+    "Create comparison page: 'YourProduct vs Competitor'",
+    "Add more specific FAQ questions buyers ask",
+    "Include case study with measurable results"
+  ]
+}`;
+
+    const auditResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert at analyzing websites for AI-readiness. Return only valid JSON with no markdown.'
+          },
+          {
+            role: 'user',
+            content: auditPrompt
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.3,
+      }),
+    });
+
+    if (!auditResponse.ok) {
+      console.error(`[${testId}] OpenAI audit API error:`, auditResponse.status);
+      throw new Error('Failed to perform AI-readiness audit');
+    }
+
+    const auditData = await auditResponse.json();
+    let auditText = auditData.choices[0].message.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    
+    console.log(`[${testId}] Raw audit response:`, auditText.substring(0, 300));
+
+    const auditResults = JSON.parse(auditText);
+
+    console.log(`[${testId}] AI-Readiness Audit Complete:`);
+    console.log(`[${testId}] - Content Clarity: ${auditResults.content_clarity_score}/25`);
+    console.log(`[${testId}] - Structured Data: ${auditResults.structured_data_score}/20`);
+    console.log(`[${testId}] - Authority Signals: ${auditResults.authority_score}/20`);
+    console.log(`[${testId}] - Discoverability: ${auditResults.discoverability_score}/20`);
+    console.log(`[${testId}] - Comparison Content: ${auditResults.comparison_score}/15`);
+    console.log(`[${testId}] - TOTAL AI-READINESS SCORE: ${auditResults.total_score}/100`);
+    console.log(`[${testId}] - Recommendations: ${auditResults.recommendations.length} improvements suggested`);
+
+    console.log(`[${testId}] ===================`);
+    console.log(`[${testId}] STEP 3: Analyzing business type for query generation...`);
+    console.log(`[${testId}] ===================`);
+    
+    // Step 3: Analyze website and generate custom queries
     let businessType = validatedIndustry;
     let queries: string[] = [];
     
@@ -680,10 +814,21 @@ Return ONLY valid JSON:
       user_email: validatedEmail,
       website_url: validatedWebsite,
       industry: validatedIndustry, // Maps to single-select: "saas", "financial", "ecommerce", "professional", "healthcare", "other"
+      test_date: testDate,
+      
+      // AI Readiness Scores (PRIMARY)
+      foundindex_score: auditResults.total_score,
+      content_clarity_score: auditResults.content_clarity_score,
+      structured_data_score: auditResults.structured_data_score,
+      authority_score: auditResults.authority_score,
+      discoverability_score: auditResults.discoverability_score,
+      comparison_score: auditResults.comparison_score,
+      analysis_details: JSON.stringify(auditResults.analysis_details, null, 2),
+      recommendations: JSON.stringify(auditResults.recommendations, null, 2),
+      
+      // Query-Based Visibility (SECONDARY)
       business_type: businessType, // AI-identified business type
       generated_queries: JSON.stringify(queries, null, 2), // Store custom queries as formatted JSON
-      test_date: testDate,
-      foundindex_score: foundIndexScore,
       chatgpt_score: foundIndexScore,
       claude_score: 0, // Not yet implemented
       perplexity_score: 0, // Not yet implemented
@@ -720,16 +865,23 @@ Return ONLY valid JSON:
       let retried = false;
       try {
         const errorJson = JSON.parse(errorText);
-        const isUnknownBusinessType =
+        const isUnknownField =
           testRecordResponse.status === 422 &&
-          errorJson?.error?.type === 'UNKNOWN_FIELD_NAME' &&
-          typeof errorJson?.error?.message === 'string' &&
-          errorJson.error.message.includes('"business_type"');
+          errorJson?.error?.type === 'UNKNOWN_FIELD_NAME';
 
-        if (isUnknownBusinessType) {
+        if (isUnknownField) {
           retried = true;
-          console.warn(`[${testId}] Airtable missing business_type field. Retrying without business_type/generated_queries...`);
+          console.warn(`[${testId}] Airtable missing AI-readiness fields. Retrying with minimal fields...`);
           const fallbackFields = { ...testRecordFields };
+          
+          // Remove all AI-readiness analysis fields
+          delete fallbackFields.content_clarity_score;
+          delete fallbackFields.structured_data_score;
+          delete fallbackFields.authority_score;
+          delete fallbackFields.discoverability_score;
+          delete fallbackFields.comparison_score;
+          delete fallbackFields.analysis_details;
+          delete fallbackFields.recommendations;
           delete fallbackFields.business_type;
           delete fallbackFields.generated_queries;
 
