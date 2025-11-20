@@ -99,6 +99,31 @@ const Methodology = () => {
           </div>
         </div>
 
+        {/* Example Box */}
+        <Card className="mb-16 p-8 bg-accent-gray-light border-border">
+          <h3 className="text-xl font-bold mb-6">What does "AI-readable" mean?</h3>
+          
+          <div className="space-y-6">
+            <div>
+              <p className="text-sm font-semibold text-destructive mb-2">Example 1 - Not AI-readable:</p>
+              <p className="text-muted-foreground italic">
+                "Best travel tips top destinations affordable luxury adventure explore discover amazing"
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold text-success mb-2">Example 2 - AI-readable:</p>
+              <p className="text-foreground">
+                "We're a travel blog focused on adventure travel in Southeast Asia. We share practical tips for solo travelers, budget recommendations, and hidden destinations."
+              </p>
+            </div>
+
+            <p className="text-sm text-muted-foreground pt-4 border-t border-border">
+              When someone asks ChatGPT "What are good travel blogs for Asia?", the second example is easy for AI to understand and recommend.
+            </p>
+          </div>
+        </Card>
+
         {/* The 5 Factors */}
         <section className="mb-16">
           <h2 className="text-editorial-lg mb-12 text-center">The 5 factors we evaluate</h2>
