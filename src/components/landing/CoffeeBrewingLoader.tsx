@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
-import { Info, Volume2, VolumeX } from "lucide-react";
+import { Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface CoffeeBrewingLoaderProps {
   onComplete?: () => void;
@@ -23,7 +17,6 @@ const STAGES = [
 
 export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) => {
   const [progress, setProgress] = useState(0);
-  const [soundEnabled, setSoundEnabled] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
 
   useEffect(() => {
@@ -85,7 +78,7 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
         <div className="relative w-64 h-64 mx-auto">
           {/* Cup */}
           <div className="absolute inset-0 flex items-end justify-center">
-            <div className="relative w-48 h-48 border-8 border-[#8B4513] rounded-b-3xl overflow-hidden bg-gradient-to-b from-white to-gray-50">
+            <div className="relative w-48 h-48 border-8 border-[#8B4513] rounded-b-[2.5rem] rounded-t-lg overflow-hidden bg-gradient-to-b from-white to-gray-50">
               {/* Rim shine/highlight */}
               <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-b from-white/60 to-transparent" />
               
@@ -105,30 +98,41 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
                   </>
                 )}
                 
-                {/* Jumping Coffee Beans - appear at 20% with staggered pop-in */}
+                {/* Coffee Beans - Dancing like ballerinas with explosions */}
                 {progress >= 20 && (
                   <>
-                    {/* Bean 1 - Pops in first */}
-                    <div className="absolute bottom-8 left-8 w-3 h-4 bg-[#5C4033] rounded-full animate-bean-pop animate-bean-float" 
-                         style={{ animationDelay: '0s' }} />
-                    {/* Bean 2 */}
-                    <div className="absolute bottom-12 right-10 w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-pop-delayed-1 animate-bean-float-1" />
-                    {/* Bean 3 */}
-                    <div className="absolute bottom-6 left-16 w-3 h-4 bg-[#5C4033] rounded-full animate-bean-pop-delayed-2 animate-bean-float-2" />
-                    {progress >= 35 && (
-                      <>
-                        {/* Bean 4 */}
-                        <div className="absolute bottom-10 right-16 w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-pop animate-bean-float-3" />
-                        {/* Bean 5 */}
-                        <div className="absolute bottom-14 left-12 w-2 h-3 bg-[#5C4033] rounded-full animate-bean-pop-delayed-1 animate-bean-float-4" />
-                      </>
-                    )}
+                    {/* Bean 1 - Random left position */}
+                    <div className="absolute w-3 h-4 bg-[#5C4033] rounded-full animate-bean-dance-1" 
+                         style={{ bottom: '20%', left: '15%' }} />
+                    {/* Bean 2 - Random right position */}
+                    <div className="absolute w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-dance-2" 
+                         style={{ bottom: '35%', right: '18%' }} />
+                    {/* Bean 3 - Random center-left */}
+                    <div className="absolute w-3 h-4 bg-[#5C4033] rounded-full animate-bean-dance-3" 
+                         style={{ bottom: '15%', left: '40%' }} />
+                    {/* Bean 4 - Random right */}
+                    <div className="absolute w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-dance-4" 
+                         style={{ bottom: '28%', right: '35%' }} />
+                    {/* Bean 5 - Random center */}
+                    <div className="absolute w-2 h-3 bg-[#5C4033] rounded-full animate-bean-dance-5" 
+                         style={{ bottom: '40%', left: '30%' }} />
+                    {/* Bean 6 - Random left */}
+                    <div className="absolute w-3 h-4 bg-[#5C4033] rounded-full animate-bean-dance-6" 
+                         style={{ bottom: '25%', left: '22%' }} />
+                    {/* Bean 7 - Random right */}
+                    <div className="absolute w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-dance-7" 
+                         style={{ bottom: '32%', right: '25%' }} />
+                    {/* Bean 8 - Random center-right */}
+                    <div className="absolute w-2 h-3 bg-[#5C4033] rounded-full animate-bean-dance-8" 
+                         style={{ bottom: '18%', right: '40%' }} />
                     {progress >= 50 && (
                       <>
-                        {/* Bean 6 */}
-                        <div className="absolute bottom-9 right-14 w-3 h-4 bg-[#5C4033] rounded-full animate-bean-pop-delayed-2 animate-bean-float-5" />
-                        {/* Bean 7 */}
-                        <div className="absolute bottom-16 left-14 w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-pop animate-bean-float-6" />
+                        {/* Bean 9 - Additional dancer */}
+                        <div className="absolute w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-dance-9" 
+                             style={{ bottom: '38%', left: '48%' }} />
+                        {/* Bean 10 - Final dancer */}
+                        <div className="absolute w-3 h-4 bg-[#5C4033] rounded-full animate-bean-dance-10" 
+                             style={{ bottom: '22%', right: '12%' }} />
                       </>
                     )}
                   </>
@@ -136,8 +140,8 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
               </div>
             </div>
             
-            {/* Cup Handle - OUTSIDE the overflow-hidden container */}
-            <div className="absolute right-[20px] top-[calc(50%+12px)] -translate-y-1/2 w-14 h-20 border-8 border-[#8B4513] border-l-0 rounded-r-full" />
+            {/* Cup Handle - OUTSIDE the cup, visible curve */}
+            <div className="absolute -right-4 top-[calc(50%+12px)] -translate-y-1/2 w-16 h-20 border-8 border-[#8B4513] border-l-0 rounded-r-[3rem]" />
           </div>
 
           {/* Steam Animation - more dynamic with 4 wisps */}
@@ -187,73 +191,75 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
             }
           }
           
-          @keyframes bean-pop {
+          @keyframes bean-dance {
             0% {
-              transform: translateY(-100px) scale(0) rotate(0deg);
+              transform: translateY(0) translateX(0) rotate(0deg) scale(1);
               opacity: 0;
             }
+            10% {
+              opacity: 1;
+              transform: translateY(0) translateX(0) rotate(0deg) scale(1.2);
+            }
+            25% {
+              transform: translateY(-60px) translateX(15px) rotate(180deg) scale(0.8);
+            }
+            50% {
+              transform: translateY(-120px) translateX(-10px) rotate(360deg) scale(1.5);
+              opacity: 1;
+            }
             60% {
-              transform: translateY(5px) scale(1.15) rotate(180deg);
+              /* Explosion at peak */
+              transform: translateY(-130px) translateX(-5px) rotate(380deg) scale(2);
+              opacity: 0.6;
+            }
+            75% {
+              transform: translateY(-80px) translateX(8px) rotate(450deg) scale(0.6);
+              opacity: 0.8;
             }
             100% {
-              transform: translateY(0) scale(1) rotate(360deg);
+              transform: translateY(0) translateX(0) rotate(540deg) scale(1);
               opacity: 1;
             }
           }
           
-          @keyframes bean-float {
-            0%, 100% {
-              transform: translate(0, 0) rotate(0deg);
-            }
-            25% {
-              transform: translate(2px, -2px) rotate(5deg);
-            }
-            50% {
-              transform: translate(-2px, 2px) rotate(-5deg);
-            }
-            75% {
-              transform: translate(2px, 2px) rotate(3deg);
-            }
+          .animate-bean-dance-1 {
+            animation: bean-dance 4s ease-in-out infinite;
           }
           
-          .animate-bean-pop {
-            animation: bean-pop 0.8s ease-out forwards;
+          .animate-bean-dance-2 {
+            animation: bean-dance 4.3s ease-in-out infinite 0.3s;
           }
           
-          .animate-bean-pop-delayed-1 {
-            animation: bean-pop 0.8s ease-out 0.2s forwards;
+          .animate-bean-dance-3 {
+            animation: bean-dance 3.8s ease-in-out infinite 0.6s;
           }
           
-          .animate-bean-pop-delayed-2 {
-            animation: bean-pop 0.8s ease-out 0.4s forwards;
+          .animate-bean-dance-4 {
+            animation: bean-dance 4.1s ease-in-out infinite 0.9s;
           }
           
-          .animate-bean-float {
-            animation: bean-float 3s ease-in-out infinite 1s;
+          .animate-bean-dance-5 {
+            animation: bean-dance 3.9s ease-in-out infinite 1.2s;
           }
           
-          .animate-bean-float-1 {
-            animation: bean-float 3.2s ease-in-out infinite 1.2s;
+          .animate-bean-dance-6 {
+            animation: bean-dance 4.2s ease-in-out infinite 1.5s;
           }
           
-          .animate-bean-float-2 {
-            animation: bean-float 2.8s ease-in-out infinite 1.4s;
+          .animate-bean-dance-7 {
+            animation: bean-dance 3.7s ease-in-out infinite 1.8s;
           }
           
-          .animate-bean-float-3 {
-            animation: bean-float 3.1s ease-in-out infinite 0.5s;
+          .animate-bean-dance-8 {
+            animation: bean-dance 4.4s ease-in-out infinite 2.1s;
           }
           
-          .animate-bean-float-4 {
-            animation: bean-float 2.9s ease-in-out infinite 0.7s;
+          .animate-bean-dance-9 {
+            animation: bean-dance 3.6s ease-in-out infinite 0.4s;
           }
           
-          .animate-bean-float-5 {
-            animation: bean-float 3.3s ease-in-out infinite 0.3s;
-          }
-          
-          .animate-bean-float-6 {
-            animation: bean-float 2.7s ease-in-out infinite 0.9s;
+          .animate-bean-dance-10 {
+            animation: bean-dance 4.5s ease-in-out infinite 0.7s;
           }
         `}</style>
 
@@ -291,29 +297,6 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
           </div>
         </Card>
 
-        {/* Sound Toggle */}
-        <div className="flex justify-center">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => setSoundEnabled(!soundEnabled)}
-                  className="p-2 rounded-full hover:bg-accent transition-colors"
-                  aria-label={soundEnabled ? "Mute sound" : "Enable sound"}
-                >
-                  {soundEnabled ? (
-                    <Volume2 className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <VolumeX className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Bean-grinding sound effects {soundEnabled ? "enabled" : "disabled"}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
       </Card>
     </div>
   );
