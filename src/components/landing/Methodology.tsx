@@ -7,25 +7,25 @@ const Methodology = () => {
       icon: HelpCircle,
       title: "Real Buyer Questions",
       description:
-        "We source 45 queries from actual buyer interviews, G2/Capterra reviews, and high-intent search data. Examples: 'Best [category] for [specific use-case]' or '[Product A] vs [Product B] pricing'.",
+        "We source queries from actual buyer conversations, reviews, and high-intent search phrases. Examples include: 'Best [category] for [use case]' or '[Tool A] vs [Tool B] pricing'.",
     },
     {
       icon: TestTube,
       title: "Standardized Testing",
       description:
-        "Every test uses fresh API sessions with no chat history. Standardized prompts eliminate personalization bias. We test against latest models: GPT-4o, Claude 3.5 Sonnet, Perplexity real-time search.",
+        "Every test uses fresh sessions with no prior chat history. Standardized prompts reduce personalization bias and make scores comparable over time.",
     },
     {
       icon: Scale,
       title: "Weighted Scoring",
       description:
-        "Your score accounts for recommendation position (1st vs 5th), context quality (detailed vs passing mention), and query recency. Not all mentions are equal—we measure impact.",
+        "Your score accounts for how prominent and how clear the recommendation is, not just whether you're mentioned by name.",
     },
     {
       icon: BarChart3,
       title: "Benchmark Calibration",
       description:
-        "Your score is calibrated against our proprietary database of 10,000+ AI query results from 200+ companies. You're not just getting a number—you're getting your position in the AI visibility landscape.",
+        "As more companies run tests, we can share more context about typical score ranges by category and use case—without inflating or inventing numbers.",
     },
   ];
 

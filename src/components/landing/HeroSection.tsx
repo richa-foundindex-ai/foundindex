@@ -48,16 +48,6 @@ const HeroSection = () => {
     { value: "Health & Medical Services", label: "Health & Medical Services" },
     { value: "Finance & Accounting", label: "Finance & Accounting" },
     { value: "Business Services (Consulting, Legal, etc.)", label: "Business Services (Consulting, Legal, etc.)" },
-    { value: "Beauty & Cosmetics", label: "Beauty & Cosmetics" },
-    { value: "Education & Training", label: "Education & Training" },
-    { value: "Legal Services", label: "Legal Services" },
-    { value: "Telecom & Communications", label: "Telecom & Communications" },
-    { value: "Food & Beverage", label: "Food & Beverage" },
-    { value: "Real Estate", label: "Real Estate" },
-    { value: "Consulting", label: "Consulting" },
-    { value: "Marketing & Advertising", label: "Marketing & Advertising" },
-    { value: "Travel & Tourism", label: "Travel & Tourism" },
-    { value: "Manufacturing", label: "Manufacturing" },
     { value: "Other", label: "Other" },
   ];
 
@@ -342,10 +332,10 @@ const HeroSection = () => {
         {/* Key Stat Box */}
         <Card className="max-w-3xl mx-auto mb-12 p-8 border-2 border-primary bg-accent-red-light">
           <p className="text-2xl font-bold text-center mb-2">
-            AI-Driven Buyers Convert at 14.2% vs. 2.8% Google Organic
+            AI assistants are changing how buyers discover new products and services.
           </p>
           <p className="text-lg text-center text-secondary">
-            Being found by AI = access to 5x higher-converting traffic
+            FoundIndex helps you see how clearly those assistants understand and recommend your brand.
           </p>
         </Card>
 
@@ -353,10 +343,7 @@ const HeroSection = () => {
         <div className="max-w-3xl mx-auto mb-12 text-center">
           <h2 className="text-xl font-bold mb-4">What is FoundIndex?</h2>
           <p className="text-body-lg text-muted-foreground">
-            FoundIndex is the first standardized AI visibility benchmark. Your
-            score (0-100) measures how often AI engines recommend your brand
-            when buyers ask for solutions—calibrated against our database of
-            200+ tested companies.
+            FoundIndex is a standardized AI visibility benchmark. Your score (0-100) measures how often AI engines recommend your brand when buyers ask for solutions.
           </p>
         </div>
 

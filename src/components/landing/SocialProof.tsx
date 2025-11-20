@@ -3,18 +3,16 @@ import { Card } from "@/components/ui/card";
 const SocialProof = () => {
   const stats = [
     {
-      value: "200+",
-      label: "Sites Tested",
+      value: "AI-native",
+      label: "Built for assistant-era search",
     },
     {
-      value: "73%",
-      label: "Get Zero Recommendations",
-      sublabel: "Despite strong SEO",
+      value: "Buyer-led",
+      label: "Focused on real evaluation questions",
     },
     {
-      value: "14.2%",
-      label: "Conversion Rate",
-      sublabel: "AI traffic vs 2.8% organic",
+      value: "Transparent",
+      label: "No inflated or unsourced claims",
     },
   ];
 

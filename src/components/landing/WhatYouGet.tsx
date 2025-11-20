@@ -7,25 +7,25 @@ const WhatYouGet = () => {
       icon: Target,
       title: "Your FoundIndex Score",
       description:
-        "0-100 score showing AI visibility. See where you rank: 62nd percentile of tested SaaS companies, 3rd of 7 direct competitors.",
+        "0-100 score showing how often AI assistants recommend your brand when buyers ask for solutions in your category.",
     },
     {
       icon: Gauge,
       title: "Engine Breakdown",
       description:
-        "Performance across ChatGPT (53/100), Claude (40/100), Perplexity (47/100). Identify which platforms work and which need attention.",
+        "A view of how you perform across different AI models, so you can see where you're already strong and where to focus.",
     },
     {
       icon: TrendingUp,
-      title: "Benchmark Comparison",
+      title: "Benchmark Context",
       description:
-        "How you compare to industry averages and direct competitors. See the gap to #1 and what it takes to get there.",
+        "Qualitative context on how to interpret your score today, with more detailed benchmarks added as our dataset grows.",
     },
     {
       icon: ListChecks,
       title: "Priority Roadmap",
       description:
-        "Ranked action plan: content freshness (+15 pts), schema markup (+12 pts), Reddit presence (+10 pts). Based on 200+ tested sites.",
+        "Plain-language suggestions for content and messaging improvements that are likely to help AI understand and recommend you more often.",
     },
   ];
 
