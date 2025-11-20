@@ -13,13 +13,12 @@ interface CoffeeBrewingLoaderProps {
 }
 
 const STAGES = [
-  { threshold: 0, label: "Grinding beans...", description: "Initializing AI queries..." },
-  { threshold: 13, label: "Heating water...", description: "Warming up OpenAI..." },
-  { threshold: 27, label: "Brewing first 5 queries...", description: "Testing AI visibility (1-5)..." },
-  { threshold: 47, label: "Brewing next 5 queries...", description: "Testing AI visibility (6-10)..." },
-  { threshold: 67, label: "Brewing final 5 queries...", description: "Testing AI visibility (11-15)..." },
-  { threshold: 87, label: "Pouring results...", description: "Calculating your FoundIndex score..." },
-  { threshold: 97, label: "Ready to serve...", description: "Redirecting to results..." },
+  { threshold: 0, label: "Setting up...", description: "Preparing your test" },
+  { threshold: 15, label: "Analyzing website...", description: "Understanding your business" },
+  { threshold: 30, label: "Generating queries...", description: "Creating buyer questions" },
+  { threshold: 50, label: "Testing AI engines...", description: "Querying ChatGPT, Claude, Perplexity" },
+  { threshold: 75, label: "Calculating scores...", description: "Computing your FoundIndex" },
+  { threshold: 90, label: "Almost done...", description: "Finalizing results" },
 ];
 
 export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) => {
@@ -106,17 +105,32 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
                   </>
                 )}
                 
-                {/* Jumping Coffee Beans - appear when coffee reaches 50% */}
-                {progress >= 50 && (
+                {/* Jumping Coffee Beans - appear at 20% with staggered pop-in */}
+                {progress >= 20 && (
                   <>
-                    {/* Bean 1 */}
-                    <div className="absolute bottom-8 left-8 w-3 h-4 bg-[#5C4033] rounded-full animate-bean-jump" />
+                    {/* Bean 1 - Pops in first */}
+                    <div className="absolute bottom-8 left-8 w-3 h-4 bg-[#5C4033] rounded-full animate-bean-pop animate-bean-float" 
+                         style={{ animationDelay: '0s' }} />
                     {/* Bean 2 */}
-                    <div className="absolute bottom-12 right-10 w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-jump-delayed-1" />
+                    <div className="absolute bottom-12 right-10 w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-pop-delayed-1 animate-bean-float-1" />
                     {/* Bean 3 */}
-                    <div className="absolute bottom-6 left-16 w-3 h-4 bg-[#5C4033] rounded-full animate-bean-jump-delayed-2" />
-                    {/* Bean 4 */}
-                    <div className="absolute bottom-10 right-16 w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-jump-delayed-3" />
+                    <div className="absolute bottom-6 left-16 w-3 h-4 bg-[#5C4033] rounded-full animate-bean-pop-delayed-2 animate-bean-float-2" />
+                    {progress >= 35 && (
+                      <>
+                        {/* Bean 4 */}
+                        <div className="absolute bottom-10 right-16 w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-pop animate-bean-float-3" />
+                        {/* Bean 5 */}
+                        <div className="absolute bottom-14 left-12 w-2 h-3 bg-[#5C4033] rounded-full animate-bean-pop-delayed-1 animate-bean-float-4" />
+                      </>
+                    )}
+                    {progress >= 50 && (
+                      <>
+                        {/* Bean 6 */}
+                        <div className="absolute bottom-9 right-14 w-3 h-4 bg-[#5C4033] rounded-full animate-bean-pop-delayed-2 animate-bean-float-5" />
+                        {/* Bean 7 */}
+                        <div className="absolute bottom-16 left-14 w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-pop animate-bean-float-6" />
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -126,22 +140,24 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
             <div className="absolute right-[20px] top-[calc(50%+12px)] -translate-y-1/2 w-14 h-20 border-8 border-[#8B4513] border-l-0 rounded-r-full" />
           </div>
 
-          {/* Steam Animation - more prominent and animated */}
+          {/* Steam Animation - more dynamic with 4 wisps */}
           {progress > 10 && (
             <div className="absolute top-0 left-1/2 -translate-x-1/2">
               <div className="relative">
                 {/* Steam wisp 1 */}
                 <div className="absolute w-2 h-12 bg-gradient-to-t from-gray-400 to-transparent opacity-70 rounded-full blur-sm" 
-                     style={{ left: "-12px", animation: "float-up 3s ease-in-out infinite" }} />
+                     style={{ left: "-16px", animation: "steam-rise 3s ease-in-out infinite" }} />
                 {/* Steam wisp 2 */}
                 <div className="absolute w-2.5 h-16 bg-gradient-to-t from-gray-300 to-transparent opacity-60 rounded-full blur-sm" 
-                     style={{ left: "0px", animation: "float-up 3.5s ease-in-out infinite 0.7s" }} />
+                     style={{ left: "-4px", animation: "steam-rise 2.5s ease-in-out infinite 0.5s" }} />
                 {/* Steam wisp 3 */}
                 <div className="absolute w-2 h-14 bg-gradient-to-t from-gray-400 to-transparent opacity-75 rounded-full blur-sm" 
-                     style={{ left: "12px", animation: "float-up 3.2s ease-in-out infinite 1.4s" }} />
-                {/* Steam wisp 4 */}
-                <div className="absolute w-1.5 h-10 bg-gradient-to-t from-gray-300 to-transparent opacity-65 rounded-full blur-sm" 
-                     style={{ left: "-6px", animation: "float-up 3.8s ease-in-out infinite 2s" }} />
+                     style={{ left: "8px", animation: "steam-rise 2.8s ease-in-out infinite 1s" }} />
+                {/* Steam wisp 4 - Intensifies at 75% */}
+                {progress > 75 && (
+                  <div className="absolute w-1.5 h-10 bg-gradient-to-t from-gray-300 to-transparent opacity-65 rounded-full blur-sm" 
+                       style={{ left: "16px", animation: "steam-rise 3.2s ease-in-out infinite 1.5s" }} />
+                )}
               </div>
             </div>
           )}
@@ -152,40 +168,92 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
         </div>
         
         <style>{`
-          @keyframes float-up {
+          @keyframes steam-rise {
             0% {
-              transform: translateY(0) translateX(0);
+              transform: translateY(0) translateX(0) scale(1);
+              opacity: 0;
+            }
+            30% {
+              transform: translateY(-15px) translateX(3px) scale(1.1);
               opacity: 0.7;
             }
-            50% {
-              transform: translateY(-20px) translateX(5px);
-              opacity: 0.5;
+            70% {
+              transform: translateY(-30px) translateX(-2px) scale(1.3);
+              opacity: 0.4;
             }
             100% {
-              transform: translateY(-40px) translateX(-3px);
+              transform: translateY(-40px) translateX(1px) scale(1.5);
               opacity: 0;
             }
           }
           
-          @keyframes bean-jump {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-12px); }
+          @keyframes bean-pop {
+            0% {
+              transform: translateY(-100px) scale(0) rotate(0deg);
+              opacity: 0;
+            }
+            60% {
+              transform: translateY(5px) scale(1.15) rotate(180deg);
+            }
+            100% {
+              transform: translateY(0) scale(1) rotate(360deg);
+              opacity: 1;
+            }
           }
           
-          .animate-bean-jump {
-            animation: bean-jump 1.2s ease-in-out infinite;
+          @keyframes bean-float {
+            0%, 100% {
+              transform: translate(0, 0) rotate(0deg);
+            }
+            25% {
+              transform: translate(2px, -2px) rotate(5deg);
+            }
+            50% {
+              transform: translate(-2px, 2px) rotate(-5deg);
+            }
+            75% {
+              transform: translate(2px, 2px) rotate(3deg);
+            }
           }
           
-          .animate-bean-jump-delayed-1 {
-            animation: bean-jump 1.4s ease-in-out infinite 0.3s;
+          .animate-bean-pop {
+            animation: bean-pop 0.8s ease-out forwards;
           }
           
-          .animate-bean-jump-delayed-2 {
-            animation: bean-jump 1.3s ease-in-out infinite 0.6s;
+          .animate-bean-pop-delayed-1 {
+            animation: bean-pop 0.8s ease-out 0.2s forwards;
           }
           
-          .animate-bean-jump-delayed-3 {
-            animation: bean-jump 1.5s ease-in-out infinite 0.9s;
+          .animate-bean-pop-delayed-2 {
+            animation: bean-pop 0.8s ease-out 0.4s forwards;
+          }
+          
+          .animate-bean-float {
+            animation: bean-float 3s ease-in-out infinite 1s;
+          }
+          
+          .animate-bean-float-1 {
+            animation: bean-float 3.2s ease-in-out infinite 1.2s;
+          }
+          
+          .animate-bean-float-2 {
+            animation: bean-float 2.8s ease-in-out infinite 1.4s;
+          }
+          
+          .animate-bean-float-3 {
+            animation: bean-float 3.1s ease-in-out infinite 0.5s;
+          }
+          
+          .animate-bean-float-4 {
+            animation: bean-float 2.9s ease-in-out infinite 0.7s;
+          }
+          
+          .animate-bean-float-5 {
+            animation: bean-float 3.3s ease-in-out infinite 0.3s;
+          }
+          
+          .animate-bean-float-6 {
+            animation: bean-float 2.7s ease-in-out infinite 0.9s;
           }
         `}</style>
 

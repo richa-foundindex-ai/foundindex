@@ -42,13 +42,42 @@ const HeroSection = () => {
     exampleQueries: string[];
   } | null>(null);
 
+  const industryOptions = [
+    { value: "Software & Apps", label: "Software & Apps" },
+    { value: "Online Retail & Shopping", label: "Online Retail & Shopping" },
+    { value: "Health & Medical Services", label: "Health & Medical Services" },
+    { value: "Finance & Accounting", label: "Finance & Accounting" },
+    { value: "Business Services (Consulting, Legal, etc.)", label: "Business Services (Consulting, Legal, etc.)" },
+    { value: "Beauty & Cosmetics", label: "Beauty & Cosmetics" },
+    { value: "Education & Training", label: "Education & Training" },
+    { value: "Legal Services", label: "Legal Services" },
+    { value: "Telecom & Communications", label: "Telecom & Communications" },
+    { value: "Food & Beverage", label: "Food & Beverage" },
+    { value: "Real Estate", label: "Real Estate" },
+    { value: "Consulting", label: "Consulting" },
+    { value: "Marketing & Advertising", label: "Marketing & Advertising" },
+    { value: "Travel & Tourism", label: "Travel & Tourism" },
+    { value: "Manufacturing", label: "Manufacturing" },
+    { value: "Other", label: "Other" },
+  ];
+
   const mapIndustryToAirtable = (displayValue: string): string => {
     const mapping: Record<string, string> = {
-      'SaaS/Technology': 'saas',
-      'Financial Services': 'financial',
-      'E-commerce': 'ecommerce',
-      'Professional Services': 'professional',
-      'Healthcare': 'healthcare',
+      'Software & Apps': 'saas',
+      'Finance & Accounting': 'financial',
+      'Online Retail & Shopping': 'ecommerce',
+      'Business Services (Consulting, Legal, etc.)': 'professional',
+      'Health & Medical Services': 'healthcare',
+      'Beauty & Cosmetics': 'beauty',
+      'Education & Training': 'education',
+      'Legal Services': 'legal',
+      'Telecom & Communications': 'telecom',
+      'Food & Beverage': 'food',
+      'Real Estate': 'realestate',
+      'Consulting': 'consulting',
+      'Marketing & Advertising': 'marketing',
+      'Travel & Tourism': 'travel',
+      'Manufacturing': 'manufacturing',
       'Other': 'other',
     };
     return mapping[displayValue] || displayValue.toLowerCase();
@@ -56,25 +85,37 @@ const HeroSection = () => {
 
   const getExampleQueries = (industry: string): string[] => {
     const queries: Record<string, string[]> = {
-      'SaaS/Technology': [
+      'Software & Apps': [
         'What are the best project management tools for remote teams?',
         'Which CRM software is best for small businesses?'
       ],
-      'E-commerce': [
+      'Online Retail & Shopping': [
         'Where can I buy organic coffee beans online?',
         'Best online stores for sustainable fashion?'
       ],
-      'Healthcare': [
+      'Health & Medical Services': [
         'What are the best telemedicine platforms?',
         'Which health tracking apps are most accurate?'
       ],
-      'Financial Services': [
+      'Finance & Accounting': [
         'What are the best investment platforms for beginners?',
         'Which banks offer the best business checking accounts?'
       ],
-      'Professional Services': [
+      'Business Services (Consulting, Legal, etc.)': [
         'How to find a good business consultant?',
         'Best accounting firms for small businesses?'
+      ],
+      'Beauty & Cosmetics': [
+        'What are the best organic skincare brands?',
+        'Where to buy cruelty-free makeup products?'
+      ],
+      'Education & Training': [
+        'What are the best online course platforms?',
+        'Which certification programs are worth it?'
+      ],
+      'Legal Services': [
+        'How to find a business attorney?',
+        'Best law firms for startups?'
       ],
     };
     return queries[industry] || ['Example query 1', 'Example query 2'];
@@ -83,8 +124,8 @@ const HeroSection = () => {
   const detectMismatch = (website: string, industry: string): { isMismatch: boolean; detectedType: string } => {
     const url = website.toLowerCase();
     
-    // SaaS/Technology mismatches
-    if (industry === 'SaaS/Technology') {
+    // Software & Apps mismatches
+    if (industry === 'Software & Apps') {
       if (url.includes('coffee') || url.includes('restaurant') || url.includes('food') || 
           url.includes('shop') || url.includes('retail') || url.includes('store')) {
         return { isMismatch: true, detectedType: 'retail/food service' };
@@ -92,7 +133,7 @@ const HeroSection = () => {
     }
     
     // E-commerce mismatches
-    if (industry === 'E-commerce') {
+    if (industry === 'Online Retail & Shopping') {
       if (url.includes('consulting') || url.includes('services') || url.includes('law') || 
           url.includes('accounting') || url.includes('advisory')) {
         return { isMismatch: true, detectedType: 'professional services' };
@@ -100,7 +141,7 @@ const HeroSection = () => {
     }
     
     // Healthcare mismatches
-    if (industry === 'Healthcare') {
+    if (industry === 'Health & Medical Services') {
       if ((url.includes('software') || url.includes('app') || url.includes('tool')) && 
           !url.includes('health') && !url.includes('medical') && !url.includes('care')) {
         return { isMismatch: true, detectedType: 'software/technology' };
@@ -338,16 +379,16 @@ const HeroSection = () => {
                   <SelectValue placeholder="Select your industry" />
                 </SelectTrigger>
                 <SelectContent className="bg-background z-50">
-                  <SelectItem value="SaaS/Technology">SaaS/Technology</SelectItem>
-                  <SelectItem value="Financial Services">Financial Services</SelectItem>
-                  <SelectItem value="E-commerce">E-commerce</SelectItem>
-                  <SelectItem value="Professional Services">
-                    Professional Services
-                  </SelectItem>
-                  <SelectItem value="Healthcare">Healthcare</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
+                  {industryOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                💡 Not sure? Choose the industry where YOUR CUSTOMERS look for solutions
+              </p>
             </div>
 
             <div className="space-y-2">

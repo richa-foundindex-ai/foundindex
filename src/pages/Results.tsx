@@ -128,15 +128,22 @@ const Results = () => {
 
   const handleShareScore = async () => {
     const shareUrl = window.location.href;
+    const shareText = `🎯 I scored ${result.foundIndexScore}/100 on FoundIndex - the AI visibility benchmark!\n\nThis measures how often ChatGPT recommends your business.\n\nTest yours: ${shareUrl}`;
+    
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toast.success('Link copied to clipboard!');
+      toast.success('✅ Link copied to clipboard!', {
+        description: 'Share it on LinkedIn or Twitter',
+        duration: 5000,
+      });
     } catch (err) {
       toast.error('Failed to copy link');
     }
   };
 
   const handleDownloadPDF = async () => {
+    const loadingToast = toast.loading('Generating PDF...');
+    
     try {
       const jsPDF = (await import('jspdf')).default;
       const html2canvas = (await import('html2canvas')).default;
@@ -146,8 +153,6 @@ const Results = () => {
         toast.error('Unable to generate PDF');
         return;
       }
-
-      toast.info('Generating PDF...');
       
       const canvas = await html2canvas(element, {
         scale: 2,
@@ -166,13 +171,21 @@ const Results = () => {
       
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       
-      const fileName = `FoundIndex-Report-${result.website?.replace(/^https?:\/\/(www\.)?/, '')}-${new Date().toISOString().split('T')[0]}.pdf`;
+      const companyName = result.website?.replace(/^https?:\/\/(www\.)?/, '').split('.')[0] || 'Report';
+      const fileName = `FoundIndex-Report-${companyName}-${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
       
-      toast.success('PDF downloaded successfully!');
+      toast.dismiss(loadingToast);
+      toast.success('✅ PDF downloaded successfully!', {
+        description: `Saved as ${fileName}`,
+        duration: 4000,
+      });
     } catch (err) {
       console.error('PDF generation error:', err);
-      toast.error('Failed to generate PDF');
+      toast.dismiss(loadingToast);
+      toast.error('Failed to generate PDF', {
+        description: 'Please try again or contact support',
+      });
     }
   };
 
@@ -201,15 +214,6 @@ const Results = () => {
             </div>
             <p className="text-xl mb-6">{getScoreInterpretation(result.foundIndexScore)}</p>
 
-            <div className="bg-muted p-4 rounded-lg mb-6">
-              <p className="font-semibold">
-                Your score of {result.foundIndexScore} places you in the 62nd percentile of all
-                SaaS companies tested.
-              </p>
-              <p className="text-muted-foreground">
-                You rank 3rd out of 7 direct competitors in our database.
-              </p>
-            </div>
 
             <div className="grid grid-cols-3 gap-4 text-left">
               <div>
@@ -332,41 +336,52 @@ const Results = () => {
           </div>
         </Card>
 
-        {/* Improvement Roadmap */}
+        {/* Improvement Tips */}
         <Card className="p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Your FoundIndex Improvement Plan</h2>
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-xl font-bold mb-4 text-primary">HIGH IMPACT (Do This Week)</h3>
-              <div className="space-y-4">
-                <div className="border-l-4 border-primary pl-4">
-                  <p className="font-bold">1. Update Content Freshness</p>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Impact: +12-15 points | Effort: 4 hours
-                  </p>
-                  <p className="text-sm">
-                    Content &lt;30 days old = 25.7% higher recommendations. Your last update: 67
-                    days.
-                  </p>
-                  <p className="text-sm mt-2">
-                    <strong>Expected:</strong> FoundIndex {result.foundIndexScore} → 59-62
-                  </p>
-                </div>
-                <div className="border-l-4 border-primary pl-4">
-                  <p className="font-bold">2. Add FAQ Schema</p>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Impact: +10-12 points | Effort: 2 hours
-                  </p>
-                  <p className="text-sm">
-                    FAQ schema = 45% visibility boost. You have 1 page, competitors have 5-8.
-                  </p>
-                  <p className="text-sm mt-2">
-                    <strong>Expected:</strong> FoundIndex 59-62 → 69-74
-                  </p>
-                </div>
+          <h2 className="text-2xl font-bold mb-6">How to Improve Your FoundIndex Score</h2>
+          <p className="text-muted-foreground mb-6">
+            Based on 200+ tests, here's what high-scoring companies do:
+          </p>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Create detailed how-to content</p>
+                <p className="text-sm text-muted-foreground">Answer specific questions your buyers ask</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Mention use cases and alternatives</p>
+                <p className="text-sm text-muted-foreground">AI models look for comprehensive comparisons</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Update content regularly</p>
+                <p className="text-sm text-muted-foreground">Fresh content (30-60 days) gets recommended more</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Include comparison charts</p>
+                <p className="text-sm text-muted-foreground">Help AI understand your positioning</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Add structured data (Schema markup)</p>
+                <p className="text-sm text-muted-foreground">Makes your content more discoverable</p>
               </div>
             </div>
           </div>
+          <p className="text-sm text-muted-foreground mt-6 pt-6 border-t">
+            These are general recommendations. Site-specific analysis coming in Pro plan.
+          </p>
         </Card>
 
         {/* Tracking CTA */}
