@@ -76,65 +76,146 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
 
         {/* Coffee Cup Animation */}
         <div className="relative w-64 h-64 mx-auto">
-          {/* Cup - wider at top like real mug */}
-          <div className="absolute inset-0 flex items-end justify-center">
-            <div className="relative w-48 h-48 border-8 border-[#8B4513] rounded-b-[2.5rem] overflow-hidden bg-gradient-to-b from-white to-gray-50 animate-[shimmer_3s_ease-in-out_infinite]"
-                 style={{ 
-                   borderTopLeftRadius: '1.5rem',
-                   borderTopRightRadius: '1.5rem',
-                   clipPath: 'polygon(8% 0%, 92% 0%, 100% 100%, 0% 100%)'
-                 }}>
-              {/* Thicker rim with shine */}
-              <div className="absolute top-0 left-0 right-0 h-3 bg-gradient-to-b from-white/70 via-white/40 to-transparent border-b-2 border-[#8B4513]/20" />
+          <svg viewBox="0 0 200 200" className="w-full h-full">
+            <defs>
+              {/* Inner shadow for depth */}
+              <filter id="cupDepth">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+                <feOffset dx="0" dy="2" result="offsetblur"/>
+                <feComponentTransfer>
+                  <feFuncA type="linear" slope="0.3"/>
+                </feComponentTransfer>
+                <feMerge>
+                  <feMergeNode/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
               
-              {/* Coffee Fill */}
-              <div
-                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#6F4E37] via-[#8B6F47] to-[#6F4E37] transition-all duration-1000 ease-in-out"
-                style={{ height: `${progress}%` }}
-              >
-                {/* Coffee Surface Bubbles with percolation animation */}
-                {progress > 0 && (
-                  <>
-                    <div className="absolute top-2 left-6 w-3 h-3 bg-[#A0826D] rounded-full animate-[pulse_1.5s_ease-in-out_infinite]" />
-                    <div className="absolute top-3 right-8 w-2 h-2 bg-[#A0826D] rounded-full animate-[pulse_1.8s_ease-in-out_infinite_0.3s]" />
-                    <div className="absolute top-4 left-10 w-2.5 h-2.5 bg-[#A0826D] rounded-full animate-[pulse_2s_ease-in-out_infinite_0.6s]" />
-                    <div className="absolute top-5 right-12 w-2 h-2 bg-[#A0826D] rounded-full animate-[pulse_1.6s_ease-in-out_infinite_0.9s]" />
-                    <div className="absolute top-2 left-14 w-2.5 h-2.5 bg-[#A0826D] rounded-full animate-[pulse_2.2s_ease-in-out_infinite_1.2s]" />
-                  </>
-                )}
-                
-                {/* Coffee Beans - Organic, asymmetric dancing */}
-                {progress >= 5 && (
-                  <>
-                    {/* 10 beans with truly random positions, staggered appearances */}
-                    <div className="absolute w-3 h-4 bg-[#5C4033] rounded-full animate-bean-dance-1" 
-                         style={{ bottom: '12%', left: '8%' }} />
-                    <div className="absolute w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-dance-2" 
-                         style={{ bottom: '38%', left: '72%' }} />
-                    <div className="absolute w-3 h-4 bg-[#5C4033] rounded-full animate-bean-dance-3" 
-                         style={{ bottom: '22%', left: '35%' }} />
-                    <div className="absolute w-2 h-3 bg-[#5C4033] rounded-full animate-bean-dance-4" 
-                         style={{ bottom: '45%', left: '18%' }} />
-                    <div className="absolute w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-dance-5" 
-                         style={{ bottom: '8%', left: '58%' }} />
-                    <div className="absolute w-3 h-4 bg-[#5C4033] rounded-full animate-bean-dance-6" 
-                         style={{ bottom: '30%', left: '85%' }} />
-                    <div className="absolute w-2 h-3 bg-[#5C4033] rounded-full animate-bean-dance-7" 
-                         style={{ bottom: '18%', left: '48%' }} />
-                    <div className="absolute w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-dance-8" 
-                         style={{ bottom: '42%', left: '28%' }} />
-                    <div className="absolute w-3 h-4 bg-[#5C4033] rounded-full animate-bean-dance-9" 
-                         style={{ bottom: '25%', left: '65%' }} />
-                    <div className="absolute w-2.5 h-3.5 bg-[#5C4033] rounded-full animate-bean-dance-10" 
-                         style={{ bottom: '35%', left: '92%' }} />
-                  </>
-                )}
-              </div>
-            </div>
+              {/* Clip path for coffee fill */}
+              <clipPath id="cupClip">
+                <path d="M 50 60 L 60 180 Q 100 188 140 180 L 150 60 Q 100 65 50 60 Z" />
+              </clipPath>
+            </defs>
             
-            {/* Cup Handle - Completely outside the cup */}
-            <div className="absolute -right-8 top-[calc(50%+12px)] -translate-y-1/2 w-16 h-20 border-8 border-[#8B4513] border-l-0 rounded-r-[3rem]" />
-          </div>
+            {/* Cup Body with consistent outline */}
+            <g filter="url(#cupDepth)">
+              {/* Cup body background */}
+              <path 
+                d="M 50 60 L 60 180 Q 100 188 140 180 L 150 60 Q 100 65 50 60 Z"
+                fill="url(#cupGradient)"
+                stroke="#5D4037"
+                strokeWidth="3"
+                className="animate-[shimmer_3s_ease-in-out_infinite]"
+              />
+              
+              {/* Rim highlight */}
+              <ellipse cx="100" cy="60" rx="50" ry="8" 
+                fill="url(#rimShine)" 
+                opacity="0.7"
+              />
+            </g>
+            
+            {/* Coffee fill */}
+            <g clipPath="url(#cupClip)">
+              <rect 
+                x="50" 
+                y={200 - (progress * 1.2)} 
+                width="100" 
+                height={progress * 1.2}
+                fill="url(#coffeeGradient)"
+                className="transition-all duration-1000 ease-in-out"
+              />
+              
+              {/* Coffee Surface Bubbles */}
+              {progress > 0 && (
+                <g>
+                  <circle cx="75" cy={200 - (progress * 1.2)} r="3" fill="#A0826D" opacity="0.8" 
+                    className="animate-[pulse_1.5s_ease-in-out_infinite]" />
+                  <circle cx="115" cy={200 - (progress * 1.2) + 5} r="2" fill="#A0826D" opacity="0.8"
+                    className="animate-[pulse_1.8s_ease-in-out_infinite_0.3s]" />
+                  <circle cx="90" cy={200 - (progress * 1.2) + 8} r="2.5" fill="#A0826D" opacity="0.8"
+                    className="animate-[pulse_2s_ease-in-out_infinite_0.6s]" />
+                  <circle cx="105" cy={200 - (progress * 1.2) + 10} r="2" fill="#A0826D" opacity="0.8"
+                    className="animate-[pulse_1.6s_ease-in-out_infinite_0.9s]" />
+                  <circle cx="80" cy={200 - (progress * 1.2) + 3} r="2.5" fill="#A0826D" opacity="0.8"
+                    className="animate-[pulse_2.2s_ease-in-out_infinite_1.2s]" />
+                </g>
+              )}
+              
+              {/* Coffee Beans - Organic, asymmetric dancing */}
+              {progress >= 5 && (
+                <g>
+                  <ellipse cx="65" cy={200 - (progress * 1.2 * 0.12)} rx="3" ry="4" fill="#5C4033" 
+                    className="animate-bean-dance-1" />
+                  <ellipse cx="125" cy={200 - (progress * 1.2 * 0.38)} rx="2.5" ry="3.5" fill="#5C4033"
+                    className="animate-bean-dance-2" />
+                  <ellipse cx="85" cy={200 - (progress * 1.2 * 0.22)} rx="3" ry="4" fill="#5C4033"
+                    className="animate-bean-dance-3" />
+                  <ellipse cx="70" cy={200 - (progress * 1.2 * 0.45)} rx="2" ry="3" fill="#5C4033"
+                    className="animate-bean-dance-4" />
+                  <ellipse cx="110" cy={200 - (progress * 1.2 * 0.08)} rx="2.5" ry="3.5" fill="#5C4033"
+                    className="animate-bean-dance-5" />
+                  <ellipse cx="135" cy={200 - (progress * 1.2 * 0.30)} rx="3" ry="4" fill="#5C4033"
+                    className="animate-bean-dance-6" />
+                  <ellipse cx="95" cy={200 - (progress * 1.2 * 0.18)} rx="2" ry="3" fill="#5C4033"
+                    className="animate-bean-dance-7" />
+                  <ellipse cx="78" cy={200 - (progress * 1.2 * 0.42)} rx="2.5" ry="3.5" fill="#5C4033"
+                    className="animate-bean-dance-8" />
+                  <ellipse cx="118" cy={200 - (progress * 1.2 * 0.25)} rx="3" ry="4" fill="#5C4033"
+                    className="animate-bean-dance-9" />
+                  <ellipse cx="140" cy={200 - (progress * 1.2 * 0.35)} rx="2.5" ry="3.5" fill="#5C4033"
+                    className="animate-bean-dance-10" />
+                </g>
+              )}
+            </g>
+            
+            {/* Cup Handle - Properly attached with visible connection points */}
+            <g>
+              {/* Main handle curve */}
+              <path 
+                d="M 150 90 Q 175 90 175 120 Q 175 150 150 150"
+                fill="none"
+                stroke="#5D4037"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+              
+              {/* Inner handle curve for depth */}
+              <path 
+                d="M 150 95 Q 170 95 170 120 Q 170 145 150 145"
+                fill="none"
+                stroke="#7D5037"
+                strokeWidth="1.5"
+                opacity="0.6"
+              />
+              
+              {/* Upper attachment point */}
+              <circle cx="150" cy="90" r="3" fill="#5D4037" />
+              
+              {/* Lower attachment point */}
+              <circle cx="150" cy="150" r="3" fill="#5D4037" />
+            </g>
+            
+            {/* Gradients */}
+            <defs>
+              <linearGradient id="cupGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#ffffff" />
+                <stop offset="100%" stopColor="#f3f4f6" />
+              </linearGradient>
+              
+              <linearGradient id="coffeeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#6F4E37" />
+                <stop offset="50%" stopColor="#8B6F47" />
+                <stop offset="100%" stopColor="#6F4E37" />
+              </linearGradient>
+              
+              <radialGradient id="rimShine">
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0.7" />
+                <stop offset="70%" stopColor="#ffffff" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+          </svg>
 
           {/* Steam Animation - starts immediately */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2">
