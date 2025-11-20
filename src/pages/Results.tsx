@@ -123,14 +123,15 @@ const Results = () => {
           <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto mb-6" />
           <h1 className="text-2xl font-bold mb-4">Testing Your Website</h1>
           <div className="space-y-2 text-muted-foreground text-sm">
-            <p>🌐 Fetching your website…</p>
-            <p>🔍 Analyzing AI-readiness…</p>
-            <p>📊 Evaluating structured data…</p>
-            <p>✅ Checking authority signals…</p>
-            <p>💡 Generating recommendations…</p>
-            <p>🎯 Testing AI visibility…</p>
+            <p>Fetching your website...</p>
+            <p>Analyzing content clarity...</p>
+            <p>Checking structured data...</p>
+            <p>Evaluating authority signals...</p>
+            <p>Assessing discoverability...</p>
+            <p>Reviewing comparison content...</p>
+            <p>Calculating your score...</p>
           </div>
-          <p className="mt-6 text-sm text-muted-foreground">Usually 90–120 seconds</p>
+          <p className="mt-6 text-sm text-muted-foreground">Usually takes 3 minutes</p>
         </div>
       </div>
     );
@@ -158,10 +159,10 @@ const Results = () => {
           <div>
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight flex items-center gap-2">
               <Sparkles className="h-7 w-7 text-primary" />
-              AI-Readiness Report
+              Your AI-readiness score
             </h1>
             <p className="mt-2 text-muted-foreground max-w-xl">
-              Your personalized FoundIndex scorecard showing how AI assistants understand and recommend your site.
+              Based on analysis of your website's content and structure
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               {result.website && <Badge variant="outline">{result.website}</Badge>}
@@ -194,27 +195,36 @@ const Results = () => {
           </Card>
 
           <Card className="p-6 space-y-3">
-            <h2 className="text-sm font-semibold">Score Breakdown</h2>
+            <h2 className="text-sm font-semibold">What we evaluated</h2>
             {[
-              { label: "Content Clarity", score: result.contentClarityScore },
-              { label: "Structured Data", score: result.structuredDataScore },
-              { label: "Authority", score: result.authorityScore },
-              { label: "Discoverability", score: result.discoverabilityScore },
-              { label: "Comparison", score: result.comparisonScore },
+              { label: "Content clarity", score: result.contentClarityScore, max: 25 },
+              { label: "Structured data", score: result.structuredDataScore, max: 20 },
+              { label: "Authority signals", score: result.authorityScore, max: 20 },
+              { label: "Discoverability", score: result.discoverabilityScore, max: 20 },
+              { label: "Comparison content", score: result.comparisonScore, max: 15 },
             ].map((item, i) => (
               <div key={i} className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm flex items-center gap-2">
-                    {item.label}
-                    {(item.score ?? 0) > 70 ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-destructive" />
-                    )}
+                  <span className="text-sm">{item.label} (X/{item.max})</span>
+                  <span className="text-xs text-muted-foreground">
+                    {item.score ?? "–"}/{item.max}
                   </span>
-                  <span className="text-xs text-muted-foreground">{item.score ?? "–"}/100</span>
                 </div>
-                <Progress value={item.score ?? 0} className="h-1.5" />
+                <div className="flex items-center gap-2">
+                  <Progress value={((item.score ?? 0) / item.max) * 100} className="h-1.5 flex-1" />
+                  {(item.score ?? 0) > (item.max * 0.7) ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-destructive" />
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {item.label === "Content clarity" && "How clearly you explain what you do"}
+                  {item.label === "Structured data" && "How organized your information is"}
+                  {item.label === "Authority signals" && "Evidence of credibility and trust"}
+                  {item.label === "Discoverability" && "How easy key information is to find"}
+                  {item.label === "Comparison content" && "Context for how you're different"}
+                </p>
               </div>
             ))}
           </Card>
@@ -222,7 +232,7 @@ const Results = () => {
 
         <section className="grid gap-6 md:grid-cols-[1.8fr_1.2fr]">
           <Card className="p-6 space-y-4">
-            <h2 className="text-sm font-semibold">Your Action Plan</h2>
+            <h2 className="text-sm font-semibold">How to improve your score</h2>
             <div className="space-y-4">
               {(result.recommendations ?? []).slice(0, 3).map((rec, i) => (
                 <div key={i} className="rounded-lg border bg-card p-4 space-y-2">
@@ -245,12 +255,11 @@ const Results = () => {
             <Card className="p-5 space-y-3 bg-muted/40">
               <div className="flex items-center gap-2">
                 <Share2 className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-semibold">Share this scorecard</h2>
+                <h2 className="text-sm font-semibold">Share your score</h2>
               </div>
               <div className="rounded-md bg-background border px-3 py-2 text-xs">
-                <p className="font-medium">I scored {score}/100 on FoundIndex AI-Readiness!</p>
-                <p className="text-muted-foreground mt-1">{getPercentile(score)}</p>
-                <p className="mt-1 text-xs text-primary">{window.location.origin}</p>
+                <p className="font-medium">I just analyzed my website's AI-readiness with FoundIndex. Score: {score}/100</p>
+                <p className="mt-1 text-xs text-primary">Test yours: {window.location.origin}</p>
               </div>
               <Button size="sm" className="w-full" variant="outline" onClick={handleShare}>
                 Copy share text
@@ -273,7 +282,7 @@ const Results = () => {
         <section className="space-y-4">
           <div className="flex items-center gap-2">
             <Globe2 className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold">Query-based visibility</h2>
+            <h2 className="text-sm font-semibold">Engine breakdown</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="p-4 space-y-1">
@@ -289,6 +298,12 @@ const Results = () => {
               <p className="text-2xl font-semibold">{result.perplexityScore ?? "–"}/100</p>
             </Card>
           </div>
+        </section>
+
+        <section className="text-center pt-8 border-t">
+          <Link to="/methodology" className="text-primary hover:underline text-sm font-medium">
+            How did we calculate this? See our methodology →
+          </Link>
         </section>
       </main>
     </div>
