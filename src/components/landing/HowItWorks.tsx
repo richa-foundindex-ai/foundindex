@@ -4,27 +4,27 @@ const HowItWorks = () => {
   const steps = [
     {
       number: "01",
-      title: "Enter Details",
-      description: "Email, website URL, industry. 10 seconds.",
+      title: "Enter your website URL",
+      description: "We fetch and analyze your website's content and structure.",
     },
     {
       number: "02",
-      title: "We Test 3 AI Engines",
+      title: "AI evaluates 5 key factors",
       description:
-        "45 queries (15 per engine) matching real buyer questions in your industry.",
+        "We check content clarity, structured data, authority signals, discoverability, and comparison content.",
     },
     {
       number: "03",
-      title: "Get Your FoundIndex",
+      title: "Get your score and recommendations",
       description:
-        "Score, breakdown, competitor comparison, improvement roadmap. Results in 90 seconds.",
+        "See your 0-100 score and specific improvements you can make today.",
     },
   ];
 
   return (
     <section className="py-20 px-4 bg-accent-gray-light">
       <div className="container mx-auto max-w-6xl">
-        <h2 className="text-editorial-lg text-center mb-16">How It Works</h2>
+        <h2 className="text-editorial-lg text-center mb-16">How we analyze your site</h2>
 
         <div className="grid md:grid-cols-3 gap-8">
           {steps.map((step, index) => (

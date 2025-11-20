@@ -107,38 +107,40 @@ const HeroSection = () => {
         'How to find a business attorney?',
         'Best law firms for startups?'
       ],
+      'Telecom & Communications': [
+        'What are the best business phone systems?',
+        'Which internet service providers offer the best speeds?'
+      ],
+      'Food & Beverage': [
+        'Where to order fresh meal kits online?',
+        'Best organic food delivery services?'
+      ],
+      'Real Estate': [
+        'How to find a good real estate agent?',
+        'Best property management companies?'
+      ],
+      'Consulting': [
+        'Top management consulting firms for small businesses?',
+        'How to hire a strategy consultant?'
+      ],
+      'Marketing & Advertising': [
+        'Best digital marketing agencies for startups?',
+        'Which social media management tools are worth it?'
+      ],
+      'Travel & Tourism': [
+        'Best travel booking websites for vacation packages?',
+        'Which travel insurance companies are most reliable?'
+      ],
+      'Manufacturing': [
+        'Best suppliers for [specific product]?',
+        'Which manufacturing software helps with inventory management?'
+      ],
+      'Other': [
+        'Best [category] for [use case]?',
+        '[Company A] vs [Company B] comparison?'
+      ]
     };
-    return queries[industry] || ['Example query 1', 'Example query 2'];
-  };
-
-  const detectMismatch = (website: string, industry: string): { isMismatch: boolean; detectedType: string } => {
-    const url = website.toLowerCase();
-    
-    // Software & Apps mismatches
-    if (industry === 'Software & Apps') {
-      if (url.includes('coffee') || url.includes('restaurant') || url.includes('food') || 
-          url.includes('shop') || url.includes('retail') || url.includes('store')) {
-        return { isMismatch: true, detectedType: 'retail/food service' };
-      }
-    }
-    
-    // E-commerce mismatches
-    if (industry === 'Online Retail & Shopping') {
-      if (url.includes('consulting') || url.includes('services') || url.includes('law') || 
-          url.includes('accounting') || url.includes('advisory')) {
-        return { isMismatch: true, detectedType: 'professional services' };
-      }
-    }
-    
-    // Healthcare mismatches
-    if (industry === 'Health & Medical Services') {
-      if ((url.includes('software') || url.includes('app') || url.includes('tool')) && 
-          !url.includes('health') && !url.includes('medical') && !url.includes('care')) {
-        return { isMismatch: true, detectedType: 'software/technology' };
-      }
-    }
-    
-    return { isMismatch: false, detectedType: '' };
+    return queries[industry] || queries['Other'];
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -146,138 +148,103 @@ const HeroSection = () => {
     
     if (!formData.industry || !formData.email || !formData.website) {
       toast({
-        title: "Missing fields",
+        title: "Missing information",
         description: "Please fill in all required fields",
         variant: "destructive",
-        duration: Infinity,
       });
       return;
     }
 
-    // Auto-format website URL
-    let formattedWebsite = formData.website.trim();
-    if (!formattedWebsite.startsWith('http://') && !formattedWebsite.startsWith('https://')) {
-      formattedWebsite = 'https://' + formattedWebsite;
+    let websiteUrl = formData.website;
+    if (!/^https?:\/\//i.test(websiteUrl)) {
+      websiteUrl = `https://${websiteUrl}`;
     }
 
-    // Check for industry mismatch
-    const mismatch = detectMismatch(formattedWebsite, formData.industry);
-    if (mismatch.isMismatch) {
-      setMismatchInfo({
-        detectedType: mismatch.detectedType,
-        chosenIndustry: formData.industry,
-        exampleQueries: getExampleQueries(formData.industry),
-      });
-      setShowMismatchDialog(true);
-      return;
-    }
-
-    // Proceed with submission
-    await submitTest(formattedWebsite);
-  };
-
-  const submitTest = async (formattedWebsite: string) => {
     setIsSubmitting(true);
 
-    // Create timeout promise (180 seconds = 3 minutes)
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Request timed out after 3 minutes")), 180000);
-    });
-
     try {
-      const submissionPromise = supabase.functions.invoke('submit-test', {
+      const mappedIndustry = mapIndustryToAirtable(formData.industry);
+      const { data: submitData, error: submitError } = await supabase.functions.invoke("submit-test", {
         body: {
           email: formData.email,
-          website: formattedWebsite,
-          industry: mapIndustryToAirtable(formData.industry),
-        }
+          website: websiteUrl,
+          industry: mappedIndustry,
+        },
       });
 
-      // Race between submission and timeout
-      const { data, error } = await Promise.race([
-        submissionPromise,
-        timeoutPromise
-      ]) as { data: any; error: any };
+      if (submitError) throw new Error(submitError.message);
+      if (submitData?.error) throw new Error(submitData.error);
 
-      if (error) {
-        console.error('Edge function error:', error);
-        throw new Error(error.message || "Failed to send request to Edge Function");
+      if (submitData?.mismatch) {
+        setMismatchInfo({
+          detectedType: submitData.detectedType,
+          chosenIndustry: formData.industry,
+          exampleQueries: getExampleQueries(formData.industry),
+        });
+        setShowMismatchDialog(true);
+        setIsSubmitting(false);
+        return;
       }
 
-      if (!data || !data.testId) {
-        console.error('Invalid response from edge function:', data);
-        throw new Error("Invalid response from server");
+      if (submitData?.testId) {
+        toast({
+          title: "Test started!",
+          description: "Analyzing your website...",
+        });
+        navigate(`/results?testId=${submitData.testId}`);
       }
-
-      // Navigate to results page with test ID
-      navigate(`/results?testId=${data.testId}`);
-
     } catch (error) {
-      console.error('Submission error:', error);
-      setIsSubmitting(false);
-      
-      let userMessage = "";
-      let technicalDetails = "";
-      
-      if (error instanceof Error) {
-        if (error.message.includes("timed out")) {
-          userMessage = "The test took longer than expected. This may indicate a temporary service issue.";
-          technicalDetails = error.message;
-        } else if (error.message.includes("rate limit") || error.message.includes("Rate limit")) {
-          userMessage = "You've reached the testing limit (3 tests per month). Please try again next month.";
-          technicalDetails = error.message;
-        } else if (error.message.includes("Invalid") || error.message.includes("invalid")) {
-          userMessage = "Please check your website URL and make sure it's valid (e.g., slack.com or https://yoursite.com)";
-          technicalDetails = error.message;
-        } else if (error.message.includes("500") || error.message.includes("Edge function")) {
-          userMessage = "We're experiencing a temporary server issue. Please wait a moment and try again.";
-          technicalDetails = error.message;
-        } else {
-          userMessage = "An unexpected error occurred. Please try again in a moment.";
-          technicalDetails = error.message;
-        }
-      } else {
-        userMessage = "An unexpected error occurred. Please try again in a moment.";
-        technicalDetails = String(error);
-      }
-      
+      console.error("[HeroSection] Submit error:", error);
       toast({
-        title: "Test Failed",
-        description: (
-          <div className="space-y-3">
-            <p>{userMessage}</p>
-            <div className="text-sm space-y-2">
-              <p className="font-semibold">Common causes:</p>
-              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                <li>Daily limit reached (3 free tests/month)</li>
-                <li>Invalid website URL</li>
-                <li>Temporary server issue</li>
-              </ul>
-              <p className="mt-2">Please wait a moment and try again, or contact support.</p>
-            </div>
-            <details className="mt-3">
-              <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-                <span>▶</span> Show technical details
-              </summary>
-              <pre className="mt-2 text-xs bg-muted p-2 rounded overflow-x-auto">
-                {technicalDetails}
-              </pre>
-            </details>
-          </div>
-        ),
+        title: "Something went wrong",
+        description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
-        duration: Infinity,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleContinueAnyway = async () => {
     setShowMismatchDialog(false);
-    let formattedWebsite = formData.website.trim();
-    if (!formattedWebsite.startsWith('http://') && !formattedWebsite.startsWith('https://')) {
-      formattedWebsite = 'https://' + formattedWebsite;
+    setIsSubmitting(true);
+
+    try {
+      let websiteUrl = formData.website;
+      if (!/^https?:\/\//i.test(websiteUrl)) {
+        websiteUrl = `https://${websiteUrl}`;
+      }
+
+      const mappedIndustry = mapIndustryToAirtable(formData.industry);
+      const { data, error } = await supabase.functions.invoke("submit-test", {
+        body: {
+          email: formData.email,
+          website: websiteUrl,
+          industry: mappedIndustry,
+          skipMismatchCheck: true,
+        },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.testId) {
+        toast({
+          title: "Test started!",
+          description: "Analyzing your website...",
+        });
+        navigate(`/results?testId=${data.testId}`);
+      }
+    } catch (error) {
+      console.error("[HeroSection] Continue anyway error:", error);
+      toast({
+        title: "Something went wrong",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
-    await submitTest(formattedWebsite);
   };
 
   return (
@@ -286,8 +253,8 @@ const HeroSection = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
-              Industry Mismatch Detected
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Industry mismatch detected
             </AlertDialogTitle>
             <AlertDialogDescription className="text-left space-y-3">
               <p>
@@ -317,111 +284,127 @@ const HeroSection = () => {
       
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-7xl">
-        {/* Headline */}
-        <h1 className="text-editorial-xl text-center mb-6">
-          Are You Found When It Matters?
-        </h1>
-
-        {/* Subheadline */}
-        <p className="text-body-lg text-secondary text-center max-w-3xl mx-auto mb-12">
-          81% of buyers ask ChatGPT, Claude, and Perplexity for recommendations
-          instead of Google. If AI doesn't know you exist, you're invisible to
-          buyers ready to purchase.
-        </p>
-
-        {/* Key Stat Box */}
-        <Card className="max-w-3xl mx-auto mb-12 p-8 border-2 border-primary bg-accent-red-light">
-          <p className="text-2xl font-bold text-center mb-2">
-            AI assistants are changing how buyers discover new products and services.
+        <div className="text-center space-y-6">
+          <h1 className="text-display font-bold text-foreground leading-tight">
+            Is your website ready for AI search?
+          </h1>
+          <p className="text-editorial-sm text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+            Get your AI-readiness score in 3 minutes. See exactly what to improve.
           </p>
-          <p className="text-lg text-center text-secondary">
-            FoundIndex helps you see how clearly those assistants understand and recommend your brand.
-          </p>
-        </Card>
 
-        {/* What is FoundIndex */}
-        <div className="max-w-3xl mx-auto mb-12 text-center">
-          <h2 className="text-xl font-bold mb-4">What is FoundIndex?</h2>
-          <p className="text-body-lg text-muted-foreground">
-            FoundIndex is a standardized AI visibility benchmark. Your score (0-100) measures how often AI engines recommend your brand when buyers ask for solutions.
-          </p>
+          <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+            <div className="flex items-center gap-3 text-left">
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+              <span className="text-base text-muted-foreground">
+                Analyze how AI-friendly your website is
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-left">
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+              <span className="text-base text-muted-foreground">
+                Get specific, actionable recommendations
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-left">
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+              <span className="text-base text-muted-foreground">
+                Understand how ChatGPT and Claude "read" your business
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-left">
+              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+              <span className="text-base text-muted-foreground">
+                Free analysis, no credit card required
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Form Card */}
-        <Card className="max-w-xl mx-auto p-8 shadow-lg">
-          <h3 className="text-2xl font-bold text-center mb-6">
-            Calculate Your FoundIndex Score
-          </h3>
-
+        <Card className="max-w-xl mx-auto mt-12 p-8 shadow-lg">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="industry">Industry *</Label>
-              <Select
-                value={formData.industry}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, industry: value })
-                }
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="industry" className="text-base font-medium">
+                  Industry
+                </Label>
+                <Select
+                  value={formData.industry}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, industry: value })
+                  }
+                >
+                  <SelectTrigger id="industry" className="h-12">
+                    <SelectValue placeholder="Select your industry" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    {industryOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-base font-medium">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  required
+                  className="h-12"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="website" className="text-base font-medium">
+                  Website URL
+                </Label>
+                <Input
+                  id="website"
+                  type="url"
+                  placeholder="https://yourwebsite.com"
+                  value={formData.website}
+                  onChange={(e) =>
+                    setFormData({ ...formData, website: e.target.value })
+                  }
+                  required
+                  className="h-12"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full h-14 text-lg"
+                disabled={isSubmitting}
               >
-                <SelectTrigger id="industry" className="w-full">
-                  <SelectValue placeholder="Select your industry" />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  {industryOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground mt-1">
-                💡 Not sure? Choose the industry where YOUR CUSTOMERS look for solutions
+                {isSubmitting ? (
+                  "Analyzing..."
+                ) : (
+                  <>
+                    Analyze my website
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </>
+                )}
+              </Button>
+              <p className="text-sm text-muted-foreground text-center">
+                Free analysis • Takes 3 minutes • No credit card required
               </p>
             </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@company.com"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="website">Website URL *</Label>
-              <Input
-                id="website"
-                type="text"
-                placeholder="https://example.com or just example.com"
-                value={formData.website}
-                onChange={(e) =>
-                  setFormData({ ...formData, website: e.target.value })
-                }
-                required
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-primary hover:bg-primary-hover text-primary-foreground text-lg py-6"
-            >
-              Calculate My FoundIndex
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-
-            <p className="text-sm text-center text-muted-foreground">
-              Free beta • 3 tests/month • Results in 2-3 min • Currently testing ChatGPT only (Claude & Perplexity coming soon) • No credit card
-            </p>
           </form>
         </Card>
-        </div>
-      </section>
+      </div>
+    </section>
     </>
   );
 };
