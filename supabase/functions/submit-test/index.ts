@@ -699,7 +699,7 @@ Return ONLY valid JSON:
     }, null, 2));
     console.log('[Airtable] Full Tests record:', JSON.stringify(testRecordFields, null, 2));
 
-    const testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
+    let testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${airtableApiKey}`,
@@ -715,7 +715,46 @@ Return ONLY valid JSON:
     if (!testRecordResponse.ok) {
       const errorText = await testRecordResponse.text();
       console.error(`[${testId}] Airtable Tests write FAILED - Status: ${testRecordResponse.status}, Response:`, errorText);
-      throw new Error(`Airtable Tests write failed: ${errorText}`);
+
+      // Handle UNKNOWN_FIELD_NAME for optional AI fields gracefully
+      let retried = false;
+      try {
+        const errorJson = JSON.parse(errorText);
+        const isUnknownBusinessType =
+          testRecordResponse.status === 422 &&
+          errorJson?.error?.type === 'UNKNOWN_FIELD_NAME' &&
+          typeof errorJson?.error?.message === 'string' &&
+          errorJson.error.message.includes('"business_type"');
+
+        if (isUnknownBusinessType) {
+          retried = true;
+          console.warn(`[${testId}] Airtable missing business_type field. Retrying without business_type/generated_queries...`);
+          const fallbackFields = { ...testRecordFields };
+          delete fallbackFields.business_type;
+          delete fallbackFields.generated_queries;
+
+          testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${airtableApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              fields: fallbackFields
+            })
+          });
+
+          console.log(`[${testId}] Airtable Tests retry write - Status: ${testRecordResponse.status}`);
+        }
+      } catch (parseError) {
+        console.error(`[${testId}] Failed to parse Airtable error JSON:`, parseError);
+      }
+
+      if (!testRecordResponse.ok) {
+        const finalErrorText = retried ? await testRecordResponse.text() : errorText;
+        console.error(`[${testId}] Airtable Tests write FINAL failure - Status: ${testRecordResponse.status}, Response:`, finalErrorText);
+        throw new Error(`Airtable Tests write failed: ${finalErrorText}`);
+      }
     }
     
     const testRecordData = await testRecordResponse.json();
