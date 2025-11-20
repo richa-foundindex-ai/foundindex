@@ -385,7 +385,7 @@ serve(async (req) => {
       });
     }
 
-    // Check IP-based rate limit: 10 tests per IP per day (production value)
+    // Check IP-based rate limit: 100 tests per IP per day (testing value - change to 10 for production)
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
                      req.headers.get('x-real-ip') || 
                      'unknown';
@@ -403,7 +403,7 @@ serve(async (req) => {
       throw new Error('Unable to process request');
     }
 
-    if (ipCount !== null && ipCount >= 10) {
+    if (ipCount !== null && ipCount >= 100) {
       return new Response(JSON.stringify({ 
         error: 'Rate limit exceeded. Too many requests from your network. Please try again later.' 
       }), {
