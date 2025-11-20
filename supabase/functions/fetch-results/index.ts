@@ -85,10 +85,21 @@ serve(async (req) => {
       testId: testRecord.test_id,
       website: testRecord.website_url,
       industry: testRecord.industry,
-      businessType: testRecord.business_type || testRecord.industry, // AI-identified business type
-      generatedQueries: testRecord.generated_queries ? JSON.parse(testRecord.generated_queries) : [], // Custom queries
+      businessType: testRecord.business_type || testRecord.industry,
+      generatedQueries: testRecord.generated_queries ? JSON.parse(testRecord.generated_queries) : [],
       testDate: testRecord.test_date,
+      
+      // AI Readiness Scores
       foundIndexScore: testRecord.foundindex_score,
+      contentClarityScore: testRecord.content_clarity_score || 0,
+      structuredDataScore: testRecord.structured_data_score || 0,
+      authorityScore: testRecord.authority_score || 0,
+      discoverabilityScore: testRecord.discoverability_score || 0,
+      comparisonScore: testRecord.comparison_score || 0,
+      analysisDetails: testRecord.analysis_details ? JSON.parse(testRecord.analysis_details) : {},
+      recommendations: testRecord.recommendations ? JSON.parse(testRecord.recommendations) : [],
+      
+      // Query-Based Visibility
       chatgptScore: testRecord.chatgpt_score,
       claudeScore: testRecord.claude_score || 0,
       perplexityScore: testRecord.perplexity_score || 0,
