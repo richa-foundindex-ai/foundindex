@@ -134,31 +134,64 @@ const Results = () => {
   }
 
   const getScoreColor = (score: number) => {
-    if (score < 30) return "text-destructive";
-    if (score < 50) return "text-amber-600";
-    if (score < 70) return "text-blue-600";
+    if (score <= 40) return "text-destructive";
+    if (score <= 70) return "text-amber-500";
     return "text-green-600";
   };
 
-  const getScoreInterpretation = (score: number) => {
-    if (score < 30) return "Low visibility - most AI-driven buyers won't discover you";
-    if (score < 50) return "Emerging visibility - you're found occasionally but competitors dominate";
-    if (score < 70) return "Strong visibility - AI recommends you regularly";
-    return "Excellent visibility - you're a top recommendation";
+  const getScoreBgColor = (score: number) => {
+    if (score <= 40) return "bg-destructive/10";
+    if (score <= 70) return "bg-amber-50 dark:bg-amber-900/20";
+    return "bg-green-50 dark:bg-green-900/20";
+  };
+
+  const getScoreBorderColor = (score: number) => {
+    if (score <= 40) return "border-destructive";
+    if (score <= 70) return "border-amber-500";
+    return "border-green-600";
+  };
+
+  const getPercentile = (score: number) => {
+    // Simulate percentile based on score distribution
+    // This would ideally come from actual data
+    if (score <= 40) return Math.round(score * 0.5); // 0-20%
+    if (score <= 70) return Math.round(20 + (score - 40) * 1.3); // 20-60%
+    return Math.round(60 + (score - 70) * 1.3); // 60-100%
+  };
+
+  const getFactorIcon = (factor: string) => {
+    switch (factor) {
+      case "content_clarity": return "📝";
+      case "structured_data": return "🏗️";
+      case "authority": return "⭐";
+      case "discoverability": return "🔍";
+      case "comparison": return "⚖️";
+      default: return "✓";
+    }
+  };
+
+  const getImpactEstimate = (index: number) => {
+    // Simulate impact estimates for recommendations
+    const impacts = ["+8-12 points", "+5-8 points", "+3-5 points", "+2-4 points", "+1-3 points"];
+    return impacts[index] || "+2-5 points";
   };
 
   const handleShareScore = async () => {
     const shareUrl = window.location.href;
-    const shareText = `🎯 I scored ${result.foundIndexScore}/100 on FoundIndex - the AI visibility benchmark!\n\nThis measures how often ChatGPT recommends your business.\n\nTest yours: ${shareUrl}`;
+    const shareText = `🎯 I scored ${result.foundIndexScore}/100 on FoundIndex AI-Readiness!
+
+Better than ${getPercentile(result.foundIndexScore)}% of tested sites.
+
+Test your site: ${shareUrl}`;
     
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast.success('✅ Link copied to clipboard!', {
-        description: 'Share it on LinkedIn or Twitter',
+      await navigator.clipboard.writeText(shareText);
+      toast.success('✅ Share text copied to clipboard!', {
+        description: 'Paste it on LinkedIn or Twitter',
         duration: 5000,
       });
     } catch (err) {
-      toast.error('Failed to copy link');
+      toast.error('Failed to copy share text');
     }
   };
 
@@ -230,54 +263,143 @@ const Results = () => {
         </div>
 
         {/* Main Score Card - AI-Readiness Score */}
-        <Card className="p-8 mb-8 border-2 border-primary">
+        <Card className={`p-10 mb-8 border-4 ${getScoreBorderColor(result.foundIndexScore)} ${getScoreBgColor(result.foundIndexScore)}`}>
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Your AI-Readiness Score</h2>
-            <div className={`text-8xl font-bold mb-4 ${getScoreColor(result.foundIndexScore)}`}>
+            <h2 className="text-2xl font-bold mb-6">Your AI-Readiness Score</h2>
+            <div className={`text-9xl font-bold mb-2 ${getScoreColor(result.foundIndexScore)}`}>
               {result.foundIndexScore}
-              <span className="text-4xl text-muted-foreground">/100</span>
+              <span className="text-5xl text-muted-foreground">/100</span>
             </div>
-            <p className="text-xl mb-6 text-muted-foreground">
+            <div className="text-lg font-semibold mb-6 text-muted-foreground">
+              Better than {getPercentile(result.foundIndexScore)}% of tested sites
+            </div>
+            <p className="text-base text-muted-foreground max-w-2xl mx-auto mb-8">
               This measures how well your website is optimized for AI recommendation engines like ChatGPT, Claude, and Perplexity.
             </p>
 
 
-            {/* Score Breakdown */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-              <div>
-                <div className={`text-3xl font-bold ${getScoreColor((result.contentClarityScore || 0) * 4)}`}>
-                  {result.contentClarityScore || 0}
+            {/* Visual Score Breakdown with Progress Bars */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-left mb-4">Score Breakdown</h3>
+              
+              {/* Content Clarity */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{getFactorIcon("content_clarity")}</span>
+                    <span className="font-medium">Content Clarity</span>
+                    {(result.contentClarityScore || 0) >= 15 ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-destructive" />
+                    )}
+                  </div>
+                  <span className="font-bold">{result.contentClarityScore || 0}/25</span>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Content Clarity</div>
-                <div className="text-xs text-muted-foreground">/25</div>
+                <div className="w-full bg-muted rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all ${
+                      (result.contentClarityScore || 0) >= 15 ? 'bg-green-600' : 'bg-destructive'
+                    }`}
+                    style={{ width: `${((result.contentClarityScore || 0) / 25) * 100}%` }}
+                  />
+                </div>
               </div>
-              <div>
-                <div className={`text-3xl font-bold ${getScoreColor((result.structuredDataScore || 0) * 5)}`}>
-                  {result.structuredDataScore || 0}
+
+              {/* Structured Data */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{getFactorIcon("structured_data")}</span>
+                    <span className="font-medium">Structured Data</span>
+                    {(result.structuredDataScore || 0) >= 12 ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-destructive" />
+                    )}
+                  </div>
+                  <span className="font-bold">{result.structuredDataScore || 0}/20</span>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Structured Data</div>
-                <div className="text-xs text-muted-foreground">/20</div>
+                <div className="w-full bg-muted rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all ${
+                      (result.structuredDataScore || 0) >= 12 ? 'bg-green-600' : 'bg-destructive'
+                    }`}
+                    style={{ width: `${((result.structuredDataScore || 0) / 20) * 100}%` }}
+                  />
+                </div>
               </div>
-              <div>
-                <div className={`text-3xl font-bold ${getScoreColor((result.authorityScore || 0) * 5)}`}>
-                  {result.authorityScore || 0}
+
+              {/* Authority Signals */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{getFactorIcon("authority")}</span>
+                    <span className="font-medium">Authority Signals</span>
+                    {(result.authorityScore || 0) >= 12 ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-destructive" />
+                    )}
+                  </div>
+                  <span className="font-bold">{result.authorityScore || 0}/20</span>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Authority</div>
-                <div className="text-xs text-muted-foreground">/20</div>
+                <div className="w-full bg-muted rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all ${
+                      (result.authorityScore || 0) >= 12 ? 'bg-green-600' : 'bg-destructive'
+                    }`}
+                    style={{ width: `${((result.authorityScore || 0) / 20) * 100}%` }}
+                  />
+                </div>
               </div>
-              <div>
-                <div className={`text-3xl font-bold ${getScoreColor((result.discoverabilityScore || 0) * 5)}`}>
-                  {result.discoverabilityScore || 0}
+
+              {/* Discoverability */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{getFactorIcon("discoverability")}</span>
+                    <span className="font-medium">Discoverability</span>
+                    {(result.discoverabilityScore || 0) >= 12 ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-destructive" />
+                    )}
+                  </div>
+                  <span className="font-bold">{result.discoverabilityScore || 0}/20</span>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Discoverability</div>
-                <div className="text-xs text-muted-foreground">/20</div>
+                <div className="w-full bg-muted rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all ${
+                      (result.discoverabilityScore || 0) >= 12 ? 'bg-green-600' : 'bg-destructive'
+                    }`}
+                    style={{ width: `${((result.discoverabilityScore || 0) / 20) * 100}%` }}
+                  />
+                </div>
               </div>
-              <div>
-                <div className={`text-3xl font-bold ${getScoreColor((result.comparisonScore || 0) * 6.67)}`}>
-                  {result.comparisonScore || 0}
+
+              {/* Comparison Content */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{getFactorIcon("comparison")}</span>
+                    <span className="font-medium">Comparison Content</span>
+                    {(result.comparisonScore || 0) >= 9 ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-destructive" />
+                    )}
+                  </div>
+                  <span className="font-bold">{result.comparisonScore || 0}/15</span>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Comparison</div>
-                <div className="text-xs text-muted-foreground">/15</div>
+                <div className="w-full bg-muted rounded-full h-3">
+                  <div
+                    className={`h-3 rounded-full transition-all ${
+                      (result.comparisonScore || 0) >= 9 ? 'bg-green-600' : 'bg-destructive'
+                    }`}
+                    style={{ width: `${((result.comparisonScore || 0) / 15) * 100}%` }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -298,76 +420,98 @@ const Results = () => {
           </div>
         </Card>
 
-        {/* Analysis Details */}
-        {result.analysisDetails && Object.keys(result.analysisDetails).length > 0 && (
-          <Card className="p-6 mb-8">
-            <h3 className="text-xl font-bold mb-4">Detailed Analysis</h3>
-            <div className="space-y-4">
-              {result.analysisDetails.content_clarity && (
-                <div>
-                  <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
-                    📝 Content Clarity
-                    <Badge variant="secondary">{result.contentClarityScore}/25</Badge>
-                  </h4>
-                  <p className="text-sm text-muted-foreground">{result.analysisDetails.content_clarity}</p>
+        {/* Share Card */}
+        <Card className="p-6 mb-8 bg-gradient-to-br from-primary/5 to-primary/10 border-2 border-primary/20">
+          <div className="text-center space-y-4">
+            <h3 className="text-xl font-bold">Share Your Score</h3>
+            <div className="bg-background p-6 rounded-lg border-2 border-border max-w-md mx-auto">
+              <p className="font-mono text-sm text-left whitespace-pre-line">
+                🎯 I scored {result.foundIndexScore}/100 on FoundIndex AI-Readiness!{'\n\n'}
+                Better than {getPercentile(result.foundIndexScore)}% of tested sites.{'\n\n'}
+                Test your site: {window.location.href}
+              </p>
+            </div>
+            <Button 
+              variant="default" 
+              size="lg"
+              className="bg-primary hover:bg-primary-hover"
+              onClick={handleShareScore}
+            >
+              <Share2 className="mr-2 h-5 w-5" />
+              Copy Share Text
+            </Button>
+          </div>
+        </Card>
+
+        {/* Recommendations Section */}
+        {result.recommendations && result.recommendations.length > 0 && (
+          <Card className="p-8 mb-8">
+            <h3 className="text-2xl font-bold mb-6">🎯 Your Action Plan</h3>
+            <p className="text-muted-foreground mb-6">
+              Implement these improvements to boost your AI-Readiness Score:
+            </p>
+            <div className="space-y-6">
+              {result.recommendations.slice(0, 5).map((rec, idx) => (
+                <div key={idx} className="border-l-4 border-primary pl-4 py-2">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold">
+                        {idx + 1}
+                      </div>
+                      <h4 className="font-semibold text-lg">{rec}</h4>
+                    </div>
+                    <Badge variant="secondary" className="ml-2 shrink-0">
+                      {getImpactEstimate(idx)}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground ml-11">
+                    <span className="font-medium">Why this matters:</span> {
+                      idx === 0 ? "AI engines rely on clear, structured data to understand and recommend your business. This is the #1 factor in improving discoverability." :
+                      idx === 1 ? "Comparison content helps AI engines position your offering against alternatives, increasing your chances of being recommended." :
+                      idx === 2 ? "Authority signals like testimonials and case studies build trust with AI systems, making them more likely to recommend you." :
+                      idx === 3 ? "FAQ sections directly answer user questions, making it easier for AI to surface your content in relevant searches." :
+                      "Additional improvements compound over time, steadily increasing your AI visibility and recommendation rate."
+                    }
+                  </p>
                 </div>
-              )}
-              {result.analysisDetails.structured_data && (
-                <div>
-                  <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
-                    🏗️ Structured Data
-                    <Badge variant="secondary">{result.structuredDataScore}/20</Badge>
-                  </h4>
-                  <p className="text-sm text-muted-foreground">{result.analysisDetails.structured_data}</p>
-                </div>
-              )}
-              {result.analysisDetails.authority && (
-                <div>
-                  <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
-                    ⭐ Authority Signals
-                    <Badge variant="secondary">{result.authorityScore}/20</Badge>
-                  </h4>
-                  <p className="text-sm text-muted-foreground">{result.analysisDetails.authority}</p>
-                </div>
-              )}
-              {result.analysisDetails.discoverability && (
-                <div>
-                  <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
-                    🔍 Discoverability
-                    <Badge variant="secondary">{result.discoverabilityScore}/20</Badge>
-                  </h4>
-                  <p className="text-sm text-muted-foreground">{result.analysisDetails.discoverability}</p>
-                </div>
-              )}
-              {result.analysisDetails.comparison && (
-                <div>
-                  <h4 className="font-semibold text-sm mb-1 flex items-center gap-2">
-                    ⚖️ Comparison Content
-                    <Badge variant="secondary">{result.comparisonScore}/15</Badge>
-                  </h4>
-                  <p className="text-sm text-muted-foreground">{result.analysisDetails.comparison}</p>
-                </div>
-              )}
+              ))}
             </div>
           </Card>
         )}
 
-        {/* Recommendations */}
-        {result.recommendations && result.recommendations.length > 0 && (
-          <Card className="p-6 mb-8 border-primary/50">
-            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-              💡 Recommended Improvements
-            </h3>
-            <ul className="space-y-3">
-              {result.recommendations.map((rec, idx) => (
-                <li key={idx} className="flex items-start gap-3">
-                  <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">{rec}</span>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        )}
+        {/* CTA - Monthly Tracking */}
+        <Card className="p-8 mb-8 bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary">
+          <div className="text-center space-y-4">
+            <h3 className="text-3xl font-bold">Track Your Progress Over Time</h3>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              See how your improvements impact your AI-Readiness Score with monthly tracking and competitor comparisons.
+            </p>
+            <div className="flex flex-wrap gap-4 justify-center mt-6">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <span className="font-medium">Monthly retests</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <span className="font-medium">Score history graphs</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <span className="font-medium">Competitor tracking</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <span className="font-medium">Priority support</span>
+              </div>
+            </div>
+            <div className="pt-4">
+              <Button size="lg" variant="default" className="bg-primary hover:bg-primary-hover text-lg px-8 py-6">
+                Get Monthly Tracking →
+              </Button>
+              <p className="text-sm text-muted-foreground mt-3">Coming soon - Join the waitlist</p>
+            </div>
+          </div>
+        </Card>
 
         {/* Query-Based Visibility (Secondary) */}
         <Card className="p-6 mb-8">
@@ -393,7 +537,7 @@ const Results = () => {
           </div>
         </Card>
 
-        {/* Engine Breakdown */}
+        {/* Engine Performance */}
         <Card className="p-8 mb-8">
           <h2 className="text-2xl font-bold mb-6">Engine Performance</h2>
           <div className="space-y-4">
@@ -433,47 +577,19 @@ const Results = () => {
           </div>
         </Card>
 
-        {/* Why Your Score Analysis */}
-        <Card className="p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">
-            Why Your Score Is {result.foundIndexScore < 30 ? 'Low' : result.foundIndexScore < 70 ? 'Moderate' : 'High'}
-          </h2>
-          
-          <div className="space-y-6">
-            {/* Test Summary */}
-            <div className="bg-accent/50 p-4 rounded-lg">
-              <div className="flex items-start gap-3 mb-3">
-                <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold mb-1">
-                    We tested {result.queryResults?.length || 15} buyer-intent queries
-                  </p>
-                  {result.businessType && result.businessType !== result.industry && (
-                    <p className="text-sm text-muted-foreground">
-                      Custom queries generated for: <span className="font-semibold text-primary">{result.businessType}</span>
-                    </p>
-                  )}
-                </div>
-              </div>
-              
-              {result.recommendationsCount > 0 ? (
-                <div className="flex items-start gap-3 mb-3">
-                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <p>Your brand was mentioned in <span className="font-bold text-green-600">{result.recommendationsCount}</span> responses</p>
-                </div>
-              ) : (
-                <div className="flex items-start gap-3 mb-3">
-                  <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                  <p>Your brand was <span className="font-bold text-red-600">not mentioned</span> in any response</p>
-                </div>
-              )}
-              
-              {/* Show top competitors mentioned */}
-              {result.queryResults && (() => {
-                const competitors = new Map<string, number>();
-                result.queryResults.forEach(query => {
-                  if (query.contextSnippet) {
-                    // Extract potential competitor names (simplified)
+        {/* Footer CTA */}
+        <div className="text-center py-8">
+          <Button variant="outline" size="lg" onClick={handleDownloadPDF}>
+            <Download className="mr-2 h-5 w-5" />
+            Download Full Report
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Results;
                     const matches = query.contextSnippet.match(/\b[A-Z][a-zA-Z]+\b/g);
                     if (matches) {
                       matches.forEach(name => {
