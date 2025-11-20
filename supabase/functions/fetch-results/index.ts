@@ -85,6 +85,8 @@ serve(async (req) => {
       testId: testRecord.test_id,
       website: testRecord.website_url,
       industry: testRecord.industry,
+      businessType: testRecord.business_type || testRecord.industry, // AI-identified business type
+      generatedQueries: testRecord.generated_queries ? JSON.parse(testRecord.generated_queries) : [], // Custom queries
       testDate: testRecord.test_date,
       foundIndexScore: testRecord.foundindex_score,
       chatgptScore: testRecord.chatgpt_score,
