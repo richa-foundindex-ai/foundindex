@@ -4,6 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Loader2, CheckCircle2, XCircle, Share2, Download, BarChart3, Target, Globe2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -53,6 +55,9 @@ const Results = () => {
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<TestResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showProModal, setShowProModal] = useState(false);
+  const [proEmail, setProEmail] = useState("");
+  const [isSubmittingProInterest, setIsSubmittingProInterest] = useState(false);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -142,6 +147,43 @@ Test yours: ${window.location.origin}`;
       toast.success('✅ Link copied to clipboard!', { duration: 5000 });
     } catch (err) {
       toast.error('Failed to copy to clipboard');
+    }
+  };
+
+  const handleProInterestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!proEmail || !proEmail.trim()) {
+      toast.error("Please enter your email");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(proEmail.trim())) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsSubmittingProInterest(true);
+
+    try {
+      const { error } = await supabase
+        .from('test_submissions')
+        .insert({
+          test_id: `pro-interest-${Date.now()}`,
+          email: proEmail.trim(),
+        });
+
+      if (error) throw error;
+
+      toast.success("Thanks! We'll notify you when Pro features launch 🚀");
+      setProEmail("");
+      setShowProModal(false);
+    } catch (err) {
+      console.error("Failed to save Pro interest:", err);
+      toast.error("Failed to save your interest. Please try again.");
+    } finally {
+      setIsSubmittingProInterest(false);
     }
   };
 
@@ -310,7 +352,9 @@ Test yours: ${window.location.origin}`;
               <p className="text-xs text-muted-foreground">
                 Turn this snapshot into a live KPI with monthly runs and trend reports.
               </p>
-              <Button size="sm" className="w-full" disabled>Get monthly tracking</Button>
+              <Button size="sm" className="w-full" onClick={() => setShowProModal(true)}>
+                Get monthly tracking
+              </Button>
             </Card>
           </div>
         </section>
@@ -342,6 +386,76 @@ Test yours: ${window.location.origin}`;
           </Link>
         </section>
       </main>
+
+      {/* Pro Features Coming Soon Modal */}
+      <Dialog open={showProModal} onOpenChange={setShowProModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Monthly tracking coming soon! 🚀</DialogTitle>
+            <DialogDescription className="text-base pt-2">
+              We're building Pro features including:
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-3 py-4">
+            <div className="flex items-start gap-3">
+              <div className="mt-1">✅</div>
+              <div>
+                <p className="font-medium">Monthly automated tests</p>
+                <p className="text-sm text-muted-foreground">Track your score over time automatically</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-3">
+              <div className="mt-1">📊</div>
+              <div>
+                <p className="font-medium">Trend reports</p>
+                <p className="text-sm text-muted-foreground">See how your AI-readiness improves month over month</p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-3">
+              <div className="mt-1">🎯</div>
+              <div>
+                <p className="font-medium">Competitor tracking</p>
+                <p className="text-sm text-muted-foreground">Compare your score against competitors</p>
+              </div>
+            </div>
+          </div>
+
+          <form onSubmit={handleProInterestSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="pro-email" className="text-sm font-medium">
+                Want early access? Enter your email:
+              </label>
+              <Input
+                id="pro-email"
+                type="email"
+                placeholder="your@email.com"
+                value={proEmail}
+                onChange={(e) => setProEmail(e.target.value)}
+                disabled={isSubmittingProInterest}
+                required
+              />
+            </div>
+            
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isSubmittingProInterest}
+            >
+              {isSubmittingProInterest ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Notify me"
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
