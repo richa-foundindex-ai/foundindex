@@ -116,6 +116,21 @@ const Results = () => {
     }
   };
 
+  const handleCopyShare = async () => {
+    if (!result) return;
+    const score = result.foundIndexScore ?? 0;
+    const shareText = `I just analyzed my website's AI-readiness with FoundIndex. Score: ${score}/100
+
+Test yours: ${window.location.origin}`;
+    
+    try {
+      await navigator.clipboard.writeText(shareText);
+      toast.success('✅ Link copied to clipboard!', { duration: 5000 });
+    } catch (err) {
+      toast.error('Failed to copy to clipboard');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -166,8 +181,7 @@ const Results = () => {
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               {result.website && <Badge variant="outline">{result.website}</Badge>}
-              {result.industry && <Badge variant="secondary">{result.industry}</Badge>}
-              {result.businessType && <Badge variant="secondary">{result.businessType}</Badge>}
+              {result.industry && <Badge variant="secondary">Industry: {result.industry}</Badge>}
             </div>
           </div>
           <div className="flex gap-2">
@@ -205,9 +219,9 @@ const Results = () => {
             ].map((item, i) => (
               <div key={i} className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">{item.label} (X/{item.max})</span>
+                  <span className="text-sm">{item.label} ({item.score ?? 0}/{item.max})</span>
                   <span className="text-xs text-muted-foreground">
-                    {item.score ?? "–"}/{item.max}
+                    {item.score ?? 0}/{item.max}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -234,20 +248,28 @@ const Results = () => {
           <Card className="p-6 space-y-4">
             <h2 className="text-sm font-semibold">How to improve your score</h2>
             <div className="space-y-4">
-              {(result.recommendations ?? []).slice(0, 3).map((rec, i) => (
-                <div key={i} className="rounded-lg border bg-card p-4 space-y-2">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
-                      {i + 1}
+              {(result.recommendations ?? []).length > 0 ? (
+                (result.recommendations ?? []).slice(0, 3).map((rec, i) => (
+                  <div key={i} className="rounded-lg border bg-card p-4 space-y-2">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                        {i + 1}
+                      </div>
+                      <p className="text-sm font-medium flex-1">{rec}</p>
+                      <span className="text-xs bg-muted px-2 py-0.5 rounded-full">+5–8 pts</span>
                     </div>
-                    <p className="text-sm font-medium flex-1">{rec}</p>
-                    <span className="text-xs bg-muted px-2 py-0.5 rounded-full">+5–8 pts</span>
+                    <p className="text-xs text-muted-foreground pl-9">
+                      Why this matters: Helps AI models understand and recommend your site more confidently.
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground pl-9">
-                    Why this matters: Helps AI models understand and recommend your site more confidently.
+                ))
+              ) : (
+                <div className="rounded-lg border bg-card p-4">
+                  <p className="text-sm text-muted-foreground">
+                    Great score! Your site is already well-optimized for AI readability. Keep your content fresh and continue building authority.
                   </p>
                 </div>
-              ))}
+              )}
             </div>
           </Card>
 
@@ -261,7 +283,7 @@ const Results = () => {
                 <p className="font-medium">I just analyzed my website's AI-readiness with FoundIndex. Score: {score}/100</p>
                 <p className="mt-1 text-xs text-primary">Test yours: {window.location.origin}</p>
               </div>
-              <Button size="sm" className="w-full" variant="outline" onClick={handleShare}>
+              <Button size="sm" className="w-full" variant="outline" onClick={handleCopyShare}>
                 Copy share text
               </Button>
             </Card>
