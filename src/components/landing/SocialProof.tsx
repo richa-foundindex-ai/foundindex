@@ -33,9 +33,6 @@ const SocialProof = () => {
                 {stat.value}
               </p>
               <p className="text-xl font-semibold mb-1">{stat.label}</p>
-              {stat.sublabel && (
-                <p className="text-muted-foreground">{stat.sublabel}</p>
-              )}
             </Card>
           ))}
         </div>
