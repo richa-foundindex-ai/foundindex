@@ -542,17 +542,76 @@ Return ONLY valid JSON (no markdown):
 
     const auditResults = JSON.parse(auditText);
 
+    // Normalize scores in case OpenAI returns different shapes
+    const getScore = (primary: any, ...fallbacks: any[]): number => {
+      const candidates = [primary, ...fallbacks];
+      for (const value of candidates) {
+        if (typeof value === 'number' && !Number.isNaN(value)) return value;
+        if (typeof value === 'string') {
+          const parsed = parseFloat(value);
+          if (!Number.isNaN(parsed)) return parsed;
+        }
+      }
+      return 0;
+    };
+
+    const breakdown = (auditResults as any).breakdown || (auditResults as any).scores || {};
+
+    const contentClarityScore = getScore(
+      (auditResults as any).content_clarity_score,
+      (auditResults as any).content_clarity,
+      (breakdown as any).content_clarity_score,
+      (breakdown as any).content_clarity,
+    );
+
+    const structuredDataScore = getScore(
+      (auditResults as any).structured_data_score,
+      (auditResults as any).structured_data,
+      (breakdown as any).structured_data_score,
+      (breakdown as any).structured_data,
+    );
+
+    const authorityScore = getScore(
+      (auditResults as any).authority_score,
+      (auditResults as any).authority,
+      (breakdown as any).authority_score,
+      (breakdown as any).authority,
+    );
+
+    const discoverabilityScore = getScore(
+      (auditResults as any).discoverability_score,
+      (auditResults as any).discoverability,
+      (breakdown as any).discoverability_score,
+      (breakdown as any).discoverability,
+    );
+
+    const comparisonScore = getScore(
+      (auditResults as any).comparison_score,
+      (auditResults as any).comparison,
+      (breakdown as any).comparison_score,
+      (breakdown as any).comparison,
+    );
+
+    const totalScore = getScore(
+      (auditResults as any).total_score,
+      (auditResults as any).score,
+      (breakdown as any).total_score,
+      (breakdown as any).score,
+    );
+
     // === ENHANCED LOGGING: What OpenAI returned ===
-    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] === AUDIT RESULTS FROM OPENAI ===`);
     console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] Total score: ${auditResults.total_score}/100`);
-    console.log(`[${testId}] Content clarity: ${auditResults.content_clarity_score}/25`);
-    console.log(`[${testId}] Structured data: ${auditResults.structured_data_score}/20`);
-    console.log(`[${testId}] Authority: ${auditResults.authority_score}/20`);
-    console.log(`[${testId}] Discoverability: ${auditResults.discoverability_score}/20`);
-    console.log(`[${testId}] Comparison: ${auditResults.comparison_score}/15`);
-    console.log(`[${testId}] Recommendations count: ${auditResults.recommendations?.length || 0}`);
+    console.log(`[${testId}] Raw audit JSON:`, JSON.stringify(auditResults, null, 2));
+    console.log(`[${testId}] Keys in auditResults:`, Object.keys(auditResults));
+    console.log(`[${testId}] Total score (normalized): ${totalScore}/100`);
+    console.log(`[${testId}] Content clarity (normalized): ${contentClarityScore}/25`);
+    console.log(`[${testId}] Structured data (normalized): ${structuredDataScore}/20`);
+    console.log(`[${testId}] Authority (normalized): ${authorityScore}/20`);
+    console.log(`[${testId}] Discoverability (normalized): ${discoverabilityScore}/20`);
+    console.log(`[${testId}] Comparison (normalized): ${comparisonScore}/15`);
+    console.log(`[${testId}] Recommendations count: ${Array.isArray((auditResults as any).recommendations) ? (auditResults as any).recommendations.length : 0}`);
     console.log(`[${testId}] ═══════════════════════════════════════`);
 
     console.log(`[${testId}] AI-Readiness Audit Complete:`);
@@ -830,14 +889,14 @@ Return ONLY valid JSON:
       test_date: testDate,
       
       // AI Readiness Scores (PRIMARY)
-      foundindex_score: auditResults.total_score,
-      content_clarity_score: auditResults.content_clarity_score,
-      structured_data_score: auditResults.structured_data_score,
-      authority_score: auditResults.authority_score,
-      discoverability_score: auditResults.discoverability_score,
-      comparison_score: auditResults.comparison_score,
-      analysis_details: JSON.stringify(auditResults.analysis_details, null, 2),
-      recommendations: JSON.stringify(auditResults.recommendations, null, 2),
+      foundindex_score: totalScore,
+      content_clarity_score: contentClarityScore,
+      structured_data_score: structuredDataScore,
+      authority_score: authorityScore,
+      discoverability_score: discoverabilityScore,
+      comparison_score: comparisonScore,
+      analysis_details: JSON.stringify((auditResults as any).analysis_details, null, 2),
+      recommendations: JSON.stringify((auditResults as any).recommendations, null, 2),
       
       // Query-Based Visibility (SECONDARY)
       business_type: businessType, // AI-identified business type
@@ -853,12 +912,13 @@ Return ONLY valid JSON:
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] === WRITING TO AIRTABLE ===`);
     console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] foundindex_score: ${testRecordFields.foundindex_score}`);
-    console.log(`[${testId}] content_clarity_score: ${testRecordFields.content_clarity_score}`);
-    console.log(`[${testId}] structured_data_score: ${testRecordFields.structured_data_score}`);
-    console.log(`[${testId}] authority_score: ${testRecordFields.authority_score}`);
-    console.log(`[${testId}] discoverability_score: ${testRecordFields.discoverability_score}`);
-    console.log(`[${testId}] comparison_score: ${testRecordFields.comparison_score}`);
+    console.log(`[${testId}] foundindex_score (totalScore):`, testRecordFields.foundindex_score, 'type:', typeof testRecordFields.foundindex_score);
+    console.log(`[${testId}] content_clarity_score:`, testRecordFields.content_clarity_score, 'type:', typeof testRecordFields.content_clarity_score);
+    console.log(`[${testId}] structured_data_score:`, testRecordFields.structured_data_score, 'type:', typeof testRecordFields.structured_data_score);
+    console.log(`[${testId}] authority_score:`, testRecordFields.authority_score, 'type:', typeof testRecordFields.authority_score);
+    console.log(`[${testId}] discoverability_score:`, testRecordFields.discoverability_score, 'type:', typeof testRecordFields.discoverability_score);
+    console.log(`[${testId}] comparison_score:`, testRecordFields.comparison_score, 'type:', typeof testRecordFields.comparison_score);
+    console.log(`[${testId}] Full Airtable payload:`, JSON.stringify(testRecordFields, null, 2));
     console.log(`[${testId}] chatgpt_score: ${testRecordFields.chatgpt_score}`);
     console.log(`[${testId}] recommendations_count: ${testRecordFields.recommendations_count}`);
     console.log(`[${testId}] recommendation_rate: ${testRecordFields.recommendation_rate}`);
