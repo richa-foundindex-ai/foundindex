@@ -463,14 +463,14 @@ Return ONLY valid JSON:
           messages: [
             {
               role: 'system',
-              content: 'You are an expert at analyzing businesses and understanding buyer search behavior. Return only valid JSON.'
+              content: 'You are an expert at analyzing businesses and buyer search behavior. Return ONLY valid JSON with no markdown formatting.'
             },
             {
               role: 'user',
               content: analysisPrompt
             }
           ],
-          max_tokens: 800,
+          max_tokens: 1000,
           temperature: 0.7,
         }),
       });
@@ -480,14 +480,27 @@ Return ONLY valid JSON:
       }
 
       const analysisData = await analysisResponse.json();
-      const analysisText = analysisData.choices[0].message.content;
+      let analysisText = analysisData.choices[0].message.content;
+      
+      // Clean any markdown formatting (```json or ``` wrappers)
+      analysisText = analysisText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      
+      console.log(`[${testId}] Raw analysis response:`, analysisText.substring(0, 200));
       
       // Parse JSON response
-      const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
+      try {
+        const parsed = JSON.parse(analysisText);
         businessType = parsed.business_type || validatedIndustry;
         queries = parsed.queries || [];
+      } catch (parseError) {
+        console.error(`[${testId}] JSON parse error:`, parseError);
+        // Try to extract JSON with regex as fallback
+        const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          businessType = parsed.business_type || validatedIndustry;
+          queries = parsed.queries || [];
+        }
       }
       
       console.log(`[${testId}] Business type identified:`, businessType);
@@ -667,13 +680,15 @@ Return ONLY valid JSON:
       user_email: validatedEmail,
       website_url: validatedWebsite,
       industry: validatedIndustry, // Maps to single-select: "saas", "financial", "ecommerce", "professional", "healthcare", "other"
+      business_type: businessType, // AI-identified business type
+      generated_queries: JSON.stringify(queries, null, 2), // Store custom queries as formatted JSON
       test_date: testDate,
       foundindex_score: foundIndexScore,
       chatgpt_score: foundIndexScore,
       claude_score: 0, // Not yet implemented
       perplexity_score: 0, // Not yet implemented
       recommendations_count: totalRecommendations,
-      recommendation_rate: parseFloat(recommendationRate.toFixed(2))
+      recommendation_rate: parseFloat(recommendationRate.toFixed(3)) // 3 decimal places per Airtable schema
     };
     
     console.log('[AIRTABLE] Writing Tests record with scores:', JSON.stringify({
