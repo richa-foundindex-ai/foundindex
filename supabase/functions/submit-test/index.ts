@@ -415,16 +415,100 @@ serve(async (req) => {
     // Generate test ID
     const testId = crypto.randomUUID();
     const testDate = new Date().toISOString();
-
-    // Get queries for industry
-    const queries = industryQueries[validatedIndustry] || industryQueries.other;
     
     // Test with OpenAI
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    console.log(`[${testId}] Step 1: Analyzing website and generating custom queries...`);
+    
+    // Step 1: Analyze website and generate custom queries
+    let businessType = validatedIndustry;
+    let queries: string[] = [];
+    
+    try {
+      const analysisPrompt = `Analyze this business website: ${validatedWebsite}
+
+Based on the URL and industry hint (${validatedIndustry}), determine:
+
+1. What type of business is this? (be specific: "travel blog", "fashion marketplace", "SaaS project tool", etc.)
+2. What would potential customers/users search for when looking for this type of business/service?
+
+Generate 15 specific buyer-intent queries that someone would ask ChatGPT when looking for this type of business.
+
+RULES:
+- Queries should be natural questions buyers actually ask
+- Focus on problems this business solves
+- Include comparison queries (e.g. "X vs Y")
+- Include recommendation queries (e.g. "best X for Y")
+- Make them specific to the business type
+
+Return ONLY valid JSON:
+{
+  "business_type": "specific category",
+  "queries": [
+    "query 1 here",
+    "query 2 here"
+  ]
+}`;
+
+      const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(15000),
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert at analyzing businesses and understanding buyer search behavior. Return only valid JSON.'
+            },
+            {
+              role: 'user',
+              content: analysisPrompt
+            }
+          ],
+          max_tokens: 800,
+          temperature: 0.7,
+        }),
+      });
+
+      if (!analysisResponse.ok) {
+        throw new Error(`OpenAI analysis failed: ${analysisResponse.status}`);
+      }
+
+      const analysisData = await analysisResponse.json();
+      const analysisText = analysisData.choices[0].message.content;
+      
+      // Parse JSON response
+      const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        businessType = parsed.business_type || validatedIndustry;
+        queries = parsed.queries || [];
+      }
+      
+      console.log(`[${testId}] Business type identified:`, businessType);
+      console.log(`[${testId}] Generated ${queries.length} custom queries`);
+      
+      // Fallback to industry queries if generation failed
+      if (!queries || queries.length < 10) {
+        console.log(`[${testId}] Custom query generation insufficient, falling back to industry queries`);
+        queries = industryQueries[validatedIndustry] || industryQueries.other;
+        businessType = validatedIndustry;
+      }
+    } catch (error) {
+      console.error(`[${testId}] Error generating custom queries:`, error);
+      console.log(`[${testId}] Falling back to industry queries`);
+      queries = industryQueries[validatedIndustry] || industryQueries.other;
+    }
+    
     let totalRecommendations = 0;
     const queryResults = [];
 
-    console.log(`[${testId}] Starting OpenAI calls for ${queries.length} queries...`);
+    console.log(`[${testId}] Step 2: Testing ${queries.length} queries with ChatGPT...`);
 
     for (let i = 0; i < queries.length; i++) {
       const query = queries[i];
@@ -458,7 +542,7 @@ serve(async (req) => {
         const data = await response.json();
         const aiResponse = data.choices[0].message.content;
         
-        // Check if website is mentioned (domain + brand matching)
+        // Check if website is mentioned (improved domain + brand matching)
         let domain = validatedWebsite;
         try {
           const url = new URL(validatedWebsite);
@@ -469,13 +553,20 @@ serve(async (req) => {
 
         const brandName = domain.split('.')[0];
         const responseText = aiResponse.toLowerCase();
+        
+        // Check multiple variations for better matching
         const domainFound = responseText.includes(domain.toLowerCase());
         const brandFound = responseText.includes(brandName.toLowerCase());
-        const wasRecommended = domainFound || brandFound;
+        
+        // Also check brand with spaces (e.g., "lighttravelaction" -> "light travel action")
+        const brandWithSpaces = brandName.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+        const brandSpacedFound = responseText.includes(brandWithSpaces);
+        
+        const wasRecommended = domainFound || brandFound || brandSpacedFound;
 
         console.log('[DOMAIN] Testing for domain:', domain);
-        console.log('[MATCH] Domain:', domain, '| Brand:', brandName);
-        console.log('[MATCH] Domain found?', domainFound, '| Brand found?', brandFound);
+        console.log('[MATCH] Domain:', domain, '| Brand:', brandName, '| Brand with spaces:', brandWithSpaces);
+        console.log('[MATCH] Domain found?', domainFound, '| Brand found?', brandFound, '| Brand spaced found?', brandSpacedFound);
         console.log('[MATCH] Final result:', wasRecommended);
         
         if (wasRecommended) {
@@ -576,6 +667,8 @@ serve(async (req) => {
       user_email: validatedEmail,
       website_url: validatedWebsite,
       industry: validatedIndustry, // Maps to single-select: "saas", "financial", "ecommerce", "professional", "healthcare", "other"
+      business_type: businessType, // AI-identified business type (e.g., "travel blog", "fashion marketplace")
+      generated_queries: JSON.stringify(queries), // Store the custom AI-generated queries
       test_date: testDate,
       foundindex_score: foundIndexScore,
       chatgpt_score: foundIndexScore,

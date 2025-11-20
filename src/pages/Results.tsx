@@ -27,6 +27,8 @@ interface TestResult {
   recommendationRate: number;
   website?: string;
   industry?: string;
+  businessType?: string; // AI-identified business type
+  generatedQueries?: string[]; // Custom AI-generated queries
   testDate?: string;
   queryResults?: QueryResult[];
 }
@@ -84,10 +86,10 @@ const Results = () => {
           <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto mb-6" />
           <h2 className="text-2xl font-bold mb-4">Testing Your Website</h2>
           <div className="space-y-2 text-muted-foreground">
-            <p>Analyzing website structure...</p>
-            <p>Generating buyer questions...</p>
-            <p>Testing ChatGPT recommendations...</p>
-            <p>Calculating FoundIndex...</p>
+            <p>📊 Analyzing your business model...</p>
+            <p>🎯 Generating custom buyer queries...</p>
+            <p>🤖 Testing with ChatGPT (15 queries)...</p>
+            <p>📈 Calculating your FoundIndex score...</p>
           </div>
           <p className="mt-6 text-sm text-muted-foreground">
             Usually 60-90 seconds
@@ -199,7 +201,11 @@ const Results = () => {
           </Badge>
           <h1 className="text-4xl font-bold mb-2">Your FoundIndex Report</h1>
           <p className="text-muted-foreground">
-            Results for: {result.website} • Industry: {result.industry} • Tested:{" "}
+            Results for: {result.website}
+            {result.businessType && result.businessType !== result.industry && (
+              <> • Business type: <span className="font-semibold">{result.businessType}</span></>
+            )}
+            {" "}• Industry: {result.industry} • Tested:{" "}
             {new Date(result.testDate || "").toLocaleDateString()}
           </p>
         </div>
@@ -300,7 +306,16 @@ const Results = () => {
             <div className="bg-accent/50 p-4 rounded-lg">
               <div className="flex items-start gap-3 mb-3">
                 <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <p className="font-semibold">We tested {result.queryResults?.length || 15} buyer-intent queries</p>
+                <div>
+                  <p className="font-semibold mb-1">
+                    We tested {result.queryResults?.length || 15} buyer-intent queries
+                  </p>
+                  {result.businessType && result.businessType !== result.industry && (
+                    <p className="text-sm text-muted-foreground">
+                      Custom queries generated for: <span className="font-semibold text-primary">{result.businessType}</span>
+                    </p>
+                  )}
+                </div>
               </div>
               
               {result.recommendationsCount > 0 ? (
@@ -354,10 +369,16 @@ const Results = () => {
 
             {/* Sample Queries with Actionable Advice */}
             <div>
-              <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <h3 className="font-semibold mb-2 flex items-center gap-2">
                 <span className="text-2xl">💡</span>
                 Sample Queries & How to Improve
               </h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {result.businessType && result.businessType !== result.industry 
+                  ? `Custom queries generated for your business type: "${result.businessType}"`
+                  : 'These buyer-intent queries are specific to your industry'
+                }
+              </p>
               
               {result.queryResults && result.queryResults.slice(0, 3).map((query) => (
                 <div 
