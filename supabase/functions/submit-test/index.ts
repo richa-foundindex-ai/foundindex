@@ -542,6 +542,19 @@ Return ONLY valid JSON (no markdown):
 
     const auditResults = JSON.parse(auditText);
 
+    // === ENHANCED LOGGING: What OpenAI returned ===
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === AUDIT RESULTS FROM OPENAI ===`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] Total score: ${auditResults.total_score}/100`);
+    console.log(`[${testId}] Content clarity: ${auditResults.content_clarity_score}/25`);
+    console.log(`[${testId}] Structured data: ${auditResults.structured_data_score}/20`);
+    console.log(`[${testId}] Authority: ${auditResults.authority_score}/20`);
+    console.log(`[${testId}] Discoverability: ${auditResults.discoverability_score}/20`);
+    console.log(`[${testId}] Comparison: ${auditResults.comparison_score}/15`);
+    console.log(`[${testId}] Recommendations count: ${auditResults.recommendations?.length || 0}`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+
     console.log(`[${testId}] AI-Readiness Audit Complete:`);
     console.log(`[${testId}] - Content Clarity: ${auditResults.content_clarity_score}/25`);
     console.log(`[${testId}] - Structured Data: ${auditResults.structured_data_score}/20`);
@@ -836,6 +849,21 @@ Return ONLY valid JSON:
       recommendation_rate: parseFloat(recommendationRate.toFixed(3)) // 3 decimal places per Airtable schema
     };
     
+    // === ENHANCED LOGGING: What we're writing to Airtable ===
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === WRITING TO AIRTABLE ===`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] foundindex_score: ${testRecordFields.foundindex_score}`);
+    console.log(`[${testId}] content_clarity_score: ${testRecordFields.content_clarity_score}`);
+    console.log(`[${testId}] structured_data_score: ${testRecordFields.structured_data_score}`);
+    console.log(`[${testId}] authority_score: ${testRecordFields.authority_score}`);
+    console.log(`[${testId}] discoverability_score: ${testRecordFields.discoverability_score}`);
+    console.log(`[${testId}] comparison_score: ${testRecordFields.comparison_score}`);
+    console.log(`[${testId}] chatgpt_score: ${testRecordFields.chatgpt_score}`);
+    console.log(`[${testId}] recommendations_count: ${testRecordFields.recommendations_count}`);
+    console.log(`[${testId}] recommendation_rate: ${testRecordFields.recommendation_rate}`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    
     console.log('[AIRTABLE] Writing Tests record with scores:', JSON.stringify({
       foundindex_score: foundIndexScore,
       chatgpt_score: foundIndexScore,
@@ -871,7 +899,18 @@ Return ONLY valid JSON:
 
         if (isUnknownField) {
           retried = true;
-          console.warn(`[${testId}] Airtable missing AI-readiness fields. Retrying with minimal fields...`);
+          console.error(`[${testId}] ❌ CRITICAL: Airtable table missing AI-readiness score fields!`);
+          console.error(`[${testId}] ❌ The following fields need to be added to your Airtable 'Tests' table:`);
+          console.error(`[${testId}] ❌   - content_clarity_score (Number field)`);
+          console.error(`[${testId}] ❌   - structured_data_score (Number field)`);
+          console.error(`[${testId}] ❌   - authority_score (Number field)`);
+          console.error(`[${testId}] ❌   - discoverability_score (Number field)`);
+          console.error(`[${testId}] ❌   - comparison_score (Number field)`);
+          console.error(`[${testId}] ❌   - analysis_details (Long text field)`);
+          console.error(`[${testId}] ❌   - recommendations (Long text field)`);
+          console.error(`[${testId}] ❌   - business_type (Single line text field)`);
+          console.error(`[${testId}] ❌   - generated_queries (Long text field)`);
+          console.warn(`[${testId}] Retrying with minimal fields (scores will be lost)...`);
           const fallbackFields = { ...testRecordFields };
           
           // Remove all AI-readiness analysis fields
