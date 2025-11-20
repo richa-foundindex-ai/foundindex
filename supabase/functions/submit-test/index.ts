@@ -667,8 +667,6 @@ Return ONLY valid JSON:
       user_email: validatedEmail,
       website_url: validatedWebsite,
       industry: validatedIndustry, // Maps to single-select: "saas", "financial", "ecommerce", "professional", "healthcare", "other"
-      business_type: businessType, // AI-identified business type (e.g., "travel blog", "fashion marketplace")
-      generated_queries: JSON.stringify(queries), // Store the custom AI-generated queries
       test_date: testDate,
       foundindex_score: foundIndexScore,
       chatgpt_score: foundIndexScore,
