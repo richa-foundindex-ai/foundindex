@@ -6,6 +6,7 @@ import WhatYouGet from "@/components/landing/WhatYouGet";
 import HowItWorks from "@/components/landing/HowItWorks";
 import TrackingSection from "@/components/landing/TrackingSection";
 import SocialProof from "@/components/landing/SocialProof";
+import SocialShare from "@/components/landing/SocialShare";
 import FAQ from "@/components/landing/FAQ";
 import FinalCTA from "@/components/landing/FinalCTA";
 
@@ -20,6 +21,7 @@ const Index = () => {
       <HowItWorks />
       <TrackingSection />
       <SocialProof />
+      <SocialShare />
       <FAQ />
       <FinalCTA />
     </div>

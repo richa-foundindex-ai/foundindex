@@ -289,48 +289,112 @@ const Results = () => {
           </div>
         </Card>
 
-        {/* Query Sample */}
+        {/* Why Your Score Analysis */}
         <Card className="p-8 mb-8">
           <h2 className="text-2xl font-bold mb-6">
-            Actual Query Results 
-            <span className="text-sm font-normal text-muted-foreground ml-2">
-              (Real queries tested for {result.industry} industry)
-            </span>
+            Why Your Score Is {result.foundIndexScore < 30 ? 'Low' : result.foundIndexScore < 70 ? 'Moderate' : 'High'}
           </h2>
-          <div className="space-y-4">
-            {result.queryResults && result.queryResults.slice(0, 5).map((query) => (
-              <div 
-                key={query.queryNumber}
-                className={`border-l-4 ${query.wasRecommended ? 'border-green-500' : 'border-red-500'} pl-4 py-2`}
-              >
-                <div className="flex items-start gap-2 mb-2">
-                  {query.wasRecommended ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  ) : (
-                    <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                  )}
-                  <div className="flex-1">
-                    <p className="font-semibold">Query: "{query.queryText}"</p>
-                    <p className="text-sm text-muted-foreground">
-                      Engine: {query.engine} • Status: {query.wasRecommended ? 'Recommended' : 'Not recommended'}
-                    </p>
-                    {query.wasRecommended && query.recommendationPosition && (
-                      <p className="text-sm mt-2 text-green-600">
-                        Position: {query.recommendationPosition} in recommendations
+          
+          <div className="space-y-6">
+            {/* Test Summary */}
+            <div className="bg-accent/50 p-4 rounded-lg">
+              <div className="flex items-start gap-3 mb-3">
+                <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <p className="font-semibold">We tested {result.queryResults?.length || 15} buyer-intent queries</p>
+              </div>
+              
+              {result.recommendationsCount > 0 ? (
+                <div className="flex items-start gap-3 mb-3">
+                  <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <p>Your brand was mentioned in <span className="font-bold text-green-600">{result.recommendationsCount}</span> responses</p>
+                </div>
+              ) : (
+                <div className="flex items-start gap-3 mb-3">
+                  <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  <p>Your brand was <span className="font-bold text-red-600">not mentioned</span> in any response</p>
+                </div>
+              )}
+              
+              {/* Show top competitors mentioned */}
+              {result.queryResults && (() => {
+                const competitors = new Map<string, number>();
+                result.queryResults.forEach(query => {
+                  if (query.contextSnippet) {
+                    // Extract potential competitor names (simplified)
+                    const matches = query.contextSnippet.match(/\b[A-Z][a-zA-Z]+\b/g);
+                    if (matches) {
+                      matches.forEach(name => {
+                        if (name.length > 3 && !['ChatGPT', 'The', 'This', 'For'].includes(name)) {
+                          competitors.set(name, (competitors.get(name) || 0) + 1);
+                        }
+                      });
+                    }
+                  }
+                });
+                
+                const topCompetitors = Array.from(competitors.entries())
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 3);
+                
+                if (topCompetitors.length > 0) {
+                  return (
+                    <div className="flex items-start gap-3">
+                      <CheckCircle2 className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <p>
+                        Top mentioned: {topCompetitors.map(([name, count]) => 
+                          `${name} (${count}x)`
+                        ).join(', ')}
                       </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+
+            {/* Sample Queries with Actionable Advice */}
+            <div>
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <span className="text-2xl">💡</span>
+                Sample Queries & How to Improve
+              </h3>
+              
+              {result.queryResults && result.queryResults.slice(0, 3).map((query) => (
+                <div 
+                  key={query.queryNumber}
+                  className="border border-border rounded-lg p-4 mb-4"
+                >
+                  <div className="flex items-start gap-2 mb-2">
+                    {query.wasRecommended ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
                     )}
-                    {query.contextSnippet && (
-                      <p className="text-sm mt-2 text-muted-foreground italic">
-                        "{query.contextSnippet}..."
+                    <div className="flex-1">
+                      <p className="font-semibold mb-1">Query: "{query.queryText}"</p>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        → {query.wasRecommended ? 'You were recommended!' : 'ChatGPT recommended competitors instead'}
                       </p>
-                    )}
+                      
+                      {!query.wasRecommended && (
+                        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 p-3 rounded-md">
+                          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                            💡 What to do:
+                          </p>
+                          <p className="text-sm text-blue-800 dark:text-blue-200">
+                            Create content that directly answers this query. Example: Write a blog post or comparison page like "{query.queryText.replace(/best|top|what are/gi, 'Complete guide to')}" that mentions your solution alongside alternatives.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            {result.queryResults && result.queryResults.length > 5 && (
+              ))}
+            </div>
+
+            {result.queryResults && result.queryResults.length > 3 && (
               <p className="text-sm text-muted-foreground text-center pt-2">
-                Showing 5 of {result.queryResults.length} queries tested
+                Showing 3 of {result.queryResults.length} queries tested
               </p>
             )}
           </div>
