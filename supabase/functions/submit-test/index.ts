@@ -311,12 +311,26 @@ serve(async (req) => {
         console.log(`[Query ${i + 1}] Looking for domain:`, domain);
         console.log(`[Query ${i + 1}] Was recommended:`, wasRecommended);
         console.log(`[Query ${i + 1}] Total recommendations so far:`, totalRecommendations);
+        
+        // Improve context snippet - extract relevant sentence or take more characters
+        let contextSnippet = aiResponse.substring(0, 400);
+        if (wasRecommended) {
+          const sentences = aiResponse.split(/[.!?]\s+/);
+          const relevantSentence = sentences.find((s: string) => 
+            s.toLowerCase().includes(brandName.toLowerCase()) || 
+            s.toLowerCase().includes(domain.toLowerCase())
+          );
+          if (relevantSentence && relevantSentence.length < 400) {
+            contextSnippet = relevantSentence;
+          }
+        }
+        
         queryResults.push({
           query_number: i + 1,
           query_text: query,
           engine: 'ChatGPT',
           was_recommended: wasRecommended,
-          context_snippet: aiResponse.substring(0, 200),
+          context_snippet: contextSnippet,
           recommendation_position: wasRecommended ? 1 : null,
           quality_rating: wasRecommended ? 'high' : 'none'
         });

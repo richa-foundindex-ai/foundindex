@@ -126,6 +126,56 @@ const Results = () => {
     return "Excellent visibility - you're a top recommendation";
   };
 
+  const handleShareScore = async () => {
+    const shareUrl = window.location.href;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('Link copied to clipboard!');
+    } catch (err) {
+      toast.error('Failed to copy link');
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      const jsPDF = (await import('jspdf')).default;
+      const html2canvas = (await import('html2canvas')).default;
+      
+      const element = document.getElementById('results-content');
+      if (!element) {
+        toast.error('Unable to generate PDF');
+        return;
+      }
+
+      toast.info('Generating PDF...');
+      
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+      
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      const fileName = `FoundIndex-Report-${result.website?.replace(/^https?:\/\/(www\.)?/, '')}-${new Date().toISOString().split('T')[0]}.pdf`;
+      pdf.save(fileName);
+      
+      toast.success('PDF downloaded successfully!');
+    } catch (err) {
+      console.error('PDF generation error:', err);
+      toast.error('Failed to generate PDF');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background py-12 px-4">
       <div className="container mx-auto max-w-4xl">
@@ -179,11 +229,15 @@ const Results = () => {
             </div>
 
             <div className="flex gap-4 mt-8 justify-center">
-              <Button variant="default" className="bg-primary hover:bg-primary-hover">
+              <Button 
+                variant="default" 
+                className="bg-primary hover:bg-primary-hover"
+                onClick={handleShareScore}
+              >
                 <Share2 className="mr-2 h-4 w-4" />
                 Share Score
               </Button>
-              <Button variant="outline">
+              <Button variant="outline" onClick={handleDownloadPDF}>
                 <Download className="mr-2 h-4 w-4" />
                 Download PDF
               </Button>
@@ -233,30 +287,48 @@ const Results = () => {
 
         {/* Query Sample */}
         <Card className="p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Sample Query Results</h2>
+          <h2 className="text-2xl font-bold mb-6">
+            Actual Query Results 
+            <span className="text-sm font-normal text-muted-foreground ml-2">
+              (Real queries tested for {result.industry} industry)
+            </span>
+          </h2>
           <div className="space-y-4">
-            <div className="border-l-4 border-green-500 pl-4 py-2">
-              <div className="flex items-start gap-2 mb-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-semibold">Query: "Best SaaS tools for remote collaboration"</p>
-                  <p className="text-sm text-muted-foreground">Engine: ChatGPT • Status: Recommended</p>
-                  <p className="text-sm mt-2">Position: 2nd of 6 recommendations</p>
+            {result.queryResults && result.queryResults.slice(0, 5).map((query) => (
+              <div 
+                key={query.queryNumber}
+                className={`border-l-4 ${query.wasRecommended ? 'border-green-500' : 'border-red-500'} pl-4 py-2`}
+              >
+                <div className="flex items-start gap-2 mb-2">
+                  {query.wasRecommended ? (
+                    <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-semibold">Query: "{query.queryText}"</p>
+                    <p className="text-sm text-muted-foreground">
+                      Engine: {query.engine} • Status: {query.wasRecommended ? 'Recommended' : 'Not recommended'}
+                    </p>
+                    {query.wasRecommended && query.recommendationPosition && (
+                      <p className="text-sm mt-2 text-green-600">
+                        Position: {query.recommendationPosition} in recommendations
+                      </p>
+                    )}
+                    {query.contextSnippet && (
+                      <p className="text-sm mt-2 text-muted-foreground italic">
+                        "{query.contextSnippet}..."
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="border-l-4 border-red-500 pl-4 py-2">
-              <div className="flex items-start gap-2 mb-2">
-                <XCircle className="h-5 w-5 text-red-500 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-semibold">Query: "Top collaboration platforms"</p>
-                  <p className="text-sm text-muted-foreground">Engine: ChatGPT • Status: Not recommended</p>
-                  <p className="text-sm mt-2 text-red-600">
-                    Gap: Competitors have fresher content (updated &lt;30 days)
-                  </p>
-                </div>
-              </div>
-            </div>
+            ))}
+            {result.queryResults && result.queryResults.length > 5 && (
+              <p className="text-sm text-muted-foreground text-center pt-2">
+                Showing 5 of {result.queryResults.length} queries tested
+              </p>
+            )}
           </div>
         </Card>
 
