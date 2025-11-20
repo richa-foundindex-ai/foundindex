@@ -13,50 +13,28 @@ const BenchmarkDatabase = () => {
 
         <div className="prose prose-lg max-w-none mb-12 space-y-6">
           <p className="text-body-lg">
-            FoundIndex isn't just a testing tool. It's a benchmark standard—like
-            Domain Authority for Moz or PageRank for Google.
+            FoundIndex isn't just a testing tool. It's a way to consistently measure how visible your brand is inside AI assistants.
           </p>
 
           <p className="text-body-lg">
-            We've tested 200+ leading companies across SaaS, fintech, e-commerce,
-            and professional services. This creates the industry's first
-            comprehensive AI visibility database.
+            Your score shows how often AI engines recommend your brand when buyers ask for solutions. As more companies run tests, the benchmark becomes more useful and representative.
           </p>
 
           <p className="text-body-lg">
-            Your score doesn't just tell you "how often AI recommends you." It
-            tells you:
+            Your report focuses on:
           </p>
 
           <div className="space-y-2 text-lg ml-4">
             <p>
-              → Where you rank in your industry (62nd percentile, 3rd of 7
-              competitors, etc.)
+              → How often you're recommended when buyers search for solutions
             </p>
-            <p>→ What separates you from top performers</p>
-            <p>→ Which specific improvements move the needle</p>
+            <p>→ How clearly AI understands what you do and who you serve</p>
+            <p>→ Which types of content and messaging are most likely to help</p>
           </div>
 
           <p className="text-body-lg">
-            As more companies test with FoundIndex, the benchmark becomes more
-            accurate and valuable—creating the definitive standard for AI
-            visibility measurement.
+            We avoid inflated or unsourced claims. Everything in your report comes directly from the AI responses we test.
           </p>
-        </div>
-
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card className="p-8 text-center bg-accent-gray-light border-none">
-            <p className="text-4xl font-bold text-primary mb-2">200+</p>
-            <p className="text-lg text-secondary">Companies Tested</p>
-          </Card>
-          <Card className="p-8 text-center bg-accent-gray-light border-none">
-            <p className="text-4xl font-bold text-primary mb-2">10,000+</p>
-            <p className="text-lg text-secondary">AI Query Results</p>
-          </Card>
-          <Card className="p-8 text-center bg-accent-gray-light border-none">
-            <p className="text-4xl font-bold text-primary mb-2">First</p>
-            <p className="text-lg text-secondary">Industry Benchmark Database</p>
-          </Card>
         </div>
       </div>
     </section>

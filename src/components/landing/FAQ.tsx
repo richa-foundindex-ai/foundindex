@@ -10,42 +10,42 @@ const FAQ = () => {
     {
       question: "What exactly is FoundIndex?",
       answer:
-        "A 0-100 score measuring how often AI engines recommend your brand, calibrated against 200+ tested companies. Like Domain Authority for AI visibility.",
+        "A 0-100 score measuring how often AI engines recommend your brand when buyers ask for solutions.",
     },
     {
       question: "Why should I care?",
       answer:
-        "81% of buyers use AI tools. AI traffic converts at 5x higher rates (14.2% vs 2.8%). If you're not found by AI, you're missing your highest-intent prospects.",
+        "AI assistants are becoming a primary way buyers discover new tools and services. If you're not mentioned there, you may never be considered.",
     },
     {
       question: "How is this different from SEO?",
       answer:
-        "SEO = Google rankings. FoundIndex = AI visibility. Google shows links. AI gives answers. If AI doesn't recommend you in its answer, there's no link to click.",
+        "SEO focuses on search engine rankings and clicks. FoundIndex looks at whether AI assistants actually mention and recommend you in their answers.",
     },
     {
       question: "How do you calculate my score?",
       answer:
-        "45 queries (real buyer questions) across ChatGPT, Claude, Perplexity. Weighted by position, context quality, query recency. Calibrated against our 200+ company benchmark database.",
+        "We run a set of standardized buyer-style queries through AI models and measure how often you appear and how clearly you're described.",
     },
     {
       question: "Can I improve my score?",
       answer:
-        "Yes. Top 3 improvements: content freshness (+15 pts), FAQ schema (+12 pts), Reddit presence (+10 pts). Your report includes customized roadmap.",
+        "Yes. Clear, specific, and helpful content that matches real buyer questions tends to perform better in AI answers.",
     },
     {
       question: "How often should I check?",
       answer:
-        "Monthly. AI engines update constantly. Track your FoundIndex like web traffic to catch drops early and measure improvement.",
+        "AI models change frequently. Many teams choose to check monthly or after major content changes.",
     },
     {
       question: "What's a good score?",
       answer:
-        "0-29: Low (most sites) | 30-49: Emerging | 50-69: Strong | 70-89: Excellent | 90-100: Market leader. Industry context matters—your report shows how you compare to your specific vertical.",
+        "Higher scores mean you're being recommended more often. Over time, we'll share more context about how scores typically distribute by category.",
     },
     {
       question: "How accurate is this?",
       answer:
-        "We use official APIs (GPT-4o, Claude 3.5 Sonnet, Perplexity). Scores reflect what real buyers see. Calibrated against 10,000+ results for statistical reliability.",
+        "We use direct API calls and a consistent testing setup so results reflect what a new buyer might see when they ask similar questions.",
     },
   ];
 

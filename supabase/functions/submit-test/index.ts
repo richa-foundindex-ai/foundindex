@@ -15,22 +15,12 @@ interface TestSubmission {
 
 // Input validation schemas
 const ALLOWED_INDUSTRIES = [
-  'saas', 
-  'financial', 
-  'ecommerce', 
-  'professional', 
-  'healthcare', 
-  'beauty',
-  'education',
-  'legal',
-  'telecom',
-  'food',
-  'realestate',
-  'consulting',
-  'marketing',
-  'travel',
-  'manufacturing',
-  'other'
+  'saas',
+  'financial',
+  'ecommerce',
+  'professional',
+  'healthcare',
+  'other',
 ];
 
 const validateEmail = (email: string): string => {
@@ -395,7 +385,7 @@ serve(async (req) => {
       });
     }
 
-    // Check IP-based rate limit: 100 tests per IP per day (increased for testing - reduce to 10 for production)
+    // Check IP-based rate limit: 10 tests per IP per day (production value)
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
                      req.headers.get('x-real-ip') || 
                      'unknown';
@@ -413,7 +403,7 @@ serve(async (req) => {
       throw new Error('Unable to process request');
     }
 
-    if (ipCount !== null && ipCount >= 100) {
+    if (ipCount !== null && ipCount >= 10) {
       return new Response(JSON.stringify({ 
         error: 'Rate limit exceeded. Too many requests from your network. Please try again later.' 
       }), {

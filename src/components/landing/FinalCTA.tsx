@@ -26,8 +26,7 @@ const FinalCTA = () => {
             </Button>
 
             <p className="text-muted-foreground text-lg">
-              Join 200+ companies tracking AI visibility • Free beta • 3
-              tests/month
+              Free beta • 3 tests/month on the starter plan
             </p>
           </div>
         </Card>
