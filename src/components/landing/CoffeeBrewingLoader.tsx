@@ -63,101 +63,242 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
         <div className="relative w-64 h-64 mx-auto">
           <svg viewBox="0 0 200 200" className="w-full h-full">
             <defs>
-              <linearGradient id="mugGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style={{ stopColor: '#8B4513', stopOpacity: 1 }} />
-                <stop offset="100%" style={{ stopColor: '#654321', stopOpacity: 1 }} />
+              <linearGradient id="cupOutlineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style={{ stopColor: '#8B7355', stopOpacity: 0.9 }} />
+                <stop offset="100%" style={{ stopColor: '#5D4037', stopOpacity: 0.95 }} />
               </linearGradient>
               <linearGradient id="coffeeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style={{ stopColor: '#3E2723', stopOpacity: 1 }} />
+                <stop offset="0%" style={{ stopColor: '#6F4E37', stopOpacity: 1 }} />
+                <stop offset="50%" style={{ stopColor: '#8B4513', stopOpacity: 1 }} />
                 <stop offset="100%" style={{ stopColor: '#5D4037', stopOpacity: 1 }} />
               </linearGradient>
               <linearGradient id="shineGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 0.3 }} />
+                <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 0.5 }} />
+                <stop offset="50%" style={{ stopColor: '#ffffff', stopOpacity: 0.2 }} />
                 <stop offset="100%" style={{ stopColor: '#ffffff', stopOpacity: 0 }} />
               </linearGradient>
-              <filter id="cupDepth">
-                <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
-                <feOffset dx="0" dy="3" result="offsetblur"/>
-                <feComponentTransfer><feFuncA type="linear" slope="0.4"/></feComponentTransfer>
+              <linearGradient id="cupBodyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style={{ stopColor: '#ffffff', stopOpacity: 0.08 }} />
+                <stop offset="100%" style={{ stopColor: '#654321', stopOpacity: 0.12 }} />
+              </linearGradient>
+              <filter id="cupShadow">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+                <feOffset dx="0" dy="4" result="offsetblur"/>
+                <feComponentTransfer><feFuncA type="linear" slope="0.3"/></feComponentTransfer>
                 <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
               </filter>
               <clipPath id="cupClip">
-                <path d="M 55 65 L 65 175 Q 100 180 135 175 L 145 65 Z" />
+                <path d="M 60 65 Q 60 70 62 72 L 68 172 Q 70 178 100 180 Q 130 178 132 172 L 138 72 Q 140 70 140 65 Z" />
               </clipPath>
             </defs>
             
-            <g>
-              <ellipse cx="85" cy="45" rx="3" ry="8" fill="#E0E0E0" opacity="0.4">
-                <animate attributeName="cy" values="45;25;15" dur="2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.4;0.2;0" dur="2s" repeatCount="indefinite" />
-              </ellipse>
-              <ellipse cx="100" cy="40" rx="3" ry="8" fill="#E0E0E0" opacity="0.5">
-                <animate attributeName="cy" values="40;20;10" dur="2.5s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.5;0.3;0" dur="2.5s" repeatCount="indefinite" />
-              </ellipse>
-              <ellipse cx="115" cy="45" rx="3" ry="8" fill="#E0E0E0" opacity="0.4">
-                <animate attributeName="cy" values="45;25;15" dur="2.2s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.4;0.2;0" dur="2.2s" repeatCount="indefinite" />
-              </ellipse>
+            {/* Shadow underneath cup */}
+            <ellipse cx="100" cy="188" rx="50" ry="10" fill="black" opacity="0.2" filter="url(#cupShadow)" />
+            
+            {/* Coffee inside (fills up with wave effect) */}
+            <g clipPath="url(#cupClip)">
+              <rect
+                x="55"
+                y={180 - (progress * 1.15)}
+                width="90"
+                height={progress * 1.15}
+                fill="url(#coffeeGradient)"
+                opacity="1"
+              >
+                <animate
+                  attributeName="y"
+                  from="180"
+                  to="65"
+                  dur="150s"
+                  fill="freeze"
+                />
+                <animate
+                  attributeName="height"
+                  from="0"
+                  to="115"
+                  dur="150s"
+                  fill="freeze"
+                />
+              </rect>
+              {/* Subtle wave on coffee surface */}
+              <path
+                d={`M 55 ${180 - (progress * 1.15)} Q 77.5 ${178 - (progress * 1.15)} 100 ${180 - (progress * 1.15)} T 145 ${180 - (progress * 1.15)}`}
+                fill="none"
+                stroke="#8B6F47"
+                strokeWidth="1.5"
+                opacity="0.5"
+              >
+                <animate
+                  attributeName="d"
+                  values={`M 55 ${180 - (progress * 1.15)} Q 77.5 ${178 - (progress * 1.15)} 100 ${180 - (progress * 1.15)} T 145 ${180 - (progress * 1.15)}; M 55 ${180 - (progress * 1.15)} Q 77.5 ${182 - (progress * 1.15)} 100 ${180 - (progress * 1.15)} T 145 ${180 - (progress * 1.15)}; M 55 ${180 - (progress * 1.15)} Q 77.5 ${178 - (progress * 1.15)} 100 ${180 - (progress * 1.15)} T 145 ${180 - (progress * 1.15)}`}
+                  dur="2s"
+                  repeatCount="indefinite"
+                />
+              </path>
             </g>
             
-            <g filter="url(#cupDepth)">
-              <path d="M 55 65 L 65 175 Q 100 180 135 175 L 145 65 Z" fill="url(#mugGradient)" stroke="#5D4037" strokeWidth="4" />
-              <ellipse cx="100" cy="65" rx="45" ry="8" fill="#A0826D" stroke="#5D4037" strokeWidth="3" />
-              <ellipse cx="100" cy="63" rx="42" ry="6" fill="url(#shineGradient)" />
-              
-              <g clipPath="url(#cupClip)">
-                <rect x="50" y={200 - (progress * 1.1)} width="100" height={progress * 1.1} fill="url(#coffeeGradient)" style={{ transition: 'y 0.3s ease-out, height 0.3s ease-out' }} />
+            {/* Coffee cup body (semi-transparent with gradient) */}
+            <path
+              d="M 60 65 Q 60 70 62 72 L 68 172 Q 70 178 100 180 Q 130 178 132 172 L 138 72 Q 140 70 140 65 Z"
+              fill="url(#cupBodyGradient)"
+              stroke="url(#cupOutlineGradient)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            
+            {/* Cup rim (top ellipse with shine) */}
+            <ellipse
+              cx="100"
+              cy="65"
+              rx="40"
+              ry="10"
+              fill="none"
+              stroke="url(#cupOutlineGradient)"
+              strokeWidth="3.5"
+            />
+            <ellipse
+              cx="100"
+              cy="65"
+              rx="40"
+              ry="10"
+              fill="url(#shineGradient)"
+            />
+            
+            {/* Cup handle (more rounded) */}
+            <path
+              d="M 138 80 Q 165 80 168 110 Q 168 140 138 140"
+              fill="none"
+              stroke="url(#cupOutlineGradient)"
+              strokeWidth="6"
+              strokeLinecap="round"
+            />
+            <path
+              d="M 140 82 Q 163 82 165 110 Q 165 138 140 138"
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.15)"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+            
+            {/* Steam wisps (more visible) */}
+            <g opacity="0.7">
+              <path d="M 75 55 Q 70 40 75 25" stroke="#B8B8B8" strokeWidth="2.5" fill="none" strokeLinecap="round">
+                <animate attributeName="d" values="M 75 55 Q 70 40 75 25; M 75 55 Q 80 40 75 25; M 75 55 Q 70 40 75 25" dur="3s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.7; 0.4; 0.7" dur="3s" repeatCount="indefinite" />
+              </path>
+              <path d="M 100 50 Q 105 35 100 20" stroke="#B8B8B8" strokeWidth="2.5" fill="none" strokeLinecap="round">
+                <animate attributeName="d" values="M 100 50 Q 105 35 100 20; M 100 50 Q 95 35 100 20; M 100 50 Q 105 35 100 20" dur="3.5s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.7; 0.4; 0.7" dur="3.5s" repeatCount="indefinite" />
+              </path>
+              <path d="M 125 55 Q 130 40 125 25" stroke="#B8B8B8" strokeWidth="2.5" fill="none" strokeLinecap="round">
+                <animate attributeName="d" values="M 125 55 Q 130 40 125 25; M 125 55 Q 120 40 125 25; M 125 55 Q 130 40 125 25" dur="4s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.7; 0.4; 0.7" dur="4s" repeatCount="indefinite" />
+              </path>
+            </g>
+            
+            {/* Animated coffee beans dancing around with rotation */}
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <g key={i}>
+                <ellipse
+                  cx="100"
+                  cy="100"
+                  rx="5"
+                  ry="7"
+                  fill="#6F4E37"
+                  stroke="#4A3428"
+                  strokeWidth="0.5"
+                  opacity="0.85"
+                >
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    from={`${i * 60} 100 100`}
+                    to={`${i * 60 + 360} 100 100`}
+                    dur="10s"
+                    repeatCount="indefinite"
+                  />
+                  <animateTransform
+                    attributeName="transform"
+                    type="translate"
+                    values="0,0; 0,-12; 0,0"
+                    dur="2.5s"
+                    repeatCount="indefinite"
+                    additive="sum"
+                  />
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    from="0"
+                    to="360"
+                    dur="4s"
+                    repeatCount="indefinite"
+                    additive="sum"
+                  />
+                </ellipse>
+                {/* Bean center line */}
+                <line
+                  x1="100"
+                  y1="94"
+                  x2="100"
+                  y2="106"
+                  stroke="#4A3428"
+                  strokeWidth="1"
+                  opacity="0.5"
+                >
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    from={`${i * 60} 100 100`}
+                    to={`${i * 60 + 360} 100 100`}
+                    dur="10s"
+                    repeatCount="indefinite"
+                  />
+                  <animateTransform
+                    attributeName="transform"
+                    type="translate"
+                    values="0,0; 0,-12; 0,0"
+                    dur="2.5s"
+                    repeatCount="indefinite"
+                    additive="sum"
+                  />
+                  <animateTransform
+                    attributeName="transform"
+                    type="rotate"
+                    from="0"
+                    to="360"
+                    dur="4s"
+                    repeatCount="indefinite"
+                    additive="sum"
+                  />
+                </line>
               </g>
-              
-              <path d="M 145 85 C 165 85, 170 100, 170 110 C 170 120, 165 135, 145 135" fill="none" stroke="#5D4037" strokeWidth="4" strokeLinecap="round" />
-              <path d="M 147 87 C 163 87, 167 100, 167 110 C 167 120, 163 133, 147 133" fill="none" stroke="#8B4513" strokeWidth="2" opacity="0.5" />
-              <circle cx="145" cy="85" r="3" fill="#5D4037" />
-              <circle cx="145" cy="135" r="3" fill="#5D4037" />
-            </g>
-            
-            {[...Array(5)].map((_, i) => {
-              const delay = i * 0.8;
-              const xPosition = 70 + (i * 15);
-              return (
-                <g key={i}>
-                  <ellipse cx={xPosition} cy="0" rx="4" ry="6" fill="#3E2723" stroke="#5D4037" strokeWidth="1">
-                    <animate attributeName="cy" values="0;180;170" dur="2s" begin={`${delay}s`} repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="1;1;0" dur="2s" begin={`${delay}s`} repeatCount="indefinite" />
-                    <animateTransform attributeName="transform" type="rotate" from={`0 ${xPosition} 0`} to={`360 ${xPosition} 180`} dur="2s" begin={`${delay}s`} repeatCount="indefinite" />
-                  </ellipse>
-                </g>
-              );
-            })}
+            ))}
           </svg>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>{Math.round(progress)}%</span>
-            <span>~{Math.max(0, Math.round((100 - progress) * 1.5))} seconds remaining</span>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">{currentStage.label}</span>
+            <span className="text-muted-foreground">{Math.min(Math.round(progress), 100)}%</span>
           </div>
-          <div className="h-3 bg-secondary rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-[#8B4513] via-[#A0826D] to-primary transition-all duration-1000 ease-out" style={{ width: `${progress}%` }} />
+          <div className="h-2 bg-secondary rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-1000 ease-out"
+              style={{ width: `${Math.min(progress, 100)}%` }}
+            />
           </div>
+          <p className="text-xs text-muted-foreground text-center">{currentStage.description}</p>
         </div>
 
-        <div className="text-center space-y-1 min-h-[80px]">
-          <p className="text-lg font-semibold animate-pulse">{currentStage.label}</p>
-          <p className="text-sm text-muted-foreground">({currentStage.description})</p>
-        </div>
-
-        <Card className="p-4 bg-accent-red-light border-primary/20">
-          <div className="flex gap-3">
-            <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-semibold text-sm">Why does this take time?</p>
-              <p className="text-sm text-muted-foreground">
-                We're fetching your site, analyzing content structure, checking authority signals, and generating your detailed report. This takes 2-3 minutes.
-              </p>
-            </div>
+        <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+          <div className="flex items-start gap-2">
+            <Info className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              We're fetching your site, analyzing content structure, checking authority signals, and generating your detailed report. This takes 2-3 minutes.
+            </p>
           </div>
-        </Card>
+        </div>
       </Card>
     </div>
   );
