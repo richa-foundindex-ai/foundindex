@@ -70,6 +70,20 @@ const Results = () => {
         if (fetchError) throw new Error(fetchError.message);
         if (data?.error) throw new Error(data.error);
 
+        // === ENHANCED LOGGING: What frontend received ===
+        console.log('═══════════════════════════════════════');
+        console.log('=== RESULTS PAGE - DATA RECEIVED ===');
+        console.log('═══════════════════════════════════════');
+        console.log('Full data object:', data);
+        console.log('foundIndexScore:', data?.foundIndexScore);
+        console.log('contentClarityScore:', data?.contentClarityScore);
+        console.log('structuredDataScore:', data?.structuredDataScore);
+        console.log('authorityScore:', data?.authorityScore);
+        console.log('discoverabilityScore:', data?.discoverabilityScore);
+        console.log('comparisonScore:', data?.comparisonScore);
+        console.log('recommendations:', data?.recommendations);
+        console.log('═══════════════════════════════════════');
+
         setResult(data as TestResult);
       } catch (err) {
         console.error("[Results] Failed to fetch results", err);

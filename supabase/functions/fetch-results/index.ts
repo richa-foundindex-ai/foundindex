@@ -53,6 +53,22 @@ serve(async (req) => {
 
     const testRecord = testsData.records[0].fields;
 
+    // === ENHANCED LOGGING: What we got from Airtable ===
+    console.log(`[fetch-results] ═══════════════════════════════════════`);
+    console.log(`[fetch-results] === DATA FROM AIRTABLE ===`);
+    console.log(`[fetch-results] ═══════════════════════════════════════`);
+    console.log(`[fetch-results] Test record exists: ${!!testRecord}`);
+    console.log(`[fetch-results] foundindex_score: ${testRecord.foundindex_score}`);
+    console.log(`[fetch-results] content_clarity_score from DB: ${testRecord.content_clarity_score}`);
+    console.log(`[fetch-results] structured_data_score from DB: ${testRecord.structured_data_score}`);
+    console.log(`[fetch-results] authority_score from DB: ${testRecord.authority_score}`);
+    console.log(`[fetch-results] discoverability_score from DB: ${testRecord.discoverability_score}`);
+    console.log(`[fetch-results] comparison_score from DB: ${testRecord.comparison_score}`);
+    console.log(`[fetch-results] chatgpt_score: ${testRecord.chatgpt_score}`);
+    console.log(`[fetch-results] recommendations field exists: ${!!testRecord.recommendations}`);
+    console.log(`[fetch-results] analysis_details field exists: ${!!testRecord.analysis_details}`);
+    console.log(`[fetch-results] ═══════════════════════════════════════`);
+
     // Fetch query results from Query_Results table
     const queryResultsResponse = await fetch(
       `https://api.airtable.com/v0/${airtableBaseId}/Query_Results?filterByFormula={test_id}='${testId}'&sort[0][field]=query_number&sort[0][direction]=asc`,
