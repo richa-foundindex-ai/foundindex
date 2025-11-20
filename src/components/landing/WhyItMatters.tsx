@@ -17,6 +17,9 @@ const WhyItMatters = () => {
             <p>
               But AI can only recommend what it understands. If your website isn't structured for AI comprehension, you're invisible to buyers who are ready to purchase.
             </p>
+            <p>
+              Modern AI systems rely more on clear explanations and credible signals than on traditional SEO tactics like backlink volume.
+            </p>
             <p className="font-medium text-foreground">
               FoundIndex shows you exactly how "AI-readable" your site is and what to improve.
             </p>
