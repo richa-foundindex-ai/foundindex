@@ -152,11 +152,9 @@ const Results = () => {
   };
 
   const getPercentile = (score: number) => {
-    // Simulate percentile based on score distribution
-    // This would ideally come from actual data
-    if (score <= 40) return Math.round(score * 0.5); // 0-20%
-    if (score <= 70) return Math.round(20 + (score - 40) * 1.3); // 20-60%
-    return Math.round(60 + (score - 70) * 1.3); // 60-100%
+    if (score <= 40) return Math.round(score * 0.5);
+    if (score <= 70) return Math.round(20 + (score - 40) * 1.3);
+    return Math.round(60 + (score - 70) * 1.3);
   };
 
   const getFactorIcon = (factor: string) => {
@@ -171,7 +169,6 @@ const Results = () => {
   };
 
   const getImpactEstimate = (index: number) => {
-    // Simulate impact estimates for recommendations
     const impacts = ["+8-12 points", "+5-8 points", "+3-5 points", "+2-4 points", "+1-3 points"];
     return impacts[index] || "+2-5 points";
   };
@@ -247,22 +244,20 @@ Test your site: ${shareUrl}`;
     <div className="min-h-screen bg-background py-12 px-4">
       <div className="container mx-auto max-w-4xl" id="results-content">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 text-center">
           <Badge variant="secondary" className="mb-4">
             Test Complete
           </Badge>
           <h1 className="text-4xl font-bold mb-2">Your AI-Readiness Report</h1>
           <p className="text-muted-foreground">
-            Results for: {result.website}
-            {result.businessType && result.businessType !== result.industry && (
-              <> • Business type: <span className="font-semibold">{result.businessType}</span></>
+            {result.website}
+            {result.businessType && (
+              <> • <span className="font-semibold">{result.businessType}</span></>
             )}
-            {" "}• Industry: {result.industry} • Tested:{" "}
-            {new Date(result.testDate || "").toLocaleDateString()}
           </p>
         </div>
 
-        {/* Main Score Card - AI-Readiness Score */}
+        {/* Main Score Card */}
         <Card className={`p-10 mb-8 border-4 ${getScoreBorderColor(result.foundIndexScore)} ${getScoreBgColor(result.foundIndexScore)}`}>
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-6">Your AI-Readiness Score</h2>
@@ -274,11 +269,10 @@ Test your site: ${shareUrl}`;
               Better than {getPercentile(result.foundIndexScore)}% of tested sites
             </div>
             <p className="text-base text-muted-foreground max-w-2xl mx-auto mb-8">
-              This measures how well your website is optimized for AI recommendation engines like ChatGPT, Claude, and Perplexity.
+              How well your website is optimized for AI recommendation engines like ChatGPT, Claude, and Perplexity.
             </p>
 
-
-            {/* Visual Score Breakdown with Progress Bars */}
+            {/* Visual Score Breakdown */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-left mb-4">Score Breakdown</h3>
               
@@ -286,7 +280,7 @@ Test your site: ${shareUrl}`;
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{getFactorIcon("content_clarity")}</span>
+                    <span className="text-2xl">📝</span>
                     <span className="font-medium">Content Clarity</span>
                     {(result.contentClarityScore || 0) >= 15 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -310,7 +304,7 @@ Test your site: ${shareUrl}`;
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{getFactorIcon("structured_data")}</span>
+                    <span className="text-2xl">🏗️</span>
                     <span className="font-medium">Structured Data</span>
                     {(result.structuredDataScore || 0) >= 12 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -334,7 +328,7 @@ Test your site: ${shareUrl}`;
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{getFactorIcon("authority")}</span>
+                    <span className="text-2xl">⭐</span>
                     <span className="font-medium">Authority Signals</span>
                     {(result.authorityScore || 0) >= 12 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -358,7 +352,7 @@ Test your site: ${shareUrl}`;
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{getFactorIcon("discoverability")}</span>
+                    <span className="text-2xl">🔍</span>
                     <span className="font-medium">Discoverability</span>
                     {(result.discoverabilityScore || 0) >= 12 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -382,7 +376,7 @@ Test your site: ${shareUrl}`;
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{getFactorIcon("comparison")}</span>
+                    <span className="text-2xl">⚖️</span>
                     <span className="font-medium">Comparison Content</span>
                     {(result.comparisonScore || 0) >= 9 ? (
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
@@ -454,11 +448,11 @@ Test your site: ${shareUrl}`;
               {result.recommendations.slice(0, 5).map((rec, idx) => (
                 <div key={idx} className="border-l-4 border-primary pl-4 py-2">
                   <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1">
                       <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold">
                         {idx + 1}
                       </div>
-                      <h4 className="font-semibold text-lg">{rec}</h4>
+                      <h4 className="font-semibold text-base">{rec}</h4>
                     </div>
                     <Badge variant="secondary" className="ml-2 shrink-0">
                       {getImpactEstimate(idx)}
@@ -513,70 +507,6 @@ Test your site: ${shareUrl}`;
           </div>
         </Card>
 
-        {/* Query-Based Visibility (Secondary) */}
-        <Card className="p-6 mb-8">
-          <h3 className="text-xl font-bold mb-4">Query-Based Visibility Test</h3>
-          <p className="text-sm text-muted-foreground mb-6">
-            We tested {result.generatedQueries?.length || 15} buyer-intent queries to see how often AI mentions your website.
-          </p>
-          <div className="grid grid-cols-3 gap-4 text-center mb-6">
-            <div>
-              <p className="text-sm text-muted-foreground">Queries tested</p>
-              <p className="text-2xl font-bold">{result.queryResults?.length || 15}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Recommendations</p>
-              <p className="text-2xl font-bold">{result.recommendationsCount}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Success rate</p>
-              <p className="text-2xl font-bold">
-                {Math.round(result.recommendationRate)}%
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Engine Performance */}
-        <Card className="p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">Engine Performance</h2>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="font-semibold">ChatGPT</span>
-                <span className="font-bold text-primary">{result.foundIndexScore}/100</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-3">
-                <div
-                  className="bg-primary h-3 rounded-full"
-                  style={{ width: `${result.foundIndexScore}%` }}
-                />
-              </div>
-              <p className="text-sm text-muted-foreground mt-1">
-                Recommended in {result.recommendationsCount} of {result.queryResults?.length || 15} queries ({Math.round(result.recommendationRate)}% success)
-              </p>
-            </div>
-            <div className="opacity-50">
-              <div className="flex justify-between mb-2">
-                <span className="font-semibold">Claude</span>
-                <span className="font-bold">Coming soon</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-3">
-                <div className="bg-muted-foreground h-3 rounded-full" style={{ width: "0%" }} />
-              </div>
-            </div>
-            <div className="opacity-50">
-              <div className="flex justify-between mb-2">
-                <span className="font-semibold">Perplexity</span>
-                <span className="font-bold">Coming soon</span>
-              </div>
-              <div className="w-full bg-muted rounded-full h-3">
-                <div className="bg-muted-foreground h-3 rounded-full" style={{ width: "0%" }} />
-              </div>
-            </div>
-          </div>
-        </Card>
-
         {/* Footer CTA */}
         <div className="text-center py-8">
           <Button variant="outline" size="lg" onClick={handleDownloadPDF}>
@@ -584,162 +514,6 @@ Test your site: ${shareUrl}`;
             Download Full Report
           </Button>
         </div>
-      </div>
-    </div>
-  );
-};
-
-export default Results;
-                    const matches = query.contextSnippet.match(/\b[A-Z][a-zA-Z]+\b/g);
-                    if (matches) {
-                      matches.forEach(name => {
-                        if (name.length > 3 && !['ChatGPT', 'The', 'This', 'For'].includes(name)) {
-                          competitors.set(name, (competitors.get(name) || 0) + 1);
-                        }
-                      });
-                    }
-                  }
-                });
-                
-                const topCompetitors = Array.from(competitors.entries())
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 3);
-                
-                if (topCompetitors.length > 0) {
-                  return (
-                    <div className="flex items-start gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                      <p>
-                        Top mentioned: {topCompetitors.map(([name, count]) => 
-                          `${name} (${count}x)`
-                        ).join(', ')}
-                      </p>
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-
-            {/* Sample Queries with Actionable Advice */}
-            <div>
-              <h3 className="font-semibold mb-2 flex items-center gap-2">
-                <span className="text-2xl">💡</span>
-                Sample Queries & How to Improve
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {result.businessType && result.businessType !== result.industry 
-                  ? `Custom queries generated for your business type: "${result.businessType}"`
-                  : 'These buyer-intent queries are specific to your industry'
-                }
-              </p>
-              
-              {result.queryResults && result.queryResults.slice(0, 3).map((query) => (
-                <div 
-                  key={query.queryNumber}
-                  className="border border-border rounded-lg p-4 mb-4"
-                >
-                  <div className="flex items-start gap-2 mb-2">
-                    {query.wasRecommended ? (
-                      <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-                    ) : (
-                      <XCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
-                    )}
-                    <div className="flex-1">
-                      <p className="font-semibold mb-1">Query: "{query.queryText}"</p>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        → {query.wasRecommended ? 'You were recommended!' : 'ChatGPT recommended competitors instead'}
-                      </p>
-                      
-                      {!query.wasRecommended && (
-                        <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 p-3 rounded-md">
-                          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                            💡 What to do:
-                          </p>
-                          <p className="text-sm text-blue-800 dark:text-blue-200">
-                            Create content that directly answers this query. Example: Write a blog post or comparison page like "{query.queryText.replace(/best|top|what are/gi, 'Complete guide to')}" that mentions your solution alongside alternatives.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {result.queryResults && result.queryResults.length > 3 && (
-              <p className="text-sm text-muted-foreground text-center pt-2">
-                Showing 3 of {result.queryResults.length} queries tested
-              </p>
-            )}
-          </div>
-        </Card>
-
-        {/* Improvement Tips */}
-        <Card className="p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">How to Improve Your FoundIndex Score</h2>
-          <p className="text-muted-foreground mb-6">
-            Based on 200+ tests, here's what high-scoring companies do:
-          </p>
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Create detailed how-to content</p>
-                <p className="text-sm text-muted-foreground">Answer specific questions your buyers ask</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Mention use cases and alternatives</p>
-                <p className="text-sm text-muted-foreground">AI models look for comprehensive comparisons</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Update content regularly</p>
-                <p className="text-sm text-muted-foreground">Fresh content (30-60 days) gets recommended more</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Include comparison charts</p>
-                <p className="text-sm text-muted-foreground">Help AI understand your positioning</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold">Add structured data (Schema markup)</p>
-                <p className="text-sm text-muted-foreground">Makes your content more discoverable</p>
-              </div>
-            </div>
-          </div>
-          <p className="text-sm text-muted-foreground mt-6 pt-6 border-t">
-            These are general recommendations. Site-specific analysis coming in Pro plan.
-          </p>
-        </Card>
-
-        {/* Tracking CTA */}
-        <Card className="p-8 border-2 border-primary bg-accent-red-light">
-          <h2 className="text-2xl font-bold mb-4 text-center">Turn This Into a Trend</h2>
-          <p className="text-center mb-6 text-muted-foreground">
-            One test shows a snapshot. Monthly tracking shows whether you're improving or falling
-            behind.
-          </p>
-          <div className="text-center">
-            <Button size="lg" className="bg-primary hover:bg-primary-hover text-primary-foreground">
-              🔒 Start Tracking Your FoundIndex
-            </Button>
-            <p className="text-sm text-muted-foreground mt-4">
-              Pro: $49/mo (Weekly tracking, 3 competitors) | Business: $199/mo (Daily tracking,
-              unlimited competitors)
-            </p>
-          </div>
-        </Card>
       </div>
     </div>
   );
