@@ -123,7 +123,7 @@ const Results = () => {
   const handleShare = () => {
     if (!result) return;
     const score = result.foundIndexScore ?? 0;
-    const text = `I scored ${score}/100 on FoundIndex AI-Readiness!\n\n${getPercentile(score)}\n\nTest your site: ${window.location.origin}`;
+    const text = `I scored ${score}/100 on FoundIndex AI Visibility!\n\n${getPercentile(score)}\n\nTest your site: ${window.location.origin}`;
 
     if (navigator.share) {
       navigator.share({ title: "My FoundIndex Score", text }).catch(() => {});
@@ -138,7 +138,7 @@ const Results = () => {
   const handleCopyShare = async () => {
     if (!result) return;
     const score = result.foundIndexScore ?? 0;
-    const shareText = `I just analyzed my website's AI-readiness with FoundIndex. Score: ${score}/100
+    const shareText = `I just analyzed my website's AI visibility with FoundIndex. Score: ${score}/100
 
 Test yours: ${window.location.origin}`;
     
@@ -230,7 +230,7 @@ Test yours: ${window.location.origin}`;
           <div>
             <h1 className="text-3xl md:text-4xl font-semibold tracking-tight flex items-center gap-2">
               <Sparkles className="h-7 w-7 text-primary" />
-              Your AI-readiness score
+              Your AI visibility score
             </h1>
             <p className="mt-2 text-muted-foreground max-w-xl">
               Based on analysis of your website's content and structure
@@ -336,7 +336,7 @@ Test yours: ${window.location.origin}`;
                 <h2 className="text-sm font-semibold">Share your score</h2>
               </div>
               <div className="rounded-md bg-background border px-3 py-2 text-xs">
-                <p className="font-medium">I just analyzed my website's AI-readiness with FoundIndex. Score: {score}/100</p>
+                <p className="font-medium">I just analyzed my website's AI visibility with FoundIndex. Score: {score}/100</p>
                 <p className="mt-1 text-xs text-primary">Test yours: {window.location.origin}</p>
               </div>
               <Button size="sm" className="w-full" variant="outline" onClick={handleCopyShare}>
@@ -367,17 +367,20 @@ Test yours: ${window.location.origin}`;
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="p-4 space-y-1">
               <p className="text-xs text-muted-foreground">ChatGPT</p>
-              <p className="text-2xl font-semibold">{result.chatgptScore ?? "–"}/100</p>
+              <p className="text-2xl font-semibold">{result.chatgptScore ?? "–"} / 100</p>
             </Card>
             <Card className="p-4 space-y-1">
               <p className="text-xs text-muted-foreground">Claude</p>
-              <p className="text-2xl font-semibold">{result.claudeScore ?? "–"}/100</p>
+              <p className="text-sm font-medium text-muted-foreground">Integration coming next month</p>
             </Card>
             <Card className="p-4 space-y-1">
               <p className="text-xs text-muted-foreground">Perplexity</p>
-              <p className="text-2xl font-semibold">{result.perplexityScore ?? "–"}/100</p>
+              <p className="text-sm font-medium text-muted-foreground">In development</p>
             </Card>
           </div>
+          <p className="text-xs text-muted-foreground mt-4">
+            We're building this in public. These scores reflect what we can currently test. Want to help us improve? Share your feedback.
+          </p>
         </section>
 
         <section className="text-center pt-8 border-t">
@@ -410,7 +413,7 @@ Test yours: ${window.location.origin}`;
               <div className="mt-1">📊</div>
               <div>
                 <p className="font-medium">Trend reports</p>
-                <p className="text-sm text-muted-foreground">See how your AI-readiness improves month over month</p>
+                <p className="text-sm text-muted-foreground">See how your AI visibility improves month over month</p>
               </div>
             </div>
             
