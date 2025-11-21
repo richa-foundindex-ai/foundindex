@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
-import 'react-circular-progressbar/dist/styles.css';
 
 interface CoffeeBrewingLoaderProps {
   onComplete?: () => void;
@@ -44,7 +42,7 @@ export const CoffeeBrewingLoader = ({ onComplete, website }: CoffeeBrewingLoader
 
   return (
     <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="max-w-md w-full p-8 space-y-6 shadow-2xl">
+      <Card className="max-w-2xl w-full p-8 space-y-8 shadow-2xl">
         {website && (
           <div className="text-center">
             <p className="text-sm text-muted-foreground">Analyzing:</p>
@@ -52,40 +50,44 @@ export const CoffeeBrewingLoader = ({ onComplete, website }: CoffeeBrewingLoader
           </div>
         )}
         
-        <div className="text-center space-y-2">
-          <h2 className="text-2xl font-semibold">{currentStage.label}</h2>
-        </div>
-
-        <div className="flex justify-center">
-          <div style={{ width: 180, height: 180 }}>
-            <CircularProgressbar
-              value={progress}
-              text={`${Math.round(progress)}%`}
-              styles={buildStyles({
-                pathColor: 'hsl(var(--primary))',
-                textColor: 'hsl(var(--foreground))',
-                trailColor: 'hsl(var(--muted))',
-                textSize: '24px',
-              })}
+        {/* Firefly animation container */}
+        <div className="relative h-24 flex items-center">
+          <div className="absolute inset-0 overflow-hidden">
+            {/* Trail effect */}
+            <div 
+              className="absolute top-1/2 -translate-y-1/2 h-3 rounded-full transition-all duration-300"
+              style={{ 
+                left: '0%',
+                width: `${progress}%`,
+                background: `linear-gradient(to right, transparent, hsl(var(--primary) / ${progress / 200}))`,
+              }}
+            />
+            
+            {/* Firefly */}
+            <div 
+              className="absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-primary transition-all duration-1000 ease-linear"
+              style={{ 
+                left: `${progress}%`,
+                transform: `translate(-50%, -50%)`,
+                boxShadow: `0 0 ${10 + (progress / 100) * 30}px hsl(var(--primary) / ${0.3 + (progress / 100) * 0.7}),
+                           0 0 ${20 + (progress / 100) * 50}px hsl(var(--primary) / ${0.2 + (progress / 100) * 0.5}),
+                           0 0 ${30 + (progress / 100) * 70}px hsl(var(--primary) / ${0.1 + (progress / 100) * 0.3})`,
+              }}
             />
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">{currentStage.label}</span>
-              <span className="text-muted-foreground">{Math.round(progress)}%</span>
-            </div>
-            <div className="h-2 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full bg-primary transition-all duration-1000 ease-linear"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">{currentStage.description}</p>
-          </div>
+        {/* Progress percentage */}
+        <div className="text-center">
+          <p className="text-4xl font-bold text-foreground">{Math.round(progress)}%</p>
+        </div>
 
+        {/* Stage description */}
+        <div className="text-center space-y-2">
+          <p className="text-sm text-muted-foreground">{currentStage.description}</p>
+        </div>
+
+        <div className="space-y-4">
           <div className="rounded-lg border bg-muted/50 p-3 text-center">
             <p className="text-sm text-muted-foreground">
               This analysis takes 2-3 minutes to ensure accuracy.
