@@ -38,7 +38,7 @@ const Footer = () => {
       setEmail("");
     } catch (err) {
       console.error("Failed to save waitlist email:", err);
-      toast.error("Couldn't save email. Please try again or email us directly at contact@foundindex.com");
+      toast.error("Couldn't save email. Please try again or email us directly at hello@foundindex.com");
     } finally {
       setIsSubmitting(false);
     }
@@ -69,7 +69,7 @@ const Footer = () => {
 
           <div className="pt-8 space-y-3 text-sm text-muted-foreground">
             <p>
-              Built by @[your-linkedin-handle] — UX researcher at British Telecom (independent project)
+              Built by @[your-linkedin-handle] — UX researcher (independent project)
             </p>
             <p>
               Background: 7 years content strategy consulting (SEO, Google Analytics, audience research) + UX research on AI adoption. Building in public with full transparency.

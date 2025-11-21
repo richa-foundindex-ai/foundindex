@@ -94,7 +94,7 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website }:
       setShowFeedback(false);
     } catch (err) {
       console.error("Failed to submit feedback:", err);
-      toast.error("Couldn't submit feedback. Please try again or email us directly at contact@foundindex.com");
+      toast.error("Couldn't submit feedback. Please try again or email us directly at hello@foundindex.com");
     } finally {
       setIsSubmitting(false);
     }

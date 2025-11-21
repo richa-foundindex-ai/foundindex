@@ -96,7 +96,7 @@ const HeroSection = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-7xl">
         <div className="text-center space-y-6">
-          <h1 className="text-[3.2rem] md:text-[4.16rem] font-bold text-foreground leading-tight">
+          <h1 className="text-[2.56rem] md:text-[3.33rem] font-bold text-foreground leading-tight">
             Most businesses are invisible to AI. Check if yours is.
           </h1>
           <p className="text-editorial-sm text-muted-foreground max-w-3xl mx-auto leading-relaxed">
