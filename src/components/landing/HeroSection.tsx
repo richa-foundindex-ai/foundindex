@@ -96,7 +96,7 @@ const HeroSection = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-7xl">
         <div className="text-center space-y-6">
-          <h1 className="text-display font-bold text-foreground leading-tight">
+          <h1 className="text-[4rem] md:text-[5.2rem] font-bold text-foreground leading-tight">
             Most businesses are invisible to AI. Check if yours is.
           </h1>
           <p className="text-editorial-sm text-muted-foreground max-w-3xl mx-auto leading-relaxed">
@@ -119,7 +119,7 @@ const HeroSection = () => {
             <div className="flex items-center gap-3 text-left">
               <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
               <span className="text-base text-muted-foreground">
-                Understand how ChatGPT and Claude "read" your business
+                Understand how ChatGPT and Claude 'read' your business
               </span>
             </div>
             <div className="flex items-center gap-3 text-left">
