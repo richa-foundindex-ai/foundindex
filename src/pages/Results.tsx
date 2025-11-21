@@ -405,23 +405,10 @@ Test yours: ${window.location.origin}`;
             <Globe2 className="h-4 w-4 text-primary" />
             <h2 className="text-sm font-semibold">Engine breakdown</h2>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="p-4 space-y-1">
-              <p className="text-xs text-muted-foreground">ChatGPT</p>
-              <p className="text-2xl font-semibold">{result.chatgptScore ?? "–"} / 100</p>
-            </Card>
-            <Card className="p-4 space-y-1">
-              <p className="text-xs text-muted-foreground">Claude</p>
-              <p className="text-sm font-medium text-muted-foreground">Integration coming next month</p>
-            </Card>
-            <Card className="p-4 space-y-1">
-              <p className="text-xs text-muted-foreground">Perplexity</p>
-              <p className="text-sm font-medium text-muted-foreground">In development</p>
-            </Card>
-          </div>
-          <p className="text-xs text-muted-foreground mt-4">
-            We're building this in public. These scores reflect what we can currently test. Want to help us improve? Share your feedback.
-          </p>
+          <Card className="p-4 space-y-1">
+            <p className="text-xs text-muted-foreground">ChatGPT</p>
+            <p className="text-2xl font-semibold">{result.chatgptScore ?? "–"} / 100</p>
+          </Card>
         </section>
 
         <section className="text-center pt-8 border-t">

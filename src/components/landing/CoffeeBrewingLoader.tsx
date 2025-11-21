@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Info } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import Lottie from "lottie-react";
 
 interface CoffeeBrewingLoaderProps {
   onComplete?: () => void;
@@ -10,7 +11,7 @@ const STAGES = [
   { threshold: 0, label: "Setting up...", description: "Preparing your test" },
   { threshold: 15, label: "Analyzing website...", description: "Understanding your business" },
   { threshold: 30, label: "Generating queries...", description: "Creating buyer questions" },
-  { threshold: 50, label: "Testing AI engines...", description: "Querying ChatGPT, Claude, Perplexity" },
+  { threshold: 50, label: "Testing AI engines...", description: "Querying ChatGPT" },
   { threshold: 75, label: "Calculating scores...", description: "Computing your FoundIndex" },
   { threshold: 90, label: "Almost done...", description: "Finalizing results" },
 ];
@@ -39,190 +40,363 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
   }, [onComplete]);
 
   const currentStage = STAGES.slice().reverse().find(stage => progress >= stage.threshold) || STAGES[0];
-  
-  // Milestone controls
-  const showBeans = progress >= 25;
-  const beansSwirl = progress >= 50;
-  const showSteam = progress >= 75;
 
-  // Coffee fill height
-  const coffeeHeight = Math.min(progress * 2.2, 220);
+  // Coffee brewing animation data - simple, professional coffee cup filling
+  const coffeeAnimationData = {
+    "v": "5.7.4",
+    "fr": 30,
+    "ip": 0,
+    "op": 150,
+    "w": 300,
+    "h": 300,
+    "nm": "Coffee Brewing",
+    "ddd": 0,
+    "assets": [],
+    "layers": [
+      {
+        "ddd": 0,
+        "ind": 1,
+        "ty": 4,
+        "nm": "Cup",
+        "sr": 1,
+        "ks": {
+          "o": { "a": 0, "k": 100 },
+          "r": { "a": 0, "k": 0 },
+          "p": { "a": 0, "k": [150, 180, 0] },
+          "a": { "a": 0, "k": [0, 0, 0] },
+          "s": { "a": 0, "k": [100, 100, 100] }
+        },
+        "ao": 0,
+        "shapes": [
+          {
+            "ty": "gr",
+            "it": [
+              {
+                "ind": 0,
+                "ty": "sh",
+                "ks": {
+                  "a": 0,
+                  "k": {
+                    "i": [[0,0],[0,0],[0,0],[0,0]],
+                    "o": [[0,0],[0,0],[0,0],[0,0]],
+                    "v": [[-50,-60],[-60,40],[60,40],[50,-60]],
+                    "c": true
+                  }
+                }
+              },
+              {
+                "ty": "st",
+                "c": { "a": 0, "k": [0.4, 0.3, 0.25, 1] },
+                "o": { "a": 0, "k": 100 },
+                "w": { "a": 0, "k": 3 },
+                "lc": 2,
+                "lj": 2
+              },
+              {
+                "ty": "fl",
+                "c": { "a": 0, "k": [0.96, 0.95, 0.91, 0.1] },
+                "o": { "a": 0, "k": 100 }
+              },
+              {
+                "ty": "tr",
+                "p": { "a": 0, "k": [0, 0] },
+                "a": { "a": 0, "k": [0, 0] },
+                "s": { "a": 0, "k": [100, 100] },
+                "r": { "a": 0, "k": 0 },
+                "o": { "a": 0, "k": 100 }
+              }
+            ]
+          }
+        ],
+        "ip": 0,
+        "op": 150,
+        "st": 0,
+        "bm": 0
+      },
+      {
+        "ddd": 0,
+        "ind": 2,
+        "ty": 4,
+        "nm": "Coffee Fill",
+        "sr": 1,
+        "ks": {
+          "o": { "a": 0, "k": 100 },
+          "r": { "a": 0, "k": 0 },
+          "p": { "a": 0, "k": [150, 220, 0] },
+          "a": { "a": 0, "k": [0, 0, 0] },
+          "s": {
+            "a": 1,
+            "k": [
+              { "t": 0, "s": [100, 0, 100], "h": 0 },
+              { "t": 140, "s": [100, 100, 100], "h": 0 }
+            ]
+          }
+        },
+        "ao": 0,
+        "shapes": [
+          {
+            "ty": "gr",
+            "it": [
+              {
+                "ty": "rc",
+                "d": 1,
+                "s": { "a": 0, "k": [108, 90] },
+                "p": { "a": 0, "k": [0, 0] },
+                "r": { "a": 0, "k": 0 }
+              },
+              {
+                "ty": "gf",
+                "o": { "a": 0, "k": 100 },
+                "g": {
+                  "p": 3,
+                  "k": {
+                    "a": 0,
+                    "k": [0, 0.82, 0.7, 0.55, 0.5, 0.6, 0.46, 0.34, 1, 0.44, 0.26, 0.13]
+                  }
+                },
+                "s": { "a": 0, "k": [0, -45] },
+                "e": { "a": 0, "k": [0, 45] },
+                "t": 1
+              },
+              {
+                "ty": "tr",
+                "p": { "a": 0, "k": [0, 0] },
+                "a": { "a": 0, "k": [0, 0] },
+                "s": { "a": 0, "k": [100, 100] },
+                "r": { "a": 0, "k": 0 },
+                "o": { "a": 0, "k": 100 }
+              }
+            ]
+          }
+        ],
+        "ip": 0,
+        "op": 150,
+        "st": 0,
+        "bm": 0
+      },
+      {
+        "ddd": 0,
+        "ind": 3,
+        "ty": 4,
+        "nm": "Steam 1",
+        "sr": 1,
+        "ks": {
+          "o": {
+            "a": 1,
+            "k": [
+              { "t": 0, "s": [0], "h": 0 },
+              { "t": 70, "s": [100], "h": 0 },
+              { "t": 150, "s": [0], "h": 0 }
+            ]
+          },
+          "r": { "a": 0, "k": 0 },
+          "p": {
+            "a": 1,
+            "k": [
+              { "t": 70, "s": [130, 120, 0], "h": 0 },
+              { "t": 150, "s": [125, 60, 0], "h": 0 }
+            ]
+          },
+          "a": { "a": 0, "k": [0, 0, 0] },
+          "s": { "a": 0, "k": [100, 100, 100] }
+        },
+        "ao": 0,
+        "shapes": [
+          {
+            "ty": "gr",
+            "it": [
+              {
+                "ty": "el",
+                "d": 1,
+                "s": { "a": 0, "k": [8, 20] },
+                "p": { "a": 0, "k": [0, 0] }
+              },
+              {
+                "ty": "fl",
+                "c": { "a": 0, "k": [0.7, 0.7, 0.7, 1] },
+                "o": { "a": 0, "k": 50 }
+              },
+              {
+                "ty": "tr",
+                "p": { "a": 0, "k": [0, 0] },
+                "a": { "a": 0, "k": [0, 0] },
+                "s": { "a": 0, "k": [100, 100] },
+                "r": { "a": 0, "k": 0 },
+                "o": { "a": 0, "k": 100 }
+              }
+            ]
+          }
+        ],
+        "ip": 70,
+        "op": 150,
+        "st": 0,
+        "bm": 0
+      },
+      {
+        "ddd": 0,
+        "ind": 4,
+        "ty": 4,
+        "nm": "Steam 2",
+        "sr": 1,
+        "ks": {
+          "o": {
+            "a": 1,
+            "k": [
+              { "t": 0, "s": [0], "h": 0 },
+              { "t": 80, "s": [100], "h": 0 },
+              { "t": 150, "s": [0], "h": 0 }
+            ]
+          },
+          "r": { "a": 0, "k": 0 },
+          "p": {
+            "a": 1,
+            "k": [
+              { "t": 80, "s": [150, 120, 0], "h": 0 },
+              { "t": 150, "s": [155, 60, 0], "h": 0 }
+            ]
+          },
+          "a": { "a": 0, "k": [0, 0, 0] },
+          "s": { "a": 0, "k": [100, 100, 100] }
+        },
+        "ao": 0,
+        "shapes": [
+          {
+            "ty": "gr",
+            "it": [
+              {
+                "ty": "el",
+                "d": 1,
+                "s": { "a": 0, "k": [8, 20] },
+                "p": { "a": 0, "k": [0, 0] }
+              },
+              {
+                "ty": "fl",
+                "c": { "a": 0, "k": [0.7, 0.7, 0.7, 1] },
+                "o": { "a": 0, "k": 50 }
+              },
+              {
+                "ty": "tr",
+                "p": { "a": 0, "k": [0, 0] },
+                "a": { "a": 0, "k": [0, 0] },
+                "s": { "a": 0, "k": [100, 100] },
+                "r": { "a": 0, "k": 0 },
+                "o": { "a": 0, "k": 100 }
+              }
+            ]
+          }
+        ],
+        "ip": 80,
+        "op": 150,
+        "st": 0,
+        "bm": 0
+      },
+      {
+        "ddd": 0,
+        "ind": 5,
+        "ty": 4,
+        "nm": "Steam 3",
+        "sr": 1,
+        "ks": {
+          "o": {
+            "a": 1,
+            "k": [
+              { "t": 0, "s": [0], "h": 0 },
+              { "t": 75, "s": [100], "h": 0 },
+              { "t": 150, "s": [0], "h": 0 }
+            ]
+          },
+          "r": { "a": 0, "k": 0 },
+          "p": {
+            "a": 1,
+            "k": [
+              { "t": 75, "s": [170, 120, 0], "h": 0 },
+              { "t": 150, "s": [175, 60, 0], "h": 0 }
+            ]
+          },
+          "a": { "a": 0, "k": [0, 0, 0] },
+          "s": { "a": 0, "k": [100, 100, 100] }
+        },
+        "ao": 0,
+        "shapes": [
+          {
+            "ty": "gr",
+            "it": [
+              {
+                "ty": "el",
+                "d": 1,
+                "s": { "a": 0, "k": [8, 20] },
+                "p": { "a": 0, "k": [0, 0] }
+              },
+              {
+                "ty": "fl",
+                "c": { "a": 0, "k": [0.7, 0.7, 0.7, 1] },
+                "o": { "a": 0, "k": 50 }
+              },
+              {
+                "ty": "tr",
+                "p": { "a": 0, "k": [0, 0] },
+                "a": { "a": 0, "k": [0, 0] },
+                "s": { "a": 0, "k": [100, 100] },
+                "r": { "a": 0, "k": 0 },
+                "o": { "a": 0, "k": 100 }
+              }
+            ]
+          }
+        ],
+        "ip": 75,
+        "op": 150,
+        "st": 0,
+        "bm": 0
+      }
+    ]
+  };
 
   return (
     <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="max-w-2xl w-full p-8 space-y-6">
-        {showWarning && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-600 rounded-lg p-4 animate-fade-in">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">⚠️</span>
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">Still brewing your perfect FoundIndex...</p>
-                <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">This can take up to 2 minutes. Please don't close this window!</p>
-              </div>
-            </div>
-          </div>
-        )}
-
+      <Card className="max-w-md w-full p-8 space-y-6 shadow-2xl">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl font-bold">Brewing Your Results ☕</h2>
-          <p className="text-muted-foreground">Analyzing your website's AI visibility...</p>
+          <h2 className="text-2xl font-semibold">Analyzing your website</h2>
+          <p className="text-sm text-muted-foreground">
+            Testing your AI visibility score
+          </p>
         </div>
 
-        <div className="relative w-full h-[400px] mx-auto flex items-center justify-center">
-          {/* Steam animation */}
-          {showSteam && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-32 h-28 flex justify-center gap-3 z-20">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="w-2 opacity-0 animate-steam"
-                  style={{
-                    animationDelay: `${i * 0.6}s`,
-                  }}
-                >
-                  <div className="w-full h-24 bg-gradient-to-t from-gray-400/30 to-transparent rounded-full blur-sm" />
-                </div>
-              ))}
+        <div className="flex justify-center">
+          <Lottie 
+            animationData={coffeeAnimationData}
+            loop={true}
+            style={{ width: 200, height: 200 }}
+          />
+        </div>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-medium">{currentStage.label}</span>
+              <span className="text-muted-foreground">{Math.round(progress)}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary transition-all duration-1000 ease-linear"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">{currentStage.description}</p>
+          </div>
+
+          {showWarning && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-3 flex gap-2">
+              <Info className="h-4 w-4 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-700 dark:text-amber-400">
+                This is taking longer than usual. We're fetching and analyzing your website content - complex sites may take a few minutes.
+              </p>
             </div>
           )}
 
-          {/* Coffee Cup */}
-          <div className="relative z-10">
-            <svg width="280" height="320" viewBox="0 0 280 320" className="drop-shadow-xl">
-              <defs>
-                {/* Coffee gradient - light tan to dark brown */}
-                <linearGradient id="coffee" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#D2B48C" />
-                  <stop offset="100%" stopColor="#704214" />
-                </linearGradient>
-                
-                {/* Clip path for cup interior */}
-                <clipPath id="cup-interior">
-                  <path d="M 60 90 L 60 260 Q 60 280 80 280 L 200 280 Q 220 280 220 260 L 220 90 Z" />
-                </clipPath>
-              </defs>
-
-              {/* Coffee liquid inside cup */}
-              <g clipPath="url(#cup-interior)">
-                <rect
-                  x="60"
-                  y={280 - coffeeHeight}
-                  width="160"
-                  height={coffeeHeight}
-                  fill="url(#coffee)"
-                />
-
-                {/* Coffee beans */}
-                {showBeans && (
-                  <>
-                    <circle
-                      cx={140 + (beansSwirl ? Math.sin(progress * 0.1) * 30 : 0)}
-                      cy={270 - coffeeHeight * 0.3}
-                      r="8"
-                      fill="#654321"
-                      className="transition-all duration-1000"
-                    />
-                    <circle
-                      cx={120 + (beansSwirl ? Math.sin(progress * 0.12 + 1) * 25 : 0)}
-                      cy={265 - coffeeHeight * 0.4}
-                      r="7"
-                      fill="#654321"
-                      className="transition-all duration-1000"
-                    />
-                    <circle
-                      cx={160 + (beansSwirl ? Math.sin(progress * 0.11 + 2) * 28 : 0)}
-                      cy={268 - coffeeHeight * 0.35}
-                      r="7"
-                      fill="#654321"
-                      className="transition-all duration-1000"
-                    />
-                    <circle
-                      cx={135 + (beansSwirl ? Math.sin(progress * 0.13 + 3) * 32 : 0)}
-                      cy={272 - coffeeHeight * 0.25}
-                      r="6"
-                      fill="#654321"
-                      className="transition-all duration-1000"
-                    />
-                    <circle
-                      cx={155 + (beansSwirl ? Math.sin(progress * 0.09 + 4) * 26 : 0)}
-                      cy={275 - coffeeHeight * 0.2}
-                      r="6"
-                      fill="#654321"
-                      className="transition-all duration-1000"
-                    />
-                  </>
-                )}
-              </g>
-
-              {/* Cup outline - transparent glass */}
-              <path
-                d="M 60 90 L 60 260 Q 60 280 80 280 L 200 280 Q 220 280 220 260 L 220 90 Z"
-                fill="none"
-                stroke="#888"
-                strokeWidth="2.5"
-              />
-
-              {/* Cup rim */}
-              <line
-                x1="60"
-                y1="90"
-                x2="220"
-                y2="90"
-                stroke="#888"
-                strokeWidth="3"
-              />
-
-              {/* Cup handle */}
-              <path
-                d="M 220 120 Q 245 120 250 150 Q 250 180 225 195"
-                fill="none"
-                stroke="#888"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              />
-            </svg>
-          </div>
-        </div>
-
-        <style>{`
-          @keyframes steam {
-            0% {
-              opacity: 0;
-              transform: translateY(0);
-            }
-            30% {
-              opacity: 0.5;
-            }
-            100% {
-              opacity: 0;
-              transform: translateY(-70px);
-            }
-          }
-          
-          .animate-steam {
-            animation: steam 3s ease-out infinite;
-          }
-        `}</style>
-
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="font-medium">{currentStage.label}</span>
-            <span className="text-muted-foreground">{Math.min(Math.round(progress), 100)}%</span>
-          </div>
-          <div className="h-2 bg-secondary rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-1000 ease-out"
-              style={{ width: `${Math.min(progress, 100)}%` }}
-            />
-          </div>
-          <p className="text-xs text-muted-foreground text-center">{currentStage.description}</p>
-        </div>
-
-        <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-          <div className="flex items-start gap-2">
-            <Info className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+          <div className="rounded-lg border bg-muted/50 p-3 flex gap-2">
+            <Info className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground">
-              We're fetching your site, analyzing content structure, checking authority signals, and generating your detailed report. This takes 2-3 minutes.
+              We're analyzing how AI systems like ChatGPT understand and recommend your business.
             </p>
           </div>
         </div>
