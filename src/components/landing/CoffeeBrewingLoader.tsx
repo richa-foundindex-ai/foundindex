@@ -74,7 +74,7 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
 
         <div className="text-center space-y-2">
           <h2 className="text-3xl font-bold">Brewing Your Results ☕</h2>
-          <p className="text-muted-foreground">Analyzing your website's AI-readiness...</p>
+          <p className="text-muted-foreground">Analyzing your website's AI visibility...</p>
         </div>
 
         <div className="relative w-full h-[450px] mx-auto flex items-center justify-center">

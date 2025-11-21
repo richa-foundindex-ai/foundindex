@@ -97,10 +97,10 @@ const HeroSection = () => {
         <div className="container mx-auto max-w-7xl">
         <div className="text-center space-y-6">
           <h1 className="text-display font-bold text-foreground leading-tight">
-            Is your website ready for AI search?
+            Most businesses are invisible to AI. Check if yours is.
           </h1>
           <p className="text-editorial-sm text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Get your AI-readiness score in 3 minutes. See exactly what to improve.
+            Get your AI visibility score in 3 minutes. See exactly what to fix and why it matters.
           </p>
 
           <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">

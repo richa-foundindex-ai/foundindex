@@ -6,7 +6,7 @@ const WhyItMatters = () => {
     <section className="py-20 px-4 bg-background">
       <div className="container mx-auto max-w-4xl">
         <h2 className="text-editorial-lg text-center mb-8">
-          Why AI-readiness matters
+          Why AI visibility matters
         </h2>
 
         <Card className="p-8 bg-accent-gray-light border-none">
