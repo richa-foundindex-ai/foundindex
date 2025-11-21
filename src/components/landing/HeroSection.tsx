@@ -8,6 +8,17 @@ import { ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CoffeeBrewingLoader } from "./CoffeeBrewingLoader";
+import { checkRateLimit, recordTest } from "@/utils/rateLimiting";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const HeroSection = () => {
   const navigate = useNavigate();
@@ -16,6 +27,8 @@ const HeroSection = () => {
     website: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showRateLimitModal, setShowRateLimitModal] = useState(false);
+  const [rateLimitInfo, setRateLimitInfo] = useState<{ url: string; score: number; remainingTests: number } | null>(null);
 
 
   const normalizeUrl = (url: string): string => {
@@ -56,6 +69,29 @@ const HeroSection = () => {
 
     const websiteUrl = normalizeUrl(formData.website);
 
+    // Check rate limit before submitting
+    const rateLimit = checkRateLimit(websiteUrl);
+    
+    if (!rateLimit.allowed) {
+      if (rateLimit.previousScore !== undefined) {
+        // Show modal for previously tested URL
+        setRateLimitInfo({
+          url: websiteUrl,
+          score: rateLimit.previousScore,
+          remainingTests: rateLimit.remainingTests
+        });
+        setShowRateLimitModal(true);
+        return;
+      } else {
+        toast({
+          title: "Monthly limit reached",
+          description: "Share on LinkedIn or give feedback to unlock more tests!",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -70,6 +106,9 @@ const HeroSection = () => {
 
 
       if (submitData?.testId) {
+        // Record the test in cookie
+        recordTest(websiteUrl, submitData.score || 0);
+        
         toast({
           title: "Test started!",
           description: "Analyzing your website...",
@@ -92,6 +131,47 @@ const HeroSection = () => {
   return (
     <>
       {isSubmitting && <CoffeeBrewingLoader website={formData.website} />}
+      
+      {/* Rate Limit Modal */}
+      <AlertDialog open={showRateLimitModal} onOpenChange={setShowRateLimitModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>You tested this URL recently</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p className="text-lg font-semibold">Score: {rateLimitInfo?.score}/100</p>
+              <p>Your score won't change unless you update your homepage content.</p>
+              <p className="font-medium">Want to test more sites?</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowRateLimitModal(false);
+                // Navigate to results page or show unlock modal
+                const unlockModal = document.querySelector('[data-unlock-modal]');
+                if (unlockModal) {
+                  (unlockModal as HTMLElement).click();
+                }
+              }}
+            >
+              Share on LinkedIn
+            </AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => {
+                setShowRateLimitModal(false);
+                // Show feedback modal
+                const feedbackModal = document.querySelector('[data-feedback-modal]');
+                if (feedbackModal) {
+                  (feedbackModal as HTMLElement).click();
+                }
+              }}
+            >
+              Give feedback
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-7xl">

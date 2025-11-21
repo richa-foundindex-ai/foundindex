@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, X, CheckCircle2, Share2, MessageSquare, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { unlockTests } from "@/utils/rateLimiting";
 
 interface UnlockTestsModalProps {
   open: boolean;
@@ -38,6 +39,9 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website }:
     const shareText = `I just analyzed my website's AI visibility with FoundIndex. Score: ${score}/100\n\nTest yours: [foundindex.com will be here after launch]`;
     const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(shareText)}`;
     window.open(linkedInUrl, '_blank');
+    
+    // Unlock tests after sharing
+    unlockTests();
     toast.success("Thanks for sharing! Your benefits have been unlocked.");
     onOpenChange(false);
   };
@@ -89,6 +93,8 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website }:
 
       if (error) throw error;
 
+      // Unlock tests after feedback
+      unlockTests();
       toast.success("✓ Feedback submitted! Check your email for the detailed rewrite guide.");
       onOpenChange(false);
       setShowFeedback(false);

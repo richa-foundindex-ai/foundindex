@@ -972,8 +972,8 @@ Return ONLY valid JSON:
       industry: validatedIndustry, // Maps to single-select: "saas", "financial", "ecommerce", "professional", "healthcare", "other"
       testDate,
       
-      // AI Readiness Scores (PRIMARY) - Use recommendation-based score as main score
-      foundIndexTotalScore: foundIndexScore, // This is the recommendation rate score (0-100)
+      // AI Readiness Scores (PRIMARY) - Use audit-based score as main score
+      foundIndexTotalScore: totalScore, // This is the AI-readiness audit score (0-100)
       contentClarity: contentClarityScore,
       structuredData: structuredDataScore,
       authority: authorityScore,
