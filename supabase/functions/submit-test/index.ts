@@ -910,27 +910,22 @@ Return ONLY valid JSON:
     
     // === ENHANCED LOGGING: What we're writing to Airtable ===
     console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] === WRITING TO AIRTABLE ===`);
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] foundindex_score (totalScore):`, testRecordFields.foundindex_score, 'type:', typeof testRecordFields.foundindex_score);
-    console.log(`[${testId}] content_clarity_score:`, testRecordFields.content_clarity_score, 'type:', typeof testRecordFields.content_clarity_score);
-    console.log(`[${testId}] structured_data_score:`, testRecordFields.structured_data_score, 'type:', typeof testRecordFields.structured_data_score);
-    console.log(`[${testId}] authority_score:`, testRecordFields.authority_score, 'type:', typeof testRecordFields.authority_score);
-    console.log(`[${testId}] discoverability_score:`, testRecordFields.discoverability_score, 'type:', typeof testRecordFields.discoverability_score);
-    console.log(`[${testId}] comparison_score:`, testRecordFields.comparison_score, 'type:', typeof testRecordFields.comparison_score);
-    console.log(`[${testId}] Full Airtable payload:`, JSON.stringify(testRecordFields, null, 2));
-    console.log(`[${testId}] chatgpt_score: ${testRecordFields.chatgpt_score}`);
-    console.log(`[${testId}] recommendations_count: ${testRecordFields.recommendations_count}`);
-    console.log(`[${testId}] recommendation_rate: ${testRecordFields.recommendation_rate}`);
+    console.log(`[${testId}] === PREPARING AIRTABLE WRITE ===`);
     console.log(`[${testId}] ═══════════════════════════════════════`);
     
-    console.log('[AIRTABLE] Writing Tests record with scores:', JSON.stringify({
-      foundindex_score: foundIndexScore,
-      chatgpt_score: foundIndexScore,
-      recommendations_count: totalRecommendations,
-      recommendation_rate: parseFloat(recommendationRate.toFixed(2))
-    }, null, 2));
-    console.log('[Airtable] Full Tests record:', JSON.stringify(testRecordFields, null, 2));
+    // Log EVERY field individually
+    console.log(`[${testId}] FIELD-BY-FIELD BREAKDOWN:`);
+    Object.entries(testRecordFields).forEach(([key, value]) => {
+      console.log(`[${testId}]   - ${key}: ${typeof value === 'string' && value.length > 100 ? value.substring(0, 100) + '...' : JSON.stringify(value)} (type: ${typeof value})`);
+    });
+    
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] COMPLETE AIRTABLE REQUEST BODY:`);
+    const requestBody = {
+      fields: testRecordFields
+    };
+    console.log(`[${testId}]`, JSON.stringify(requestBody, null, 2));
+    console.log(`[${testId}] ═══════════════════════════════════════`);
 
     let testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
       method: 'POST',
@@ -938,16 +933,25 @@ Return ONLY valid JSON:
         'Authorization': `Bearer ${airtableApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        fields: testRecordFields
-      })
+      body: JSON.stringify(requestBody)
     });
 
-    console.log(`[${testId}] Airtable Tests write - Status: ${testRecordResponse.status}`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] AIRTABLE RESPONSE RECEIVED`);
+    console.log(`[${testId}] Status Code: ${testRecordResponse.status}`);
+    console.log(`[${testId}] Status Text: ${testRecordResponse.statusText}`);
     
     if (!testRecordResponse.ok) {
       const errorText = await testRecordResponse.text();
-      console.error(`[${testId}] Airtable Tests write FAILED - Status: ${testRecordResponse.status}, Response:`, errorText);
+      console.error(`[${testId}] ❌ AIRTABLE WRITE FAILED ❌`);
+      console.error(`[${testId}] Response Status: ${testRecordResponse.status}`);
+      console.error(`[${testId}] Response Body:`, errorText);
+      console.error(`[${testId}] Full Error Details:`, JSON.stringify({
+        status: testRecordResponse.status,
+        statusText: testRecordResponse.statusText,
+        headers: Object.fromEntries(testRecordResponse.headers.entries()),
+        body: errorText
+      }, null, 2));
 
       // Handle UNKNOWN_FIELD_NAME for optional AI fields gracefully
       let retried = false;
@@ -984,6 +988,8 @@ Return ONLY valid JSON:
           delete fallbackFields.business_type;
           delete fallbackFields.generated_queries;
 
+          console.log(`[${testId}] RETRY REQUEST BODY:`, JSON.stringify({ fields: fallbackFields }, null, 2));
+          
           testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
             method: 'POST',
             headers: {
@@ -995,7 +1001,9 @@ Return ONLY valid JSON:
             })
           });
 
-          console.log(`[${testId}] Airtable Tests retry write - Status: ${testRecordResponse.status}`);
+          console.log(`[${testId}] RETRY RESPONSE - Status: ${testRecordResponse.status}`);
+          const retryResponseText = await testRecordResponse.clone().text();
+          console.log(`[${testId}] RETRY RESPONSE - Body:`, retryResponseText);
         }
       } catch (parseError) {
         console.error(`[${testId}] Failed to parse Airtable error JSON:`, parseError);
@@ -1010,7 +1018,10 @@ Return ONLY valid JSON:
     
     const testRecordData = await testRecordResponse.json();
     const airtableRecordId = testRecordData.id;
-    console.log(`[Airtable] Tests write successful, record ID: ${airtableRecordId}`);
+    console.log(`[${testId}] ✅ AIRTABLE WRITE SUCCESS ✅`);
+    console.log(`[${testId}] Record ID: ${airtableRecordId}`);
+    console.log(`[${testId}] Full Success Response:`, JSON.stringify(testRecordData, null, 2));
+    console.log(`[${testId}] ═══════════════════════════════════════`);
 
     // Store query results in batches
     const batchSize = 10;
