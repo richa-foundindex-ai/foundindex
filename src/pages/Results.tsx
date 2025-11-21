@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Loader2, CheckCircle2, XCircle, Share2, Download, BarChart3, Target, Globe2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { UnlockTestsModal } from "@/components/results/UnlockTestsModal";
 
 interface QueryResult {
   queryNumber: number;
@@ -58,6 +59,7 @@ const Results = () => {
   const [showProModal, setShowProModal] = useState(false);
   const [proEmail, setProEmail] = useState("");
   const [isSubmittingProInterest, setIsSubmittingProInterest] = useState(false);
+  const [showUnlockModal, setShowUnlockModal] = useState(false);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -90,6 +92,11 @@ const Results = () => {
         console.log('═══════════════════════════════════════');
 
         setResult(data as TestResult);
+        
+        // Show unlock modal after a short delay
+        setTimeout(() => {
+          setShowUnlockModal(true);
+        }, 2000);
       } catch (err) {
         console.error("[Results] Failed to fetch results", err);
         setError(err instanceof Error ? err.message : "Failed to fetch results");
@@ -509,6 +516,15 @@ Test yours: [foundindex.com will be here after launch]`;
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Unlock Tests Modal */}
+      <UnlockTestsModal
+        open={showUnlockModal}
+        onOpenChange={setShowUnlockModal}
+        testId={testId || ""}
+        score={score}
+        website={result.website || ""}
+      />
     </div>
   );
 };
