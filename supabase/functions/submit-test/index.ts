@@ -1049,6 +1049,65 @@ Return ONLY valid JSON:
     console.log(`[${testId}]`, JSON.stringify(requestBody, null, 2));
     console.log(`[${testId}] ═══════════════════════════════════════`);
 
+    // ============ DIAGNOSTIC: VERIFY AIRTABLE CONFIGURATION ============
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === AIRTABLE CONFIGURATION DIAGNOSTICS ===`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] Airtable Base ID: ${airtableBaseId}`);
+    console.log(`[${testId}] Table Name: Tests`);
+    console.log(`[${testId}] Full Endpoint URL: https://api.airtable.com/v0/${airtableBaseId}/Tests`);
+    
+    // Fetch the actual table schema from Airtable to see what fields exist
+    try {
+      console.log(`[${testId}] Fetching table schema from Airtable...`);
+      const schemaResponse = await fetch(`https://api.airtable.com/v0/meta/bases/${airtableBaseId}/tables`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${airtableApiKey}`,
+        },
+      });
+      
+      if (schemaResponse.ok) {
+        const schemaData = await schemaResponse.json();
+        const testsTable = schemaData.tables?.find((t: any) => t.name === 'Tests');
+        
+        if (testsTable) {
+          console.log(`[${testId}] ✅ Found 'Tests' table in Airtable base`);
+          console.log(`[${testId}] Table ID: ${testsTable.id}`);
+          console.log(`[${testId}] Available fields in 'Tests' table:`);
+          testsTable.fields?.forEach((field: any) => {
+            console.log(`[${testId}]   - ${field.name} (${field.type})`);
+          });
+          
+          // Check which of our fields are missing
+          const availableFieldNames = testsTable.fields?.map((f: any) => f.name) || [];
+          const ourFieldNames = Object.keys(testRecordFields);
+          const missingFields = ourFieldNames.filter(f => !availableFieldNames.includes(f));
+          
+          if (missingFields.length > 0) {
+            console.error(`[${testId}] ⚠️ MISSING FIELDS IN AIRTABLE:`);
+            missingFields.forEach(f => {
+              console.error(`[${testId}]     ❌ "${f}" - NOT FOUND in Airtable table`);
+            });
+          } else {
+            console.log(`[${testId}] ✅ All fields exist in Airtable table`);
+          }
+        } else {
+          console.error(`[${testId}] ❌ 'Tests' table NOT FOUND in Airtable base`);
+          console.error(`[${testId}] Available tables:`, schemaData.tables?.map((t: any) => t.name).join(', '));
+        }
+      } else {
+        console.error(`[${testId}] Failed to fetch Airtable schema: ${schemaResponse.status}`);
+        const errorText = await schemaResponse.text();
+        console.error(`[${testId}] Schema fetch error:`, errorText);
+      }
+    } catch (schemaError) {
+      console.error(`[${testId}] Exception fetching Airtable schema:`, schemaError);
+    }
+    
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    // ============ END DIAGNOSTIC ============
+
     let testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
       method: 'POST',
       headers: {
