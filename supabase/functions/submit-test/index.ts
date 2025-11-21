@@ -536,11 +536,34 @@ Return ONLY valid JSON (no markdown):
     }
 
     const auditData = await auditResponse.json();
+    
+    // === DEBUG: Log FULL OpenAI API Response ===
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === FULL OPENAI API RESPONSE ===`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] Full auditData object:`, JSON.stringify(auditData, null, 2));
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    
     let auditText = auditData.choices[0].message.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
     
-    console.log(`[${testId}] Raw audit response:`, auditText.substring(0, 300));
+    // === DEBUG: Log Extracted Content ===
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === EXTRACTED CONTENT FROM OPENAI ===`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] Raw audit text (full):`, auditText);
+    console.log(`[${testId}] Raw audit text length:`, auditText.length);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
 
     const auditResults = JSON.parse(auditText);
+    
+    // === DEBUG: Log Parsed JSON ===
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === PARSED JSON FROM OPENAI ===`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] Parsed auditResults:`, JSON.stringify(auditResults, null, 2));
+    console.log(`[${testId}] Type of auditResults:`, typeof auditResults);
+    console.log(`[${testId}] Keys in auditResults:`, Object.keys(auditResults));
+    console.log(`[${testId}] ═══════════════════════════════════════`);
 
     // Normalize scores in case OpenAI returns different shapes
     const getScore = (primary: any, ...fallbacks: any[]): number => {
@@ -598,6 +621,36 @@ Return ONLY valid JSON (no markdown):
       (breakdown as any).total_score,
       (breakdown as any).score,
     );
+
+    // === DEBUG: Log Individual Score Extraction ===
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === INDIVIDUAL SCORE EXTRACTION ===`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] contentClarityScore extracted:`, contentClarityScore);
+    console.log(`[${testId}]   - Tried: (auditResults as any).content_clarity_score =`, (auditResults as any).content_clarity_score);
+    console.log(`[${testId}]   - Tried: (auditResults as any).content_clarity =`, (auditResults as any).content_clarity);
+    console.log(`[${testId}]   - Tried: breakdown.content_clarity_score =`, (breakdown as any).content_clarity_score);
+    console.log(`[${testId}] structuredDataScore extracted:`, structuredDataScore);
+    console.log(`[${testId}]   - Tried: (auditResults as any).structured_data_score =`, (auditResults as any).structured_data_score);
+    console.log(`[${testId}]   - Tried: (auditResults as any).structured_data =`, (auditResults as any).structured_data);
+    console.log(`[${testId}]   - Tried: breakdown.structured_data_score =`, (breakdown as any).structured_data_score);
+    console.log(`[${testId}] authorityScore extracted:`, authorityScore);
+    console.log(`[${testId}]   - Tried: (auditResults as any).authority_score =`, (auditResults as any).authority_score);
+    console.log(`[${testId}]   - Tried: (auditResults as any).authority =`, (auditResults as any).authority);
+    console.log(`[${testId}]   - Tried: breakdown.authority_score =`, (breakdown as any).authority_score);
+    console.log(`[${testId}] discoverabilityScore extracted:`, discoverabilityScore);
+    console.log(`[${testId}]   - Tried: (auditResults as any).discoverability_score =`, (auditResults as any).discoverability_score);
+    console.log(`[${testId}]   - Tried: (auditResults as any).discoverability =`, (auditResults as any).discoverability);
+    console.log(`[${testId}]   - Tried: breakdown.discoverability_score =`, (breakdown as any).discoverability_score);
+    console.log(`[${testId}] comparisonScore extracted:`, comparisonScore);
+    console.log(`[${testId}]   - Tried: (auditResults as any).comparison_score =`, (auditResults as any).comparison_score);
+    console.log(`[${testId}]   - Tried: (auditResults as any).comparison =`, (auditResults as any).comparison);
+    console.log(`[${testId}]   - Tried: breakdown.comparison_score =`, (breakdown as any).comparison_score);
+    console.log(`[${testId}] totalScore extracted:`, totalScore);
+    console.log(`[${testId}]   - Tried: (auditResults as any).total_score =`, (auditResults as any).total_score);
+    console.log(`[${testId}]   - Tried: (auditResults as any).score =`, (auditResults as any).score);
+    console.log(`[${testId}]   - Tried: breakdown.total_score =`, (breakdown as any).total_score);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
 
     // === ENHANCED LOGGING: What OpenAI returned ===
     console.log(`[${testId}] ═══════════════════════════════════════`);
@@ -907,6 +960,22 @@ Return ONLY valid JSON:
       recommendations_count: totalRecommendations,
       recommendation_rate: parseFloat(recommendationRate.toFixed(3)) // 3 decimal places per Airtable schema
     };
+    
+    // === DEBUG: Log Final Scores Object Before Airtable Write ===
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === FINAL SCORES OBJECT BEFORE AIRTABLE WRITE ===`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] Final scores being written to Airtable:`);
+    console.log(`[${testId}]   foundindex_score (totalScore):`, totalScore);
+    console.log(`[${testId}]   content_clarity_score:`, contentClarityScore);
+    console.log(`[${testId}]   structured_data_score:`, structuredDataScore);
+    console.log(`[${testId}]   authority_score:`, authorityScore);
+    console.log(`[${testId}]   discoverability_score:`, discoverabilityScore);
+    console.log(`[${testId}]   comparison_score:`, comparisonScore);
+    console.log(`[${testId}]   chatgpt_score (foundIndexScore):`, foundIndexScore);
+    console.log(`[${testId}]   recommendations_count:`, totalRecommendations);
+    console.log(`[${testId}]   recommendation_rate:`, parseFloat(recommendationRate.toFixed(3)));
+    console.log(`[${testId}] ═══════════════════════════════════════`);
     
     // === ENHANCED LOGGING: What we're writing to Airtable ===
     console.log(`[${testId}] ═══════════════════════════════════════`);
