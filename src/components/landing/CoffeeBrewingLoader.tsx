@@ -77,187 +77,192 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
           <p className="text-muted-foreground">Analyzing your website's AI-readiness...</p>
         </div>
 
-        <div className="relative w-80 h-80 mx-auto flex items-center justify-center">
+        <div className="relative w-full h-[450px] mx-auto flex items-center justify-center">
           {/* Steam wisps */}
           {progress > 10 && (
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-24 flex justify-center gap-3">
+            <div className="absolute top-8 left-1/2 -translate-x-1/2 w-40 h-32 flex justify-center gap-4 z-20">
               {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  className="w-2 opacity-0"
+                  className="w-3 opacity-0"
                   style={{
                     animation: `steam ${3 + i * 0.3}s ease-in-out infinite`,
                     animationDelay: `${i * 0.8}s`,
                   }}
                 >
-                  <div className="w-full h-20 bg-gradient-to-t from-gray-400/40 via-gray-300/20 to-transparent rounded-full blur-sm" />
+                  <div className="w-full h-28 bg-gradient-to-t from-gray-400/40 via-gray-300/20 to-transparent rounded-full blur-sm" />
                 </div>
               ))}
             </div>
           )}
 
-          {/* Coffee beans falling and swirling */}
-          {showBeans && (
-            <div className="absolute inset-0">
-              {beans.map((bean) => (
-                <div
-                  key={bean.id}
-                  className="absolute top-10"
-                  style={{
-                    left: `${bean.x}%`,
-                    animation: progress < 75 
-                      ? `beanPop 1.2s ease-out ${bean.delay}s forwards, beanSwirl 4s ease-in-out ${bean.delay + 1.2}s infinite`
-                      : `beanDance 2s ease-in-out ${bean.delay}s infinite`,
-                    animationDelay: `${bean.delay}s`,
-                  }}
-                >
-                  {/* Coffee bean shape */}
-                  <div className="relative w-4 h-5">
-                    <div 
-                      className="absolute inset-0 bg-gradient-to-br from-[#8B6F47] to-[#654321] rounded-full shadow-lg"
-                      style={{ transform: `rotate(${bean.rotation}deg)` }}
-                    />
-                    <div 
-                      className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[2px] bg-[#4a3520]"
-                      style={{ transform: `rotate(${bean.rotation}deg)` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Coffee cup with 3D effect */}
+          {/* Coffee cup with transparent glass effect */}
           <div className="relative z-10">
             {/* Cup shadow base */}
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-40 h-4 bg-black/20 rounded-full blur-md" />
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-72 h-6 bg-black/20 rounded-full blur-lg" />
             
-            {/* Cup body - 3D perspective */}
-            <svg width="140" height="160" viewBox="0 0 140 160" className="drop-shadow-xl">
-              {/* Cup back edge (gives depth) */}
-              <ellipse cx="70" cy="45" rx="52" ry="12" fill="#6B5744" opacity="0.3" />
-              
-              {/* Cup body */}
-              <path
-                d="M 20 45 Q 18 100 30 140 L 110 140 Q 122 100 120 45 Z"
-                fill="url(#cupGradient)"
-                stroke="#5D4037"
-                strokeWidth="2.5"
-              />
-              
-              {/* Cup top ellipse */}
-              <ellipse cx="70" cy="45" rx="50" ry="12" fill="#8B6F47" stroke="#5D4037" strokeWidth="2.5" />
-              
-              {/* Cup handle */}
-              <path
-                d="M 120 60 Q 140 60 145 80 Q 145 95 130 100 Q 125 102 120 95"
-                fill="none"
-                stroke="#5D4037"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-              <path
-                d="M 122 65 Q 135 65 138 80 Q 138 90 128 95"
-                fill="none"
-                stroke="#8B6F47"
-                strokeWidth="2"
-                opacity="0.6"
-              />
-              
-              {/* Coffee liquid */}
+            {/* Cup SVG - Larger transparent glass */}
+            <svg width="320" height="380" viewBox="0 0 320 380" className="drop-shadow-2xl">
               <defs>
-                <clipPath id="cupClip">
-                  <path d="M 22 48 Q 20 100 31 138 L 109 138 Q 120 100 118 48 Z" />
-                </clipPath>
-                <linearGradient id="coffeeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stopColor="#D2B48C" />
-                  <stop offset="50%" stopColor="#A0826D" />
-                  <stop offset="100%" stopColor="#704214" />
+                {/* Glass gradient for transparency effect */}
+                <linearGradient id="glassGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="rgba(255, 255, 255, 0.3)" />
+                  <stop offset="50%" stopColor="rgba(255, 255, 255, 0.15)" />
+                  <stop offset="100%" stopColor="rgba(255, 255, 255, 0.25)" />
                 </linearGradient>
-                <linearGradient id="cupGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#A68A64" />
-                  <stop offset="50%" stopColor="#8B6F47" />
-                  <stop offset="100%" stopColor="#6B5744" />
+                
+                {/* Coffee gradient */}
+                <linearGradient id="coffeeGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#D4A574" />
+                  <stop offset="40%" stopColor="#B8865F" />
+                  <stop offset="100%" stopColor="#8B5A3C" />
+                </linearGradient>
+                
+                {/* Clip path for coffee inside cup */}
+                <clipPath id="cupClip">
+                  <path d="M 50 110 Q 48 240 68 340 L 252 340 Q 272 240 270 110 Z" />
+                </clipPath>
+                
+                {/* Glass shine effect */}
+                <linearGradient id="shineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="rgba(255, 255, 255, 0)" />
+                  <stop offset="50%" stopColor="rgba(255, 255, 255, 0.4)" />
+                  <stop offset="100%" stopColor="rgba(255, 255, 255, 0)" />
                 </linearGradient>
               </defs>
               
+              {/* Coffee liquid inside cup */}
               <g clipPath="url(#cupClip)">
                 <rect
-                  x="20"
-                  y={160 - (progress * 0.9)}
-                  width="100"
-                  height={progress * 0.9}
+                  x="48"
+                  y={380 - (progress * 2.4)}
+                  width="224"
+                  height={progress * 2.4}
                   fill="url(#coffeeGradient)"
                   className="transition-all duration-1000 ease-out"
                 />
+                
+                {/* Coffee beans inside the cup */}
+                {showBeans && beans.map((bean) => {
+                  const coffeeLevel = 380 - (progress * 2.4);
+                  const beanY = Math.max(coffeeLevel + 20, 140);
+                  const swirlX = 160 + Math.sin((bean.delay * 2 + progress / 20) * Math.PI) * 40;
+                  const swirlY = beanY + Math.sin((bean.delay * 3 + progress / 15) * Math.PI) * 15;
+                  
+                  return (
+                    <g key={bean.id} opacity={progress > 20 ? 1 : 0} className="transition-opacity duration-500">
+                      <ellipse
+                        cx={swirlX}
+                        cy={swirlY}
+                        rx="9"
+                        ry="11"
+                        fill="#6B4423"
+                        transform={`rotate(${bean.rotation + progress * 2} ${swirlX} ${swirlY})`}
+                      />
+                      <line
+                        x1={swirlX - 3}
+                        y1={swirlY}
+                        x2={swirlX + 3}
+                        y2={swirlY}
+                        stroke="#4A2F1A"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        transform={`rotate(${bean.rotation + progress * 2} ${swirlX} ${swirlY})`}
+                      />
+                    </g>
+                  );
+                })}
+                
                 {/* Coffee surface reflection */}
-                {progress > 20 && (
+                {progress > 10 && (
                   <ellipse
-                    cx="70"
-                    cy={160 - (progress * 0.9)}
-                    rx="45"
-                    ry="8"
+                    cx="160"
+                    cy={380 - (progress * 2.4)}
+                    rx="100"
+                    ry="18"
                     fill="white"
-                    opacity={progress > 80 ? "0.25" : "0.15"}
-                    className="transition-opacity duration-1000"
+                    opacity="0.2"
+                    className="transition-all duration-1000"
                   />
                 )}
+                
                 {/* Sparkle effect when done */}
                 {progress > 90 && (
                   <>
-                    <circle cx="50" cy={160 - (progress * 0.9) - 10} r="2" fill="white" opacity="0.8" className="animate-pulse" />
-                    <circle cx="90" cy={160 - (progress * 0.9) - 5} r="1.5" fill="white" opacity="0.7" className="animate-pulse" style={{ animationDelay: '0.3s' }} />
-                    <circle cx="70" cy={160 - (progress * 0.9) - 15} r="1" fill="white" opacity="0.6" className="animate-pulse" style={{ animationDelay: '0.6s' }} />
+                    <circle cx="120" cy={380 - (progress * 2.4) - 15} r="3" fill="white" opacity="0.9" className="animate-pulse" />
+                    <circle cx="200" cy={380 - (progress * 2.4) - 10} r="2.5" fill="white" opacity="0.8" className="animate-pulse" style={{ animationDelay: '0.3s' }} />
+                    <circle cx="160" cy={380 - (progress * 2.4) - 20} r="2" fill="white" opacity="0.7" className="animate-pulse" style={{ animationDelay: '0.6s' }} />
                   </>
                 )}
               </g>
+              
+              {/* Transparent glass cup body */}
+              <path
+                d="M 50 110 Q 48 240 68 340 L 252 340 Q 272 240 270 110 Z"
+                fill="url(#glassGradient)"
+                stroke="rgba(200, 200, 200, 0.6)"
+                strokeWidth="3"
+              />
+              
+              {/* Glass shine highlight */}
+              <path
+                d="M 70 130 Q 75 180 80 280"
+                stroke="url(#shineGradient)"
+                strokeWidth="25"
+                fill="none"
+                opacity="0.6"
+              />
+              
+              {/* Cup rim (top ellipse) */}
+              <ellipse 
+                cx="160" 
+                cy="110" 
+                rx="110" 
+                ry="22" 
+                fill="rgba(255, 255, 255, 0.2)" 
+                stroke="rgba(200, 200, 200, 0.6)" 
+                strokeWidth="3"
+              />
+              
+              {/* Inner rim shadow for depth */}
+              <ellipse 
+                cx="160" 
+                cy="110" 
+                rx="105" 
+                ry="18" 
+                fill="rgba(0, 0, 0, 0.1)" 
+              />
+              
+              {/* Cup handle */}
+              <path
+                d="M 270 145 Q 300 145 310 180 Q 310 210 285 230 Q 275 235 270 220"
+                fill="url(#glassGradient)"
+                stroke="rgba(200, 200, 200, 0.6)"
+                strokeWidth="4"
+                strokeLinecap="round"
+              />
+              <path
+                d="M 274 155 Q 295 155 302 180 Q 302 205 282 220"
+                fill="none"
+                stroke="rgba(255, 255, 255, 0.3)"
+                strokeWidth="3"
+              />
             </svg>
           </div>
         </div>
 
         <style>{`
-          @keyframes beanPop {
+          @keyframes steam {
             0% {
-              transform: translateY(-50px) scale(0) rotate(0deg);
               opacity: 0;
+              transform: translateY(0) scale(1);
             }
-            60% {
-              transform: translateY(140px) scale(1.2) rotate(180deg);
-              opacity: 1;
+            20% {
+              opacity: 0.6;
             }
             100% {
-              transform: translateY(130px) scale(1) rotate(360deg);
-              opacity: 1;
-            }
-          }
-
-          @keyframes beanSwirl {
-            0%, 100% {
-              transform: translateY(130px) translateX(0px) rotate(0deg);
-            }
-            25% {
-              transform: translateY(125px) translateX(8px) rotate(90deg);
-            }
-            50% {
-              transform: translateY(135px) translateX(0px) rotate(180deg);
-            }
-            75% {
-              transform: translateY(125px) translateX(-8px) rotate(270deg);
-            }
-          }
-
-          @keyframes beanDance {
-            0%, 100% {
-              transform: translateY(130px) translateX(0px) rotate(0deg) scale(1);
-            }
-            25% {
-              transform: translateY(115px) translateX(-12px) rotate(-25deg) scale(1.1);
-            }
-            50% {
-              transform: translateY(125px) translateX(0px) rotate(0deg) scale(1);
-            }
-            75% {
-              transform: translateY(115px) translateX(12px) rotate(25deg) scale(1.1);
+              opacity: 0;
+              transform: translateY(-80px) scale(1.5);
             }
           }
         `}</style>
