@@ -8,44 +8,29 @@ import {
 const FAQ = () => {
   const faqs = [
     {
-      question: "What exactly is FoundIndex?",
+      question: "What does FoundIndex analyze?",
       answer:
-        "A 0-100 score measuring how often AI engines recommend your brand when buyers ask for solutions.",
+        "We analyze how clearly AI systems can understand your business—the structure, clarity, and authority signals that affect AI visibility. Think of it as showing you how AI 'reads' your homepage.",
     },
     {
-      question: "Why should I care?",
+      question: "Why just the homepage?",
       answer:
-        "AI assistants are becoming a primary way buyers discover new tools and services. If you're not mentioned there, you may never be considered.",
+        "Your homepage is your AI introduction. If AI can't understand your main page, it won't dig deeper into your site. So far, we've seen that most AI visibility issues start with the homepage. (Multi-page analysis coming in v2.)",
     },
     {
       question: "How is this different from SEO?",
       answer:
-        "SEO focuses on search engine rankings and clicks. FoundIndex looks at whether AI assistants actually mention and recommend you in their answers.",
+        "SEO optimizes for search engine algorithms. AI visibility optimizes for comprehension. AI doesn't care about keyword density—it needs clear explanations, structured content, and credible signals to understand and recommend your business.",
     },
     {
-      question: "How do you calculate my score?",
+      question: "What do I get for free?",
       answer:
-        "We run a set of standardized buyer-style queries through AI models and measure how often you appear and how clearly you're described.",
+        "Complete homepage analysis, AI visibility score (0-100), specific recommendations on what to fix first, and insights on how AI systems interpret your content.",
     },
     {
-      question: "Can I improve my score?",
+      question: "Who built this and why?",
       answer:
-        "Yes. Clear, specific, and helpful content that matches real buyer questions tends to perform better in AI answers.",
-    },
-    {
-      question: "How often should I check?",
-      answer:
-        "AI models change frequently. Many teams choose to check monthly or after major content changes.",
-    },
-    {
-      question: "What's a good score?",
-      answer:
-        "Higher scores mean you're being recommended more often. Over time, we'll share more context about how scores typically distribute by category.",
-    },
-    {
-      question: "How accurate is this?",
-      answer:
-        "We use direct API calls and a consistent testing setup so results reflect what a new buyer might see when they ask similar questions.",
+        "I'm a UX Researcher at British Telecom studying AI adoption. I built FoundIndex as an independent project after realizing businesses have no visibility into how AI understands them. This tool gives you that diagnostic—and a roadmap to improve it.",
     },
   ];
 
@@ -53,7 +38,7 @@ const FAQ = () => {
     <section className="py-20 px-4 bg-accent-gray-light">
       <div className="container mx-auto max-w-4xl">
         <h2 className="text-editorial-lg text-center mb-16">
-          Frequently Asked Questions
+          Frequently asked questions
         </h2>
 
         <Accordion type="single" collapsible className="space-y-4">

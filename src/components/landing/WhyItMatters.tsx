@@ -12,16 +12,18 @@ const WhyItMatters = () => {
         <Card className="p-8 bg-accent-gray-light border-none">
           <div className="space-y-6 text-lg text-muted-foreground leading-relaxed">
             <p>
-              Search behavior is changing. More people start their research by asking AI assistants instead of traditional search engines.
-            </p>
-            <p>
-              But AI can only recommend what it understands. If your website isn't structured for AI comprehension, you're invisible to buyers who are ready to purchase.
-            </p>
-            <p>
-              Modern AI systems rely more on clear explanations and credible signals than on traditional SEO tactics like backlink volume.
+              Search behavior is changing. More people ask ChatGPT and Claude for recommendations instead of searching Google.
             </p>
             <p className="font-medium text-foreground">
-              FoundIndex shows you exactly how "AI-readable" your site is and what to improve.
+              'What's the best project management tool for remote teams?'<br />
+              'Which travel agency specializes in sustainable tourism?'<br />
+              'Where can I find legal services for startup founders?'
+            </p>
+            <p>
+              AI can only recommend what it clearly understands. If your website isn't structured for AI comprehension, you're invisible to this growing discovery channel.
+            </p>
+            <p className="font-medium text-foreground">
+              FoundIndex shows you exactly how AI 'sees' your business—and what to fix.
             </p>
           </div>
           
