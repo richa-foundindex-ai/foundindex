@@ -1022,7 +1022,7 @@ Return ONLY valid JSON:
         body: errorText
       }, null, 2));
 
-      // Handle UNKNOWN_FIELD_NAME for optional AI fields gracefully
+      // Handle UNKNOWN_FIELD_NAME by removing ONLY the problematic field
       let retried = false;
       try {
         const errorJson = JSON.parse(errorText);
@@ -1032,32 +1032,48 @@ Return ONLY valid JSON:
 
         if (isUnknownField) {
           retried = true;
-          console.error(`[${testId}] ❌ CRITICAL: Airtable table missing AI-readiness score fields!`);
-          console.error(`[${testId}] ❌ The following fields need to be added to your Airtable 'Tests' table:`);
-          console.error(`[${testId}] ❌   - content_clarity_score (Number field)`);
-          console.error(`[${testId}] ❌   - structured_data_score (Number field)`);
-          console.error(`[${testId}] ❌   - authority_score (Number field)`);
-          console.error(`[${testId}] ❌   - discoverability_score (Number field)`);
-          console.error(`[${testId}] ❌   - comparison_score (Number field)`);
-          console.error(`[${testId}] ❌   - analysis_details (Long text field)`);
-          console.error(`[${testId}] ❌   - recommendations (Long text field)`);
-          console.error(`[${testId}] ❌   - business_type (Single line text field)`);
-          console.error(`[${testId}] ❌   - generated_queries (Long text field)`);
-          console.warn(`[${testId}] Retrying with minimal fields (scores will be lost)...`);
-          const fallbackFields = { ...testRecordFields };
           
-          // Remove all AI-readiness analysis fields
-          delete fallbackFields.content_clarity_score;
-          delete fallbackFields.structured_data_score;
-          delete fallbackFields.authority_score;
-          delete fallbackFields.discoverability_score;
-          delete fallbackFields.comparison_score;
-          delete fallbackFields.analysis_details;
-          delete fallbackFields.recommendations;
-          delete fallbackFields.business_type;
-          delete fallbackFields.generated_queries;
-
+          // Extract the specific field name from the error message
+          // Error format: "Unknown field name: \"field_name\""
+          const errorMessage = errorJson?.error?.message || '';
+          const fieldNameMatch = errorMessage.match(/Unknown field name: "([^"]+)"/);
+          const problematicField = fieldNameMatch ? fieldNameMatch[1] : null;
+          
+          console.error(`[${testId}] ═══════════════════════════════════════`);
+          console.error(`[${testId}] ❌ AIRTABLE FIELD ERROR DETECTED`);
+          console.error(`[${testId}] Full Airtable Error:`, JSON.stringify(errorJson, null, 2));
+          
+          let fallbackFields = { ...testRecordFields };
+          
+          if (problematicField) {
+            console.error(`[${testId}] ❌ Problematic Field: "${problematicField}"`);
+            console.error(`[${testId}] This field needs to be added to your Airtable 'Tests' table`);
+            console.warn(`[${testId}] Retrying without the "${problematicField}" field...`);
+            
+            // Remove ONLY the problematic field
+            delete fallbackFields[problematicField];
+            
+            console.log(`[${testId}] Field "${problematicField}" removed from payload`);
+            console.log(`[${testId}] Remaining fields:`, Object.keys(fallbackFields).join(', '));
+          } else {
+            // Fallback: if we can't identify the specific field, remove all optional fields
+            console.error(`[${testId}] ⚠️ Could not identify specific problematic field from error message`);
+            console.error(`[${testId}] Error message was: "${errorMessage}"`);
+            console.warn(`[${testId}] Removing all optional fields as fallback...`);
+            
+            delete fallbackFields.content_clarity_score;
+            delete fallbackFields.structured_data_score;
+            delete fallbackFields.authority_score;
+            delete fallbackFields.discoverability_score;
+            delete fallbackFields.comparison_score;
+            delete fallbackFields.analysis_details;
+            delete fallbackFields.recommendations;
+            delete fallbackFields.business_type;
+            delete fallbackFields.generated_queries;
+          }
+          
           console.log(`[${testId}] RETRY REQUEST BODY:`, JSON.stringify({ fields: fallbackFields }, null, 2));
+          console.log(`[${testId}] ═══════════════════════════════════════`);
           
           testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
             method: 'POST',
