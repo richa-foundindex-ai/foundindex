@@ -115,9 +115,9 @@ const Results = () => {
   };
 
   const getPercentile = (score: number) => {
-    if (score <= 40) return "Better than 25% of tested sites";
-    if (score <= 70) return "Better than 58% of tested sites";
-    return "Better than 85% of tested sites";
+    if (score <= 39) return "AI struggles to understand your business. Here's what to focus on first.";
+    if (score <= 69) return "AI partially understands your business. Key improvements needed.";
+    return "AI understands your business well. Minor optimizations recommended.";
   };
 
   const handleShare = () => {
@@ -343,7 +343,7 @@ Test yours: ${window.location.origin}`;
 
         <section className="grid gap-6 md:grid-cols-[1.8fr_1.2fr]">
           <Card className="p-6 space-y-4">
-            <h2 className="text-sm font-semibold">How to improve your score</h2>
+            <h2 className="text-sm font-semibold">What to fix first</h2>
             <div className="space-y-4">
               {(result.recommendations ?? []).length > 0 ? (
                 (result.recommendations ?? []).slice(0, 3).map((rec, i) => (

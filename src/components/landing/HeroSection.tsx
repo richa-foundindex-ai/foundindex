@@ -91,7 +91,7 @@ const HeroSection = () => {
 
   return (
     <>
-      {isSubmitting && <CoffeeBrewingLoader />}
+      {isSubmitting && <CoffeeBrewingLoader website={formData.website} />}
       
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-7xl">
@@ -100,14 +100,17 @@ const HeroSection = () => {
             Most businesses are invisible to AI. Check if yours is.
           </h1>
           <p className="text-editorial-sm text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Get your AI visibility score in 3 minutes. See exactly what to fix and why it matters.
+            ChatGPT and Claude answer millions of questions every day. They can only recommend what they clearly understand.
+          </p>
+          <p className="text-editorial-sm text-muted-foreground max-w-3xl mx-auto leading-relaxed mt-4">
+            Get your AI visibility score in 3 minutes. See how AI understands your business and what may be missing.
           </p>
 
           <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
             <div className="flex items-center gap-3 text-left">
               <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
               <span className="text-base text-muted-foreground">
-                Analyze how AI-friendly your website is
+                See how AI systems understand your business
               </span>
             </div>
             <div className="flex items-center gap-3 text-left">
@@ -119,7 +122,7 @@ const HeroSection = () => {
             <div className="flex items-center gap-3 text-left">
               <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
               <span className="text-base text-muted-foreground">
-                Understand how ChatGPT and Claude 'read' your business
+                Learn what affects your AI visibility
               </span>
             </div>
             <div className="flex items-center gap-3 text-left">
