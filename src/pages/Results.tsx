@@ -300,6 +300,47 @@ Test yours: ${window.location.origin}`;
           </Card>
         </section>
 
+        {/* Understanding Your Score Section */}
+        <Card className="p-6 space-y-4 bg-muted/30">
+          <div className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary" />
+            <h2 className="text-lg font-semibold">Understanding Your Score</h2>
+          </div>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Your AI visibility score is based on content analysis. Slight variations (±1-2 points) can occur naturally, even without changes. This is normal—AI-powered analysis isn't perfectly deterministic.
+            </p>
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Real improvements require 5+ point changes. These come from:</p>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>Adding customer testimonials <span className="text-emerald-600 font-medium">(+3-8 points)</span></span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>Creating comparison pages <span className="text-emerald-600 font-medium">(+5-8 points)</span></span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>Improving your FAQ <span className="text-emerald-600 font-medium">(+2-4 points)</span></span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>Adding structured data <span className="text-emerald-600 font-medium">(+4-6 points)</span></span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>Publishing case studies <span className="text-emerald-600 font-medium">(+5-8 points)</span></span>
+                </li>
+              </ul>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              These changes take days or weeks to show up because Google needs to recrawl your site. This is why monthly tracking helps—you'll see meaningful progress over time, not day-to-day fluctuations.
+            </p>
+          </div>
+        </Card>
+
         <section className="grid gap-6 md:grid-cols-[1.8fr_1.2fr]">
           <Card className="p-6 space-y-4">
             <h2 className="text-sm font-semibold">How to improve your score</h2>
