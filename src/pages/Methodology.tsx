@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { 
   MessageSquare, 
@@ -81,6 +82,20 @@ const Methodology = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Sticky Header */}
+      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto max-w-5xl flex h-16 items-center justify-between px-4">
+          <Link to="/" className="text-lg font-semibold hover:text-primary transition-colors">
+            FoundIndex
+          </Link>
+          <Link to="/">
+            <Button variant="outline" size="sm">
+              Analyze your website
+            </Button>
+          </Link>
+        </div>
+      </header>
+
       <main className="container mx-auto px-4 py-16 max-w-5xl">
         {/* Header */}
         <div className="text-center mb-16">
@@ -205,10 +220,10 @@ const Methodology = () => {
             <Mail className="h-6 w-6 text-primary mx-auto mb-4" />
             <p className="text-muted-foreground mb-4">Questions about our methodology?</p>
             <a 
-              href="mailto:richa.x.deo@gmail.com" 
+              href="mailto:hello@foundindex.com" 
               className="text-primary hover:underline font-medium"
             >
-              richa.x.deo@gmail.com
+              hello@foundindex.com
             </a>
           </Card>
         </section>

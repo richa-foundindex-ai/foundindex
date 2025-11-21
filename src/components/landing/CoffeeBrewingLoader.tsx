@@ -50,30 +50,49 @@ export const CoffeeBrewingLoader = ({ onComplete, website }: CoffeeBrewingLoader
           </div>
         )}
         
-        {/* Firefly animation container */}
-        <div className="relative h-24 flex items-center">
-          <div className="absolute inset-0 overflow-hidden">
-            {/* Trail effect */}
+        {/* Horizontal progress bar with glowing dot */}
+        <div className="relative h-24 flex items-center px-4">
+          {/* Progress bar track */}
+          <div className="w-full h-2 bg-border rounded-full relative overflow-visible">
+            {/* Filled progress background */}
             <div 
-              className="absolute top-1/2 -translate-y-1/2 h-3 rounded-full transition-all duration-300"
-              style={{ 
-                left: '0%',
-                width: `${progress}%`,
-                background: `linear-gradient(to right, transparent, hsl(var(--primary) / ${progress / 200}))`,
-              }}
+              className="absolute inset-0 bg-primary/20 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
             />
             
-            {/* Firefly */}
+            {/* Glowing dot that moves along the bar */}
             <div 
-              className="absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-primary transition-all duration-1000 ease-linear"
+              className="absolute top-1/2 -translate-y-1/2 transition-all duration-300"
               style={{ 
                 left: `${progress}%`,
-                transform: `translate(-50%, -50%)`,
-                boxShadow: `0 0 ${10 + (progress / 100) * 30}px hsl(var(--primary) / ${0.3 + (progress / 100) * 0.7}),
-                           0 0 ${20 + (progress / 100) * 50}px hsl(var(--primary) / ${0.2 + (progress / 100) * 0.5}),
-                           0 0 ${30 + (progress / 100) * 70}px hsl(var(--primary) / ${0.1 + (progress / 100) * 0.3})`,
+                transform: `translate(-50%, -50%)`
               }}
-            />
+            >
+              {/* Glow trail behind the dot */}
+              <div 
+                className="absolute right-0 top-1/2 -translate-y-1/2 h-2 rounded-l-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(progress * 2, 100)}px`,
+                  background: `linear-gradient(to left, 
+                    hsl(var(--primary) / ${progress / 100}), 
+                    transparent)`,
+                  boxShadow: `0 0 ${Math.max(8, progress / 4)}px hsl(var(--primary) / ${progress / 200})`
+                }}
+              />
+              
+              {/* Main glowing dot */}
+              <div 
+                className="relative w-3 h-3 rounded-full bg-primary transition-all duration-300"
+                style={{
+                  boxShadow: `
+                    0 0 ${Math.max(10, progress / 3)}px hsl(var(--primary) / 0.8),
+                    0 0 ${Math.max(20, progress / 2)}px hsl(var(--primary) / 0.6),
+                    0 0 ${Math.max(30, progress)}px hsl(var(--primary) / ${progress / 250})
+                  `,
+                  filter: `brightness(${1 + progress / 150})`
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -97,7 +116,7 @@ export const CoffeeBrewingLoader = ({ onComplete, website }: CoffeeBrewingLoader
           <div className="rounded-lg border bg-muted/50 p-3 flex gap-2">
             <Info className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground">
-              We're testing how AI would respond if someone asked about your business
+              We're testing how AI would respond if someone asked for a business like yours
             </p>
           </div>
         </div>

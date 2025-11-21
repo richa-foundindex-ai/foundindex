@@ -130,14 +130,26 @@ const Results = () => {
   const handleShare = () => {
     if (!result) return;
     const score = result.foundIndexScore ?? 0;
-    const text = `I scored ${score}/100 on FoundIndex AI Visibility!\n\n${getPercentile(score)}\n\nTest your site: ${window.location.origin}`;
+    
+    // Get the first recommendation as the most surprising insight
+    const firstRecommendation = result.recommendations?.[0] || "AI readability improvements needed";
+    
+    const linkedInText = `My website scored ${score}/100 for AI visibility.
 
-    if (navigator.share) {
-      navigator.share({ title: "My FoundIndex Score", text }).catch(() => {});
-    } else if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(
-        () => toast.success("Copied to clipboard"),
-        () => toast.error("Failed to copy")
+Most surprising insight: ${firstRecommendation}
+
+Check how AI 'reads' your business (free, 3 minutes): https://foundindex.com
+
+#AIvisibility`;
+    
+    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://foundindex.com')}`;
+    window.open(linkedInUrl, '_blank', 'width=600,height=600');
+    
+    // Also copy text to clipboard for easy pasting
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(linkedInText).then(
+        () => toast.success("Share text copied! Paste it in your LinkedIn post"),
+        () => {}
       );
     }
   };
@@ -188,7 +200,7 @@ Test yours: [foundindex.com will be here after launch]`;
       setShowProModal(false);
     } catch (err) {
       console.error("Failed to save Pro interest:", err);
-      toast.error("Couldn't save email. Please try again or email us directly at contact@foundindex.com");
+      toast.error("Couldn't save email. Please try again or email us directly at hello@foundindex.com");
     } finally {
       setIsSubmittingProInterest(false);
     }
@@ -249,10 +261,7 @@ Test yours: [foundindex.com will be here after launch]`;
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handleShare}>
-              <Share2 className="mr-2 h-4 w-4" /> Share
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" /> PDF
+              <Share2 className="mr-2 h-4 w-4" /> Share on LinkedIn
             </Button>
           </div>
         </section>
@@ -267,6 +276,9 @@ Test yours: [foundindex.com will be here after launch]`;
               <span className={`text-5xl font-bold ${getScoreColor(score)}`}>{score}</span>
               <span className="text-muted-foreground">/100</span>
             </div>
+            <p className="text-sm text-muted-foreground">
+              Better than {Math.round(Math.max(0, Math.min(100, ((score - 40) / 60) * 100)))}% of tested sites
+            </p>
             <p className="text-sm font-medium">{getPercentile(score)}</p>
             <Progress value={score} className="h-2" />
           </Card>
