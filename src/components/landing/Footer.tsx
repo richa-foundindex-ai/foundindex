@@ -34,11 +34,11 @@ const Footer = () => {
 
       if (error) throw error;
 
-      toast.success("Thanks! We'll notify you when v2 launches 🚀");
+      toast.success("✓ You're on the v2 waitlist! We'll email you when it launches.");
       setEmail("");
     } catch (err) {
       console.error("Failed to save waitlist email:", err);
-      toast.error("Failed to save your email. Please try again.");
+      toast.error("Couldn't save email. Please try again or email us directly at contact@foundindex.com");
     } finally {
       setIsSubmitting(false);
     }
@@ -72,11 +72,14 @@ const Footer = () => {
               Built by @[your-linkedin-handle] — UX researcher at British Telecom (independent project)
             </p>
             <p>
+              Background: 7 years content strategy consulting (SEO, Google Analytics, audience research) + UX research on AI adoption. Building in public with full transparency.
+            </p>
+            <p>
               Uses OpenAI models for analysis • We don't store your website data
             </p>
             <div className="flex justify-center gap-4 pt-2">
-              <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-              <a href="#" className="hover:text-foreground transition-colors">Terms</a>
+              <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
+              <a href="/privacy" className="hover:text-foreground transition-colors">Terms</a>
             </div>
           </div>
         </div>

@@ -140,7 +140,7 @@ const Results = () => {
     const score = result.foundIndexScore ?? 0;
     const shareText = `I just analyzed my website's AI visibility with FoundIndex. Score: ${score}/100
 
-Test yours: ${window.location.origin}`;
+Test yours: [foundindex.com will be here after launch]`;
     
     try {
       await navigator.clipboard.writeText(shareText);
@@ -176,12 +176,12 @@ Test yours: ${window.location.origin}`;
 
       if (error) throw error;
 
-      toast.success("Thanks! We'll notify you when Pro features launch 🚀");
+      toast.success("✓ You're on the v2 waitlist! We'll email you when it launches.");
       setProEmail("");
       setShowProModal(false);
     } catch (err) {
       console.error("Failed to save Pro interest:", err);
-      toast.error("Failed to save your interest. Please try again.");
+      toast.error("Couldn't save email. Please try again or email us directly at contact@foundindex.com");
     } finally {
       setIsSubmittingProInterest(false);
     }
@@ -300,6 +300,14 @@ Test yours: ${window.location.origin}`;
           </Card>
         </section>
 
+        {/* About This Analysis Section */}
+        <Card className="p-6 space-y-4 bg-muted/30 border-dashed">
+          <h2 className="text-lg font-semibold">About this analysis</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            FoundIndex is a v1 diagnostic tool. We analyze your homepage only (multi-page coming in v2). Scores may vary ±2 points between tests—this is normal with AI-powered analysis. We're building in public and learning from your feedback.
+          </p>
+        </Card>
+
         {/* Understanding Your Score Section */}
         <Card className="p-6 space-y-4 bg-muted/30">
           <div className="flex items-center gap-2">
@@ -378,7 +386,7 @@ Test yours: ${window.location.origin}`;
               </div>
               <div className="rounded-md bg-background border px-3 py-2 text-xs">
                 <p className="font-medium">I just analyzed my website's AI visibility with FoundIndex. Score: {score}/100</p>
-                <p className="mt-1 text-xs text-primary">Test yours: {window.location.origin}</p>
+                <p className="mt-1 text-xs text-primary">Test yours: [foundindex.com will be here after launch]</p>
               </div>
               <Button size="sm" className="w-full" variant="outline" onClick={handleCopyShare}>
                 Copy share text
@@ -412,9 +420,23 @@ Test yours: ${window.location.origin}`;
         </section>
 
         <section className="text-center pt-8 border-t">
-          <Link to="/methodology" className="text-primary hover:underline text-sm font-medium">
-            How did we calculate this? See our methodology →
-          </Link>
+          <a 
+            href="/#methodology" 
+            className="text-primary hover:underline text-sm font-medium"
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.href = '/#methodology';
+              // Slight delay to ensure navigation completes
+              setTimeout(() => {
+                const methodologySection = document.getElementById('methodology');
+                if (methodologySection) {
+                  methodologySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }, 100);
+            }}
+          >
+            See our methodology →
+          </a>
         </section>
       </main>
 

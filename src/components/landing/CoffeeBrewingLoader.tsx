@@ -97,7 +97,7 @@ export const CoffeeBrewingLoader = ({ onComplete, website }: CoffeeBrewingLoader
           <div className="rounded-lg border bg-muted/50 p-3 flex gap-2">
             <Info className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground">
-              AI is analyzing your content the same way it processes user questions.
+              We're testing how AI would respond if someone asked about your business
             </p>
           </div>
         </div>
