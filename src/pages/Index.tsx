@@ -1,17 +1,49 @@
+import { useEffect } from "react";
 import HeroSection from "@/components/landing/HeroSection";
 import WhyItMatters from "@/components/landing/WhyItMatters";
 import FAQ from "@/components/landing/FAQ";
 import ComingInV2 from "@/components/landing/ComingInV2";
+import Methodology from "@/components/landing/Methodology";
 import Footer from "@/components/landing/Footer";
+import { Button } from "@/components/ui/button";
+import { ArrowUp } from "lucide-react";
 
 const Index = () => {
+  useEffect(() => {
+    // Handle smooth scroll to methodology on page load if hash is present
+    if (window.location.hash === '#methodology') {
+      setTimeout(() => {
+        const methodologySection = document.getElementById('methodology');
+        if (methodologySection) {
+          methodologySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <HeroSection />
       <WhyItMatters />
       <FAQ />
       <ComingInV2 />
+      <div id="methodology">
+        <Methodology />
+      </div>
       <Footer />
+      
+      {/* Back to top button - shows after scrolling */}
+      <Button
+        onClick={scrollToTop}
+        className="fixed bottom-8 right-8 rounded-full w-12 h-12 p-0 shadow-lg"
+        size="icon"
+      >
+        <ArrowUp className="h-5 w-5" />
+      </Button>
     </div>
   );
 };
