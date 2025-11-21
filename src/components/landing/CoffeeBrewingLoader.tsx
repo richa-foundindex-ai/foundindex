@@ -8,12 +8,12 @@ interface CoffeeBrewingLoaderProps {
 }
 
 const STAGES = [
-  { threshold: 0, label: "Setting up...", description: "Preparing your test" },
-  { threshold: 15, label: "Analyzing website...", description: "Understanding your business" },
-  { threshold: 30, label: "Generating queries...", description: "Creating buyer questions" },
-  { threshold: 50, label: "Testing AI engines...", description: "Querying ChatGPT" },
-  { threshold: 75, label: "Calculating scores...", description: "Computing your FoundIndex" },
-  { threshold: 90, label: "Almost done...", description: "Finalizing results" },
+  { threshold: 0, label: "Analyzing your AI visibility", description: "Scanning website structure" },
+  { threshold: 15, label: "Extracting content signals", description: "Checking content clarity" },
+  { threshold: 30, label: "Evaluating authority signals", description: "Analyzing competitor positioning" },
+  { threshold: 50, label: "Generating optimization recommendations", description: "Testing ChatGPT compatibility" },
+  { threshold: 75, label: "Finalizing your score", description: "Preparing detailed report" },
+  { threshold: 90, label: "Just a few more seconds", description: "Completing final checks" },
 ];
 
 export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) => {
@@ -355,9 +355,12 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
     <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <Card className="max-w-md w-full p-8 space-y-6 shadow-2xl">
         <div className="text-center space-y-2">
-          <h2 className="text-2xl font-semibold">Analyzing your website</h2>
+          <h2 className="text-2xl font-semibold">{currentStage.label}</h2>
           <p className="text-sm text-muted-foreground">
-            Testing your AI visibility score
+            {progress >= 30 && progress < 50 && "We're about halfway through."}
+            {progress >= 50 && progress < 75 && "Almost done! Final checks underway."}
+            {progress >= 75 && "Just a few more seconds..."}
+            {progress < 30 && currentStage.description}
           </p>
         </div>
 
@@ -388,7 +391,7 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
             <div className="rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-3 flex gap-2">
               <Info className="h-4 w-4 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-700 dark:text-amber-400">
-                This is taking longer than usual. We're fetching and analyzing your website content - complex sites may take a few minutes.
+                We're diving deep into your website. This thorough analysis usually takes 2-3 minutes total.
               </p>
             </div>
           )}
@@ -396,7 +399,7 @@ export const CoffeeBrewingLoader = ({ onComplete }: CoffeeBrewingLoaderProps) =>
           <div className="rounded-lg border bg-muted/50 p-3 flex gap-2">
             <Info className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
             <p className="text-xs text-muted-foreground">
-              We're analyzing how AI systems like ChatGPT understand and recommend your business.
+              We're checking how easily ChatGPT understands your business.
             </p>
           </div>
         </div>
