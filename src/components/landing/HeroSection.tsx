@@ -73,6 +73,29 @@ const HeroSection = () => {
     return mapping[displayValue] || displayValue.toLowerCase();
   };
 
+  const normalizeUrl = (url: string): string => {
+    // Trim whitespace
+    let normalized = url.trim();
+    
+    // Remove trailing slash if present (we'll add it back later)
+    normalized = normalized.replace(/\/+$/, '');
+    
+    // If no dots and no slashes, assume it's just a domain name - add .com
+    if (!normalized.includes('.') && !normalized.includes('/')) {
+      normalized = `${normalized}.com`;
+    }
+    
+    // Add https:// if no protocol
+    if (!/^https?:\/\//i.test(normalized)) {
+      normalized = `https://${normalized}`;
+    }
+    
+    // Ensure trailing slash
+    normalized = `${normalized}/`;
+    
+    return normalized;
+  };
+
   const getExampleQueries = (industry: string): string[] => {
     const queries: Record<string, string[]> = {
       'Software & Apps': [
@@ -155,10 +178,7 @@ const HeroSection = () => {
       return;
     }
 
-    let websiteUrl = formData.website;
-    if (!/^https?:\/\//i.test(websiteUrl)) {
-      websiteUrl = `https://${websiteUrl}`;
-    }
+    const websiteUrl = normalizeUrl(formData.website);
 
     setIsSubmitting(true);
 
@@ -210,10 +230,7 @@ const HeroSection = () => {
     setIsSubmitting(true);
 
     try {
-      let websiteUrl = formData.website;
-      if (!/^https?:\/\//i.test(websiteUrl)) {
-        websiteUrl = `https://${websiteUrl}`;
-      }
+      const websiteUrl = normalizeUrl(formData.website);
 
       const mappedIndustry = mapIndustryToAirtable(formData.industry);
       const { data, error } = await supabase.functions.invoke("submit-test", {
