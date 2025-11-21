@@ -934,32 +934,85 @@ Return ONLY valid JSON:
     console.log(`[${testId}] Airtable config - Base ID exists: ${!!airtableBaseId}, API Key exists: ${!!airtableApiKey}`);
 
     // Store test record - Airtable field mapping
-    const testRecordFields: Record<string, any> = {
-      test_id: testId,
-      user_email: validatedEmail,
-      website_url: validatedWebsite,
+    const airtableFieldMapping: Record<string, string> = {
+      testId: 'test_id',
+      email: 'user_email',
+      website: 'website_url',
+      industry: 'industry',
+      testDate: 'test_date',
+      foundIndexTotalScore: 'foundindex_score',
+      contentClarity: 'content_clarity_score',
+      structuredData: 'structured_data_score',
+      authority: 'authority_score',
+      discoverability: 'discoverability_score',
+      comparison: 'comparison_score',
+      analysisDetails: 'analysis_details',
+      recommendations: 'recommendations',
+      businessType: 'business_type',
+      queries: 'generated_queries',
+      chatGptScore: 'chatgpt_score',
+      claudeScore: 'claude_score',
+      perplexityScore: 'perplexity_score',
+      recommendationsCount: 'recommendations_count',
+      recommendationRate: 'recommendation_rate',
+    };
+
+    const internalPayload = {
+      testId,
+      email: validatedEmail,
+      website: validatedWebsite,
       industry: validatedIndustry, // Maps to single-select: "saas", "financial", "ecommerce", "professional", "healthcare", "other"
-      test_date: testDate,
+      testDate,
       
       // AI Readiness Scores (PRIMARY)
-      foundindex_score: totalScore,
-      content_clarity_score: contentClarityScore,
-      structured_data_score: structuredDataScore,
-      authority_score: authorityScore,
-      discoverability_score: discoverabilityScore,
-      comparison_score: comparisonScore,
-      analysis_details: JSON.stringify((auditResults as any).analysis_details, null, 2),
-      recommendations: JSON.stringify((auditResults as any).recommendations, null, 2),
+      foundIndexTotalScore: totalScore,
+      contentClarity: contentClarityScore,
+      structuredData: structuredDataScore,
+      authority: authorityScore,
+      discoverability: discoverabilityScore,
+      comparison: comparisonScore,
+      analysisDetails: (auditResults as any).analysis_details,
+      recommendations: (auditResults as any).recommendations,
       
       // Query-Based Visibility (SECONDARY)
-      business_type: businessType, // AI-identified business type
-      generated_queries: JSON.stringify(queries, null, 2), // Store custom queries as formatted JSON
-      chatgpt_score: foundIndexScore,
-      claude_score: 0, // Not yet implemented
-      perplexity_score: 0, // Not yet implemented
-      recommendations_count: totalRecommendations,
-      recommendation_rate: parseFloat(recommendationRate.toFixed(3)) // 3 decimal places per Airtable schema
+      businessType, // AI-identified business type
+      queries, // Store custom queries as formatted JSON
+      chatGptScore: foundIndexScore,
+      claudeScore: 0, // Not yet implemented
+      perplexityScore: 0, // Not yet implemented
+      recommendationsCount: totalRecommendations,
+      recommendationRate: parseFloat(recommendationRate.toFixed(3)), // 3 decimal places per Airtable schema
     };
+
+    const testRecordFields: Record<string, any> = {};
+
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === AIRTABLE FIELD NAME MAPPING ===`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+
+    Object.entries(internalPayload).forEach(([internalKey, value]) => {
+      const airtableField = airtableFieldMapping[internalKey];
+      if (!airtableField) {
+        console.warn(`[${testId}] WARNING: No Airtable mapping for internal field "${internalKey}"`);
+        return;
+      }
+
+      // Transform complex objects to JSON strings where needed
+      let finalValue = value;
+      if (internalKey === 'analysisDetails' || internalKey === 'recommendations' || internalKey === 'queries') {
+        try {
+          finalValue = JSON.stringify(value, null, 2);
+        } catch (err) {
+          console.error(`[${testId}] Failed to stringify field "${internalKey}" for Airtable:`, err);
+          finalValue = null;
+        }
+      }
+
+      testRecordFields[airtableField] = finalValue;
+      console.log(`[${testId}]   ${internalKey} -> ${airtableField}`);
+    });
+
+    console.log(`[${testId}] ═══════════════════════════════════════`);
     
     // === DEBUG: Log Final Scores Object Before Airtable Write ===
     console.log(`[${testId}] ═══════════════════════════════════════`);
