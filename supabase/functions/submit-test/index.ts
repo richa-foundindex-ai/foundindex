@@ -1050,22 +1050,24 @@ Return ONLY valid JSON:
     });
     
     console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] COMPLETE AIRTABLE REQUEST BODY:`);
-    const requestBody = {
+    console.log(`[${testId}] COMPLETE AIRTABLE REQUEST BODY (before validation):`);
+    let requestBody = {
       fields: testRecordFields
     };
     console.log(`[${testId}]`, JSON.stringify(requestBody, null, 2));
     console.log(`[${testId}] ═══════════════════════════════════════`);
 
-    // ============ DIAGNOSTIC: VERIFY AIRTABLE CONFIGURATION ============
+    // ============ DEFENSIVE FIELD VALIDATION ============
     console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] === AIRTABLE CONFIGURATION DIAGNOSTICS ===`);
+    console.log(`[${testId}] === VALIDATING FIELDS AGAINST AIRTABLE SCHEMA ===`);
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] Airtable Base ID: ${airtableBaseId}`);
     console.log(`[${testId}] Table Name: Tests`);
-    console.log(`[${testId}] Full Endpoint URL: https://api.airtable.com/v0/${airtableBaseId}/Tests`);
     
-    // Fetch the actual table schema from Airtable to see what fields exist
+    // Start with all fields we want to send
+    let validatedFields = { ...testRecordFields };
+    
+    // Fetch the actual table schema from Airtable
     try {
       console.log(`[${testId}] Fetching table schema from Airtable...`);
       const schemaResponse = await fetch(`https://api.airtable.com/v0/meta/bases/${airtableBaseId}/tables`, {
@@ -1081,40 +1083,69 @@ Return ONLY valid JSON:
         
         if (testsTable) {
           console.log(`[${testId}] ✅ Found 'Tests' table in Airtable base`);
-          console.log(`[${testId}] Table ID: ${testsTable.id}`);
-          console.log(`[${testId}] Available fields in 'Tests' table:`);
-          testsTable.fields?.forEach((field: any) => {
-            console.log(`[${testId}]   - ${field.name} (${field.type})`);
-          });
           
-          // Check which of our fields are missing
+          // Get list of all available field names
           const availableFieldNames = testsTable.fields?.map((f: any) => f.name) || [];
-          const ourFieldNames = Object.keys(testRecordFields);
-          const missingFields = ourFieldNames.filter(f => !availableFieldNames.includes(f));
+          console.log(`[${testId}] Fields that actually exist in Airtable:`, availableFieldNames.join(', '));
           
-          if (missingFields.length > 0) {
-            console.error(`[${testId}] ⚠️ MISSING FIELDS IN AIRTABLE:`);
-            missingFields.forEach(f => {
-              console.error(`[${testId}]     ❌ "${f}" - NOT FOUND in Airtable table`);
+          // Get list of fields we're trying to send
+          const ourFieldNames = Object.keys(testRecordFields);
+          console.log(`[${testId}] Fields we're trying to send:`, ourFieldNames.join(', '));
+          
+          // Find fields that exist and fields that don't
+          const validFields = ourFieldNames.filter(f => availableFieldNames.includes(f));
+          const invalidFields = ourFieldNames.filter(f => !availableFieldNames.includes(f));
+          
+          console.log(`[${testId}] ═══════════════════════════════════════`);
+          console.log(`[${testId}] FIELD VALIDATION RESULTS:`);
+          console.log(`[${testId}]   ✅ Valid fields (${validFields.length}):`, validFields.join(', '));
+          
+          if (invalidFields.length > 0) {
+            console.warn(`[${testId}]   ⚠️ Skipping invalid fields (${invalidFields.length}):`, invalidFields.join(', '));
+            
+            // Remove invalid fields from our payload
+            invalidFields.forEach(fieldName => {
+              delete validatedFields[fieldName];
+            });
+            
+            console.log(`[${testId}]   🔧 These fields should be added to your Airtable 'Tests' table:`);
+            invalidFields.forEach(f => {
+              console.log(`[${testId}]      - ${f}`);
             });
           } else {
-            console.log(`[${testId}] ✅ All fields exist in Airtable table`);
+            console.log(`[${testId}]   ✅ All fields are valid!`);
           }
         } else {
           console.error(`[${testId}] ❌ 'Tests' table NOT FOUND in Airtable base`);
           console.error(`[${testId}] Available tables:`, schemaData.tables?.map((t: any) => t.name).join(', '));
+          console.warn(`[${testId}] ⚠️ Proceeding with all fields (unvalidated)`);
         }
       } else {
         console.error(`[${testId}] Failed to fetch Airtable schema: ${schemaResponse.status}`);
         const errorText = await schemaResponse.text();
         console.error(`[${testId}] Schema fetch error:`, errorText);
+        console.warn(`[${testId}] ⚠️ Proceeding with all fields (unvalidated)`);
       }
     } catch (schemaError) {
       console.error(`[${testId}] Exception fetching Airtable schema:`, schemaError);
+      console.warn(`[${testId}] ⚠️ Proceeding with all fields (unvalidated)`);
     }
     
     console.log(`[${testId}] ═══════════════════════════════════════`);
-    // ============ END DIAGNOSTIC ============
+    console.log(`[${testId}] FINAL VALIDATED FIELDS TO SEND (${Object.keys(validatedFields).length} fields):`);
+    Object.keys(validatedFields).forEach(key => {
+      console.log(`[${testId}]   ✓ ${key}`);
+    });
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    // ============ END VALIDATION ============
+    
+    // Update request body with validated fields only
+    requestBody.fields = validatedFields;
+    
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] FINAL REQUEST BODY TO SEND TO AIRTABLE:`);
+    console.log(`[${testId}]`, JSON.stringify(requestBody, null, 2));
+    console.log(`[${testId}] ═══════════════════════════════════════`);
 
     let testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
       method: 'POST',
