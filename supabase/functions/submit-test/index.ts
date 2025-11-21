@@ -8,9 +8,9 @@ const corsHeaders = {
 };
 
 interface TestSubmission {
-  email: string;
+  email?: string;
   website: string;
-  industry: string;
+  industry?: string;
 }
 
 // Input validation schemas
@@ -23,7 +23,11 @@ const ALLOWED_INDUSTRIES = [
   'other',
 ];
 
-const validateEmail = (email: string): string => {
+const validateEmail = (email: string | undefined): string => {
+  if (!email) {
+    // Generate anonymous email with timestamp
+    return `anonymous-${Date.now()}@foundindex.local`;
+  }
   const trimmed = email.trim().toLowerCase();
   if (trimmed.length > 255) {
     throw new Error('Email must be less than 255 characters');
@@ -57,7 +61,11 @@ const validateWebsite = (website: string): string => {
   }
 };
 
-const validateIndustry = (industry: string): string => {
+const validateIndustry = (industry: string | undefined): string => {
+  if (!industry) {
+    // Default to 'other' when not provided
+    return 'other';
+  }
   if (!ALLOWED_INDUSTRIES.includes(industry)) {
     throw new Error('Invalid industry. Must be one of: ' + ALLOWED_INDUSTRIES.join(', '));
   }
