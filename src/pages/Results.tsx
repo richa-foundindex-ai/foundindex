@@ -60,6 +60,7 @@ const Results = () => {
   const [proEmail, setProEmail] = useState("");
   const [isSubmittingProInterest, setIsSubmittingProInterest] = useState(false);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   useEffect(() => {
     const fetchResults = async () => {
@@ -288,6 +289,9 @@ Test yours: [foundindex.com will be here after launch]`;
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={handleShare}>
                 <Share2 className="mr-2 h-4 w-4" /> Share on LinkedIn
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowFeedbackModal(true)}>
+                Give feedback
               </Button>
             </div>
           </div>
@@ -557,6 +561,16 @@ Test yours: [foundindex.com will be here after launch]`;
       <UnlockTestsModal
         open={showUnlockModal}
         onOpenChange={setShowUnlockModal}
+        testId={testId || ""}
+        score={score}
+        website={result.website || ""}
+        recommendations={result.recommendations}
+      />
+
+      {/* Feedback Modal */}
+      <UnlockTestsModal
+        open={showFeedbackModal}
+        onOpenChange={setShowFeedbackModal}
         testId={testId || ""}
         score={score}
         website={result.website || ""}

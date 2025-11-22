@@ -9,3 +9,6 @@ verify_jwt = false
 
 [functions.fetch-results]
 verify_jwt = false
+
+[functions.submit-waitlist]
+verify_jwt = false

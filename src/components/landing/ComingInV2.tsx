@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const ComingInV2 = () => {
-  const [email, setEmail] = useState(""); // Empty by default
+  const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const features = [
     "Multi-page analysis (homepage + 5 key pages)",
@@ -34,23 +35,45 @@ const ComingInV2 = () => {
     setIsSubmitting(true);
 
     try {
-      // Submit to Airtable via edge function
-      const { error } = await supabase.functions.invoke("submit-waitlist", {
+      console.log('🚀 Submitting waitlist email:', email.trim());
+      
+      const { data, error } = await supabase.functions.invoke("submit-waitlist", {
         body: {
           email: email.trim(),
-          source: 'v2-waitlist'
+          source: 'v2_waitlist'
         }
       });
 
+      console.log('Response:', { data, error });
+
       if (error) throw error;
 
-      toast.success("✓ You're on the v2 waitlist! We'll email you when it launches.");
       setEmail("");
+      setShowSuccess(true);
+      toast.success("✓ You're on the list!");
     } catch (err) {
-      console.error("Failed to save waitlist email:", err);
+      console.error("❌ Failed to save waitlist email:", err);
       toast.error("Couldn't save email. Please try again or email us directly at hello@foundindex.com");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleLinkedInShare = () => {
+    const linkedInText = `I joined the FoundIndex v2 waitlist for multi-page AI visibility analysis.
+
+Free v1 homepage test: foundindex.com
+
+#AIvisibility`;
+    
+    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://foundindex.com')}`;
+    window.open(linkedInUrl, '_blank', 'width=600,height=600');
+    
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(linkedInText).then(
+        () => toast.success("Share text copied! Paste it in your LinkedIn post"),
+        () => {}
+      );
     }
   };
 
@@ -80,19 +103,30 @@ const ComingInV2 = () => {
               <p className="text-lg font-medium text-foreground mb-4">
                 Join the v2 waitlist:
               </p>
-              <form onSubmit={handleSubmit} className="flex gap-2">
-                <Input
-                  type="email"
-                  placeholder="your@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isSubmitting}
-                  className="flex-1"
-                />
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Saving..." : "Notify me"}
-                </Button>
-              </form>
+              {!showSuccess ? (
+                <form onSubmit={handleSubmit} className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="your@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isSubmitting}
+                    className="flex-1"
+                  />
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Saving..." : "Notify me"}
+                  </Button>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-lg text-foreground">
+                    You're on the list! Share on LinkedIn to help others discover AI visibility
+                  </p>
+                  <Button onClick={handleLinkedInShare} className="w-full">
+                    Share on LinkedIn
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </Card>

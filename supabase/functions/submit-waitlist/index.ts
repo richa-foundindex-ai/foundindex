@@ -24,10 +24,12 @@ serve(async (req) => {
     // Airtable configuration
     const AIRTABLE_API_KEY = Deno.env.get('AIRTABLE_API_KEY');
     const AIRTABLE_BASE_ID = Deno.env.get('AIRTABLE_BASE_ID');
-    const AIRTABLE_TABLE_NAME = Deno.env.get('AIRTABLE_TABLE_NAME') || 'V2 Waitlist';
+    const AIRTABLE_TABLE_NAME = 'Tracking_Waitlist';
+
+    console.log('📧 Submitting to Airtable:', { email, source, table: AIRTABLE_TABLE_NAME });
 
     if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
-      console.error('Airtable credentials not configured');
+      console.error('❌ Airtable credentials not configured');
       return new Response(
         JSON.stringify({ error: 'Configuration error' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -45,18 +47,20 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         fields: {
-          Email: email,
-          Source: source || 'v2-waitlist',
-          'Submitted At': new Date().toISOString(),
+          email: email,
+          source: source || 'v2_waitlist',
+          signup_date: new Date().toISOString(),
         },
       }),
     });
 
     if (!airtableResponse.ok) {
       const errorText = await airtableResponse.text();
-      console.error('Airtable error:', errorText);
+      console.error('❌ Airtable error:', errorText);
       throw new Error(`Airtable API error: ${airtableResponse.status}`);
     }
+
+    console.log('✅ Successfully submitted to Airtable');
 
     return new Response(
       JSON.stringify({ success: true }),
