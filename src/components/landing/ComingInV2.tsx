@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const ComingInV2 = () => {
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(""); // Empty by default
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const features = [
@@ -34,12 +34,13 @@ const ComingInV2 = () => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('test_submissions')
-        .insert({
-          test_id: `v2-waitlist-${Date.now()}`,
+      // Submit to Airtable via edge function
+      const { error } = await supabase.functions.invoke("submit-waitlist", {
+        body: {
           email: email.trim(),
-        });
+          source: 'v2-waitlist'
+        }
+      });
 
       if (error) throw error;
 

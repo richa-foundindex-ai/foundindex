@@ -471,23 +471,15 @@ Test yours: [foundindex.com will be here after launch]`;
         </section>
 
         <section className="text-center pt-8 border-t">
-          <a 
-            href="/#methodology" 
+          <Button
+            variant="link"
             className="text-primary hover:underline text-sm font-medium"
-            onClick={(e) => {
-              e.preventDefault();
-              window.location.href = '/#methodology';
-              // Slight delay to ensure navigation completes
-              setTimeout(() => {
-                const methodologySection = document.getElementById('methodology');
-                if (methodologySection) {
-                  methodologySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-              }, 100);
+            onClick={() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
           >
-            See our methodology →
-          </a>
+            Back to results ↑
+          </Button>
         </section>
       </main>
 
@@ -568,6 +560,7 @@ Test yours: [foundindex.com will be here after launch]`;
         testId={testId || ""}
         score={score}
         website={result.website || ""}
+        recommendations={result.recommendations}
       />
     </div>
   );

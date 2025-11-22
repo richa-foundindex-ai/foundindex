@@ -18,9 +18,10 @@ interface UnlockTestsModalProps {
   testId: string;
   score: number;
   website: string;
+  recommendations?: string[];
 }
 
-export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website }: UnlockTestsModalProps) => {
+export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, recommendations }: UnlockTestsModalProps) => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -36,14 +37,29 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website }:
   const [email, setEmail] = useState("");
 
   const handleShareLinkedIn = () => {
-    const shareText = `I just analyzed my website's AI visibility with FoundIndex. Score: ${score}/100\n\nTest yours: [foundindex.com will be here after launch]`;
-    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(shareText)}`;
-    window.open(linkedInUrl, '_blank');
+    // Get the first recommendation as the key insight
+    const keyInsight = recommendations?.[0] || "AI readability improvements needed";
+    
+    const shareText = `I tested my website's AI visibility with FoundIndex.
+Key insight: ${keyInsight}
+Free analysis: foundindex.com
+#AIvisibility`;
+    
+    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://foundindex.com')}`;
+    window.open(linkedInUrl, '_blank', 'width=600,height=600');
+    
+    // Also copy text to clipboard for easy pasting
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareText).then(
+        () => toast.success("Share text copied! Paste it in your LinkedIn post"),
+        () => {}
+      );
+    }
     
     // Unlock tests after sharing
     unlockTests();
     toast.success("Thanks for sharing! Your benefits have been unlocked.");
-    onOpenChange(false);
+    // Keep popup open - don't close it
   };
 
   const handleGiveFeedback = () => {
