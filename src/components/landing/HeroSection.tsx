@@ -177,13 +177,10 @@ const HeroSection = () => {
         <div className="container mx-auto max-w-7xl">
         <div className="text-center space-y-6">
           <h1 className="text-[2.56rem] md:text-[3.33rem] font-bold text-foreground leading-tight">
-            Most businesses are invisible to AI. Check if yours is.
+            Is your business invisible to AI?
           </h1>
           <p className="text-editorial-sm text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            ChatGPT and Claude answer millions of questions every day. They can only recommend what they clearly understand.
-          </p>
-          <p className="text-editorial-sm text-muted-foreground max-w-3xl mx-auto leading-relaxed mt-4">
-            Get your AI visibility score in 3 minutes. See how AI understands your business and what may be missing.
+            When someone asks ChatGPT or Claude for recommendations, will they mention you? Find out in 3 minutes.
           </p>
 
           <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
@@ -197,12 +194,6 @@ const HeroSection = () => {
               <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
               <span className="text-base text-muted-foreground">
                 Get specific, actionable recommendations
-              </span>
-            </div>
-            <div className="flex items-center gap-3 text-left">
-              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-              <span className="text-base text-muted-foreground">
-                Learn what affects your AI visibility
               </span>
             </div>
             <div className="flex items-center gap-3 text-left">

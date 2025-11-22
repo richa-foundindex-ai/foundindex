@@ -15,12 +15,12 @@ const FAQ = () => {
     {
       question: "Why just the homepage?",
       answer:
-        "Your homepage is your AI introduction. If AI can't understand your main page, it won't dig deeper into your site. So far, we've seen that most AI visibility issues start with the homepage. (Multi-page analysis coming in v2.)",
+        "Your homepage is your AI introduction. If AI can't understand your main page, it won't dig deeper. Most AI visibility issues start with the homepage. (Multi-page analysis coming in v2.)",
     },
     {
       question: "How is this different from SEO?",
       answer:
-        "SEO optimizes for search engine algorithms. AI visibility optimizes for comprehension. AI doesn't care about keyword density—it needs clear explanations, structured content, and credible signals to understand and recommend your business.",
+        "SEO optimizes for search algorithms. AI visibility optimizes for comprehension. AI doesn't care about keyword density—it needs clear explanations, structured content, and credible signals.",
     },
     {
       question: "What do I get for free?",
@@ -30,7 +30,7 @@ const FAQ = () => {
     {
       question: "Who built this and why?",
       answer:
-        "I'm a UX Researcher with 7 years in enterprise AI/SaaS (British Telecom, RapiPay, Google Ads) plus 7 years as a content strategist and SEO consultant. I built FoundIndex as an independent project after realizing businesses have no visibility into how AI understands them. This tool gives you that diagnostic—and a roadmap to improve it.",
+        "I'm Richa Deo, a UX researcher with 7+ years of experience studying how people and AI systems understand information. I built FoundIndex because businesses deserve to know why AI recommends—or ignores—them.",
     },
   ];
 

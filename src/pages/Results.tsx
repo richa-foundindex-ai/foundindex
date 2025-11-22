@@ -245,24 +245,51 @@ Test yours: [foundindex.com will be here after launch]`;
   return (
     <div className="min-h-screen bg-background/40">
       <main className="max-w-5xl mx-auto px-4 py-10 space-y-8">
-        <section className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight flex items-center gap-2">
-              <Sparkles className="h-7 w-7 text-primary" />
-              Your AI visibility score
-            </h1>
-            <p className="mt-2 text-muted-foreground max-w-xl">
+        <section className="space-y-8">
+          <div className="text-center space-y-4">
+            <h1 className="text-editorial-xl">Your AI visibility score</h1>
+            <p className="text-editorial-sm text-muted-foreground">
               Based on analysis of your website's content and structure
             </p>
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          </div>
+
+          {/* How FoundIndex scored your site */}
+          <Card className="p-6 bg-accent-gray-light border-none">
+            <h2 className="text-xl font-semibold mb-4 text-foreground">
+              How FoundIndex scored your site
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              We tested how AI systems would describe your business:
+            </p>
+            <ul className="space-y-2 text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">✓</span>
+                <span>Can they identify what you do?</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">✓</span>
+                <span>Do they understand who you serve?</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary font-bold">✓</span>
+                <span>Can they explain why someone should choose you?</span>
+              </li>
+            </ul>
+            <p className="text-muted-foreground mt-4">
+              Your score reflects how clearly AI grasped these core details.
+            </p>
+          </Card>
+
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               {result.website && <Badge variant="outline">{result.website}</Badge>}
               {result.industry && <Badge variant="secondary">Industry: {result.industry}</Badge>}
             </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleShare}>
-              <Share2 className="mr-2 h-4 w-4" /> Share on LinkedIn
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleShare}>
+                <Share2 className="mr-2 h-4 w-4" /> Share on LinkedIn
+              </Button>
+            </div>
           </div>
         </section>
 

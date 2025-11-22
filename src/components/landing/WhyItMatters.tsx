@@ -12,15 +12,10 @@ const WhyItMatters = () => {
         <Card className="p-8 bg-accent-gray-light border-none">
           <div className="space-y-6 text-lg text-muted-foreground leading-relaxed">
             <p>
-              Search behavior is changing. More people ask ChatGPT and Claude for recommendations instead of searching Google.
-            </p>
-            <p className="font-medium text-foreground">
-              'What's the best project management tool for remote teams?'<br />
-              'Which travel agency specializes in sustainable tourism?'<br />
-              'Where can I find legal services for startup founders?'
+              Search behavior is changing. People increasingly ask ChatGPT and Claude for recommendations instead of searching Google.
             </p>
             <p>
-              AI can only recommend what it clearly understands. If your website isn't structured for AI comprehension, you're invisible to this growing discovery channel.
+              AI only recommends businesses it understands clearly. If your website isn't structured for AI comprehension, you're missing from these recommendations.
             </p>
             <p className="font-medium text-foreground">
               FoundIndex shows you exactly how AI 'sees' your business—and what to fix.
