@@ -1,12 +1,7 @@
 import { Card } from "@/components/ui/card";
+import { Link } from "react-router-dom";
 
 const WhyItMatters = () => {
-  const scrollToMethodology = () => {
-    const methodologySection = document.getElementById('methodology');
-    if (methodologySection) {
-      methodologySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
 
   return (
     <section className="py-20 px-4 bg-background">
@@ -29,12 +24,12 @@ const WhyItMatters = () => {
           </div>
           
           <div className="mt-8">
-            <button 
-              onClick={scrollToMethodology}
-              className="text-primary hover:underline font-medium cursor-pointer bg-transparent border-none p-0"
+            <Link 
+              to="/methodology"
+              className="text-primary hover:underline font-medium"
             >
               See our methodology →
-            </button>
+            </Link>
           </div>
         </Card>
       </div>
