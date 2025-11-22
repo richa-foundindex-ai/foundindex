@@ -69,13 +69,13 @@ const Footer = () => {
 
           <div className="pt-8 space-y-3 text-sm text-muted-foreground">
             <p>
-              Built by @[your-linkedin-handle] — UX researcher (independent project)
+              Built by Richa Deo — UX researcher + content strategist (independent project)
             </p>
             <p>
-              Background: 7 years content strategy consulting (SEO, Google Analytics, audience research) + UX research on AI adoption. Building in public with full transparency.
+              Background: 7 years UX research (British Telecom, RapiPay, Google Ads) + 7 years content strategy & SEO consulting. Building in public with full transparency.
             </p>
             <p>
-              Uses OpenAI models for analysis • We don't store your website data
+              Uses OpenAI models for analysis • We don't store your website data • Contact: hello@foundindex.com
             </p>
             <div className="flex justify-center gap-4 pt-2">
               <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Loader2, CheckCircle2, XCircle, Share2, Download, BarChart3, Target, Globe2, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Share2, Download, BarChart3, Target, Globe2, Sparkles, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UnlockTestsModal } from "@/components/results/UnlockTestsModal";
@@ -321,17 +321,22 @@ Test yours: [foundindex.com will be here after launch]`;
 
         {/* About This Analysis Section */}
         <Card className="p-6 space-y-4 bg-muted/30 border-dashed">
-          <h2 className="text-lg font-semibold">About this analysis</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            FoundIndex is a v1 diagnostic tool. We analyze your homepage only (multi-page coming in v2). Scores may vary ±2 points between tests—this is normal with AI-powered analysis. We're building in public and learning from your feedback.
-          </p>
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+            <div className="space-y-2">
+              <h2 className="text-lg font-semibold">About this analysis</h2>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                FoundIndex is a v1 diagnostic tool. We analyze your homepage only (multi-page coming in v2). Scores may vary ±2 points between tests—this is normal with AI-powered analysis. We're building in public and learning from your feedback.
+              </p>
+            </div>
+          </div>
         </Card>
 
         {/* Understanding Your Score Section */}
         <Card className="p-6 space-y-4 bg-muted/30">
           <div className="flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Understanding Your Score</h2>
+            <h2 className="text-lg font-semibold">Understanding your score</h2>
           </div>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
