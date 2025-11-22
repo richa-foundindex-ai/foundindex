@@ -30,7 +30,7 @@ const FAQ = () => {
     {
       question: "Who built this and why?",
       answer:
-        "I'm a UX Researcher studying AI adoption. I built FoundIndex as an independent project after realizing businesses have no visibility into how AI understands them. This tool gives you that diagnostic—and a roadmap to improve it.",
+        "I'm a UX Researcher with 7 years in enterprise AI/SaaS (British Telecom, RapiPay, Google Ads) plus 7 years as a content strategist and SEO consultant. I built FoundIndex as an independent project after realizing businesses have no visibility into how AI understands them. This tool gives you that diagnostic—and a roadmap to improve it.",
     },
   ];
 

@@ -244,8 +244,8 @@ const HeroSection = () => {
                   "Analyzing..."
                 ) : (
                   <>
-                    Analyze my website
-                    <ArrowRight className="ml-2 h-5 w-5" />
+                Analyze my website →
+                    <ArrowRight className="ml-2 h-5 w-5 hidden" />
                   </>
                 )}
               </Button>

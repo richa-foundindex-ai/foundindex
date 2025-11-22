@@ -9,10 +9,10 @@ interface CoffeeBrewingLoaderProps {
 
 const STAGES = [
   { threshold: 0, label: "Scanning website structure", description: "Scanning website structure" },
-  { threshold: 20, label: "Evaluating content clarity", description: "Checking content clarity" },
-  { threshold: 40, label: "Checking authority signals", description: "Analyzing authority signals" },
-  { threshold: 60, label: "Generating recommendations", description: "Creating optimization recommendations" },
-  { threshold: 80, label: "Finalizing your score", description: "Preparing detailed report" },
+  { threshold: 20, label: "Evaluating content clarity", description: "Evaluating content clarity" },
+  { threshold: 40, label: "Checking authority signals", description: "Checking authority signals" },
+  { threshold: 60, label: "Generating recommendations", description: "Generating recommendations" },
+  { threshold: 80, label: "Finalizing your score", description: "Finalizing your score" },
 ];
 
 export const CoffeeBrewingLoader = ({ onComplete, website }: CoffeeBrewingLoaderProps) => {
