@@ -30,7 +30,7 @@ const FAQ = () => {
     {
       question: "Who built this and why?",
       answer:
-        "I'm Richa Deo, a UX researcher with 7+ years of experience studying how people and AI systems understand information. I built FoundIndex because businesses deserve to know why AI recommends—or ignores—them.",
+        "I'm Richa Deo, a UX researcher with 14+ years of experience studying how people, content, and AI systems understand information. I built FoundIndex because businesses deserve to know why AI recommends—or ignores—them.",
     },
   ];
 
