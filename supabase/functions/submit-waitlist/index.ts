@@ -20,7 +20,6 @@ serve(async (req) => {
       });
     }
 
-    // GET AIRTABLE CREDENTIALS FROM ENVIRONMENT VARIABLES
     const AIRTABLE_API_KEY = Deno.env.get("AIRTABLE_API_KEY");
     const AIRTABLE_BASE_ID = Deno.env.get("AIRTABLE_BASE_ID");
 
@@ -32,7 +31,10 @@ serve(async (req) => {
       });
     }
 
-    // SEND TO AIRTABLE
+    console.log("📤 Sending to Airtable:", { email, source: source || "v2_waitlist" });
+
+    // SEND TO AIRTABLE - ONLY email and source
+    // signup_date will auto-populate because it's a "Created time" field
     const airtableResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Tracking_Waitlist`, {
       method: "POST",
       headers: {
@@ -40,24 +42,32 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        fields: {
-          email: email,
-          source: source || "v2_waitlist",
-        },
+        records: [
+          {
+            fields: {
+              email: email,
+              source: source || "v2_waitlist",
+            },
+          },
+        ],
       }),
     });
 
+    const responseText = await airtableResponse.text();
+    console.log("📥 Airtable response:", responseText);
+
     if (!airtableResponse.ok) {
-      const errorText = await airtableResponse.text();
-      console.error("❌ Airtable error:", errorText);
-      return new Response(JSON.stringify({ error: "Failed to save to Airtable" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      console.error("❌ Airtable API error:", airtableResponse.status, responseText);
+      return new Response(
+        JSON.stringify({
+          error: `Airtable API error: ${airtableResponse.status}`,
+          details: responseText,
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    const airtableData = await airtableResponse.json();
-    console.log("✅ Waitlist signup saved to Airtable:", airtableData);
+    console.log("✅ Waitlist signup saved to Airtable");
 
     return new Response(
       JSON.stringify({
@@ -68,9 +78,12 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("❌ Error:", error);
-    return new Response(JSON.stringify({ error: "Server error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Server error",
+        message: error.message,
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });
