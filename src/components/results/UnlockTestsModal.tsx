@@ -97,6 +97,20 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
       return;
     }
 
+    // Check if this email has already submitted feedback in the last 30 days
+    const previousEmail = localStorage.getItem('feedbackSubmittedEmail');
+    const previousDate = localStorage.getItem('feedbackSubmittedDate');
+    
+    if (previousEmail && previousDate) {
+      const submittedTime = parseInt(previousDate);
+      const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+      
+      if (email.trim().toLowerCase() === previousEmail.toLowerCase() && submittedTime > thirtyDaysAgo) {
+        toast.error("You've already submitted feedback this month. For more tests, email hello@foundindex.com");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -115,11 +129,24 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
 
       if (error) throw error;
 
+      // Reset rate limit and store feedback submission
+      localStorage.setItem('testsRemaining', '3');
+      localStorage.setItem('feedbackSubmittedEmail', email.trim().toLowerCase());
+      localStorage.setItem('feedbackSubmittedDate', Date.now().toString());
+
       // Unlock tests after feedback
       unlockTests();
       setShowFeedback(false);
       setShowConfirmation(true);
-      toast.success("✓ Feedback submitted! Check your email for the detailed rewrite guide.");
+      
+      // Show prominent success message
+      toast.success("Thanks for your feedback! You've unlocked 3 more tests. 🎉", {
+        duration: 5000,
+        style: {
+          fontSize: '16px',
+          padding: '20px',
+        }
+      });
     } catch (err) {
       console.error("Failed to submit feedback:", err);
       toast.error(
