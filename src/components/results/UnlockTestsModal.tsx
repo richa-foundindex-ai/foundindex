@@ -23,32 +23,35 @@ interface UnlockTestsModalProps {
 
 export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, recommendations }: UnlockTestsModalProps) => {
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Feedback form state
-  const [accuracyRating, setAccuracyRating] = useState("");
-  const [accuracyWhy, setAccuracyWhy] = useState("");
-  const [firstRecommendation, setFirstRecommendation] = useState("");
-  const [improvement, setImprovement] = useState("");
-  const [shareAnonymously, setShareAnonymously] = useState(false);
-  const [shareWithName, setShareWithName] = useState(false);
-  const [userName, setUserName] = useState("");
-  const [keepPrivate, setKeepPrivate] = useState(false);
+  // Feedback form state - NEW QUESTIONS
+  const [surprisingResult, setSurprisingResult] = useState("");
+  const [describeToColleague, setDescribeToColleague] = useState("");
+  const [preventingImprovements, setPreventingImprovements] = useState<string[]>([]);
+  const [otherPrevention, setOtherPrevention] = useState("");
+  const [userType, setUserType] = useState("");
   const [email, setEmail] = useState("");
 
+  const preventionOptions = [
+    "I don't know which pages to fix first",
+    "I don't know how to rewrite my content",
+    "I can't tell if my changes actually helped",
+    "I need to compare my site to competitors",
+    "I don't have time to do this myself",
+    "I need expert help",
+  ];
+
   const handleShareLinkedIn = () => {
-    // Get the first recommendation as the key insight
     const keyInsight = recommendations?.[0] || "AI readability improvements needed";
     
-    const shareText = `I tested my website's AI visibility with FoundIndex.
-Key insight: ${keyInsight}
-Free analysis: foundindex.com
-#AIvisibility`;
+    const shareText = `Just tested my website's AI visibility with FoundIndex. ${score}/100. Key insight: ${keyInsight}. Worth checking if AI systems understand your business. foundindex.com`;
     
     const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://foundindex.com')}`;
     window.open(linkedInUrl, '_blank', 'width=600,height=600');
     
-    // Also copy text to clipboard for easy pasting
+    // Copy text to clipboard
     if (navigator.clipboard) {
       navigator.clipboard.writeText(shareText).then(
         () => toast.success("Share text copied! Paste it in your LinkedIn post"),
@@ -59,7 +62,6 @@ Free analysis: foundindex.com
     // Unlock tests after sharing
     unlockTests();
     toast.success("Thanks for sharing! Your benefits have been unlocked.");
-    // Keep popup open - don't close it
   };
 
   const handleGiveFeedback = () => {
@@ -79,13 +81,19 @@ Free analysis: foundindex.com
       return;
     }
 
-    if (!accuracyRating || !firstRecommendation) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    if (!surprisingResult.trim() || !describeToColleague.trim() || !userType) {
       toast.error("Please answer all required questions");
       return;
     }
 
-    if (shareWithName && !userName.trim()) {
-      toast.error("Please enter your name to share feedback with attribution");
+    if (preventingImprovements.includes("Something else") && !otherPrevention.trim()) {
+      toast.error("Please specify what else is preventing you from improving");
       return;
     }
 
@@ -97,12 +105,10 @@ Free analysis: foundindex.com
           testId,
           score,
           website,
-          accuracyRating,
-          accuracyWhy,
-          firstRecommendation,
-          improvement,
-          permissionLevel: shareAnonymously ? "anonymous" : shareWithName ? "named" : "private",
-          userName: shareWithName ? userName : null,
+          surprisingResult: surprisingResult.trim(),
+          describeToColleague: describeToColleague.trim(),
+          preventingImprovements: preventingImprovements.join(", ") + (preventingImprovements.includes("Something else") ? `: ${otherPrevention}` : ""),
+          userType,
           email: email.trim(),
         },
       });
@@ -111,9 +117,9 @@ Free analysis: foundindex.com
 
       // Unlock tests after feedback
       unlockTests();
-      toast.success("✓ Feedback submitted! Check your email for the detailed rewrite guide.");
-      onOpenChange(false);
       setShowFeedback(false);
+      setShowConfirmation(true);
+      toast.success("✓ Feedback submitted! Check your email for the detailed rewrite guide.");
     } catch (err) {
       console.error("Failed to submit feedback:", err);
       toast.error("Couldn't submit feedback. Please try again or email us directly at hello@foundindex.com");
@@ -122,146 +128,162 @@ Free analysis: foundindex.com
     }
   };
 
+  if (showConfirmation) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl flex items-center gap-2">
+              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+              Thanks! Your rewrite guide is on its way.
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <p className="text-muted-foreground">
+              You'll receive your personalized homepage rewrite guide within 24-48 hours during beta.
+            </p>
+            <Button onClick={() => onOpenChange(false)} className="w-full">
+              Back to results
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   if (showFeedback) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Help us improve FoundIndex (2 minutes)</DialogTitle>
-            <DialogDescription className="flex items-center gap-2 text-sm">
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-              Unlock: Detailed rewrite guide • 3 free tests • Early v2 access
+            <DialogTitle className="text-2xl">Help us improve FoundIndex (60 seconds)</DialogTitle>
+            <DialogDescription className="space-y-2 pt-2">
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                <span className="text-sm">Detailed homepage rewrite guide</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                <span className="text-sm">3 additional free tests</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                <span className="text-sm">Early v2 access</span>
+              </div>
             </DialogDescription>
           </DialogHeader>
 
           <form onSubmit={handleSubmitFeedback} className="space-y-6 pt-4">
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Was your score accurate?</Label>
-              <RadioGroup value={accuracyRating} onValueChange={setAccuracyRating} required>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="too_high" id="too_high" />
-                  <Label htmlFor="too_high" className="font-normal cursor-pointer">Too high</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="about_right" id="about_right" />
-                  <Label htmlFor="about_right" className="font-normal cursor-pointer">About right</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="too_low" id="too_low" />
-                  <Label htmlFor="too_low" className="font-normal cursor-pointer">Too low</Label>
-                </div>
-              </RadioGroup>
-              <Textarea
-                placeholder="Why? (optional)"
-                value={accuracyWhy}
-                onChange={(e) => setAccuracyWhy(e.target.value)}
-                className="mt-2"
+              <Label htmlFor="surprising" className="text-base font-semibold">
+                What surprised you most about your results? <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="surprising"
+                placeholder="I didn't realize my homepage was vague"
+                value={surprisingResult}
+                onChange={(e) => setSurprisingResult(e.target.value)}
+                maxLength={100}
+                required
               />
+              <p className="text-xs text-muted-foreground">{surprisingResult.length}/100 characters</p>
             </div>
 
             <div className="space-y-3">
-              <Label className="text-base font-semibold">Which recommendation will you implement first?</Label>
-              <RadioGroup value={firstRecommendation} onValueChange={setFirstRecommendation} required>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="service_descriptions" id="service_descriptions" />
-                  <Label htmlFor="service_descriptions" className="font-normal cursor-pointer">Service descriptions</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="authority_signals" id="authority_signals" />
-                  <Label htmlFor="authority_signals" className="font-normal cursor-pointer">Authority signals</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="content_structure" id="content_structure" />
-                  <Label htmlFor="content_structure" className="font-normal cursor-pointer">Content structure</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="other" id="other" />
-                  <Label htmlFor="other" className="font-normal cursor-pointer">Other</Label>
-                </div>
-              </RadioGroup>
+              <Label htmlFor="describe" className="text-base font-semibold">
+                How would you describe FoundIndex to a colleague? <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="describe"
+                placeholder="It's a tool that..."
+                value={describeToColleague}
+                onChange={(e) => setDescribeToColleague(e.target.value)}
+                maxLength={100}
+                required
+              />
+              <p className="text-xs text-muted-foreground">{describeToColleague.length}/100 characters</p>
             </div>
 
             <div className="space-y-3">
-              <Label htmlFor="improvement" className="text-base font-semibold">What would make this tool more valuable?</Label>
-              <Textarea
-                id="improvement"
-                placeholder="Your suggestions..."
-                value={improvement}
-                onChange={(e) => setImprovement(e.target.value)}
-                rows={4}
-              />
-            </div>
-
-            <div className="space-y-3 border-t pt-4">
-              <Label className="text-base font-semibold">Permissions</Label>
+              <Label className="text-base font-semibold">
+                What's preventing you from improving your AI visibility right now? <span className="text-muted-foreground">(select all that apply)</span>
+              </Label>
               <div className="space-y-3">
-                <div className="flex items-start space-x-2">
-                  <Checkbox
-                    id="anonymous"
-                    checked={shareAnonymously}
-                    onCheckedChange={(checked) => {
-                      setShareAnonymously(checked as boolean);
-                      if (checked) {
-                        setShareWithName(false);
-                        setKeepPrivate(false);
-                      }
-                    }}
-                  />
-                  <Label htmlFor="anonymous" className="font-normal cursor-pointer">
-                    You can share my feedback anonymously
-                  </Label>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-start space-x-2">
+                {preventionOptions.map((option) => (
+                  <div key={option} className="flex items-start space-x-2">
                     <Checkbox
-                      id="named"
-                      checked={shareWithName}
+                      id={option}
+                      checked={preventingImprovements.includes(option)}
                       onCheckedChange={(checked) => {
-                        setShareWithName(checked as boolean);
                         if (checked) {
-                          setShareAnonymously(false);
-                          setKeepPrivate(false);
+                          setPreventingImprovements([...preventingImprovements, option]);
+                        } else {
+                          setPreventingImprovements(preventingImprovements.filter(p => p !== option));
                         }
                       }}
                     />
-                    <Label htmlFor="named" className="font-normal cursor-pointer">
-                      Use my feedback with my name:
+                    <Label htmlFor={option} className="font-normal cursor-pointer leading-tight">
+                      {option}
                     </Label>
                   </div>
-                  {shareWithName && (
+                ))}
+                <div className="space-y-2">
+                  <div className="flex items-start space-x-2">
+                    <Checkbox
+                      id="other"
+                      checked={preventingImprovements.includes("Something else")}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setPreventingImprovements([...preventingImprovements, "Something else"]);
+                        } else {
+                          setPreventingImprovements(preventingImprovements.filter(p => p !== "Something else"));
+                          setOtherPrevention("");
+                        }
+                      }}
+                    />
+                    <Label htmlFor="other" className="font-normal cursor-pointer leading-tight">
+                      Something else:
+                    </Label>
+                  </div>
+                  {preventingImprovements.includes("Something else") && (
                     <Input
-                      placeholder="Your name"
-                      value={userName}
-                      onChange={(e) => setUserName(e.target.value)}
+                      placeholder="Please specify..."
+                      value={otherPrevention}
+                      onChange={(e) => setOtherPrevention(e.target.value)}
                       className="ml-6"
-                      required={shareWithName}
                     />
                   )}
-                </div>
-
-                <div className="flex items-start space-x-2">
-                  <Checkbox
-                    id="private"
-                    checked={keepPrivate}
-                    onCheckedChange={(checked) => {
-                      setKeepPrivate(checked as boolean);
-                      if (checked) {
-                        setShareAnonymously(false);
-                        setShareWithName(false);
-                      }
-                    }}
-                  />
-                  <Label htmlFor="private" className="font-normal cursor-pointer">
-                    Keep my feedback private
-                  </Label>
                 </div>
               </div>
             </div>
 
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">
+                Which best describes you? <span className="text-destructive">*</span>
+              </Label>
+              <RadioGroup value={userType} onValueChange={setUserType} required>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="agency" id="agency" />
+                  <Label htmlFor="agency" className="font-normal cursor-pointer">Agency/consultant working with multiple clients</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="inhouse" id="inhouse" />
+                  <Label htmlFor="inhouse" className="font-normal cursor-pointer">In-house marketer/founder managing our site</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="seo" id="seo" />
+                  <Label htmlFor="seo" className="font-normal cursor-pointer">SEO professional adding this to my services</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="exploring" id="exploring" />
+                  <Label htmlFor="exploring" className="font-normal cursor-pointer">Just exploring to learn more</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
             <div className="space-y-2 border-t pt-4">
               <Label htmlFor="email" className="text-base font-semibold">
-                Email for your rewrite guide: <span className="text-destructive">*</span>
+                Email to receive your rewrite guide: <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="email"
@@ -280,7 +302,7 @@ Free analysis: foundindex.com
                   Submitting...
                 </>
               ) : (
-                "Submit feedback"
+                "Submit & unlock bonuses"
               )}
             </Button>
           </form>

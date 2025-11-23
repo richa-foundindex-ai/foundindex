@@ -44,9 +44,12 @@ export const CoffeeBrewingLoader = ({ onComplete, website }: CoffeeBrewingLoader
     <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <Card className="max-w-2xl w-full p-8 space-y-8 shadow-2xl">
         {website && (
-          <div className="text-center">
+          <div className="text-center space-y-3">
             <p className="text-sm text-muted-foreground">Analyzing:</p>
             <p className="text-lg font-semibold text-foreground">{website}</p>
+            <p className="text-sm font-bold text-foreground">
+              We analyze your homepage only. If you entered a subpage, we'll redirect to your main domain.
+            </p>
           </div>
         )}
         

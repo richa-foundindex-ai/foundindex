@@ -612,11 +612,8 @@ Test yours: [foundindex.com will be here after launch]`;
               variant="outline"
               className="w-full h-auto py-6 flex flex-col items-center gap-2"
               onClick={() => {
-                const linkedInText = `I tested ${result.website} on FoundIndex and scored ${score}/100 for AI visibility.
-
-Free test: foundindex.com
-
-#AIvisibility`;
+                const keyInsight = result.recommendations?.[0] || "AI readability improvements needed";
+                const linkedInText = `Just tested my website's AI visibility with FoundIndex. ${score}/100. ${keyInsight}. Worth checking if AI systems understand your business. foundindex.com`;
                 const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://foundindex.com')}`;
                 window.open(linkedInUrl, '_blank', 'width=600,height=600');
                 
