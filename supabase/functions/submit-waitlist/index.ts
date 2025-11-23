@@ -25,11 +25,7 @@ serve(async (req) => {
     const AIRTABLE_BASE_ID = Deno.env.get("AIRTABLE_BASE_ID");
     const AIRTABLE_TABLE_NAME = "Tracking_Waitlist";
 
-    console.log("📧 Airtable Config:", {
-      hasApiKey: !!AIRTABLE_API_KEY,
-      hasBaseId: !!AIRTABLE_BASE_ID,
-      table: AIRTABLE_TABLE_NAME,
-    });
+    console.log("📧 Submitting to Airtable:", { email, source });
 
     if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
       console.error("❌ Airtable credentials not configured");
@@ -39,22 +35,8 @@ serve(async (req) => {
       });
     }
 
-    // Submit to Airtable
+    // Submit to Airtable - WITHOUT signup_date (it's auto-set by Airtable)
     const airtableUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_NAME}`;
-
-    const requestBody = {
-      records: [
-        {
-          fields: {
-            email: email,
-            source: source || "v2_waitlist",
-            signup_date: new Date().toISOString(),
-          },
-        },
-      ],
-    };
-
-    console.log("📤 Sending to Airtable:", JSON.stringify(requestBody, null, 2));
 
     const airtableResponse = await fetch(airtableUrl, {
       method: "POST",
@@ -62,28 +44,26 @@ serve(async (req) => {
         Authorization: `Bearer ${AIRTABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({
+        records: [
+          {
+            fields: {
+              email: email,
+              source: source || "v2_waitlist",
+              // signup_date is automatically set by Airtable as "Created time"
+            },
+          },
+        ],
+      }),
     });
-
-    console.log("📥 Airtable Response Status:", airtableResponse.status);
 
     if (!airtableResponse.ok) {
       const errorText = await airtableResponse.text();
-      console.error("❌ Airtable error response:", errorText);
-
-      // Try to parse the error for more details
-      try {
-        const errorJson = JSON.parse(errorText);
-        console.error("❌ Airtable error details:", JSON.stringify(errorJson, null, 2));
-      } catch (e) {
-        console.error("❌ Airtable raw error:", errorText);
-      }
-
+      console.error("❌ Airtable error:", errorText);
       throw new Error(`Airtable API error: ${airtableResponse.status}`);
     }
 
-    const responseData = await airtableResponse.json();
-    console.log("✅ Successfully submitted to Airtable:", responseData);
+    console.log("✅ Successfully submitted to Airtable");
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
