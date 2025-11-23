@@ -9,12 +9,10 @@ interface FeedbackRequest {
   testId: string;
   score: number;
   website: string;
-  accuracyRating: string;
-  accuracyWhy?: string;
-  firstRecommendation: string;
-  improvement?: string;
-  permissionLevel: "anonymous" | "named" | "private";
-  userName?: string;
+  surprisingResult: string;
+  describeToColleague: string;
+  preventingImprovements: string;
+  userType: string;
   email: string;
 }
 
@@ -28,14 +26,19 @@ const handler = async (req: Request): Promise<Response> => {
       testId,
       score,
       website,
-      accuracyRating,
-      accuracyWhy,
-      firstRecommendation,
-      improvement,
-      permissionLevel,
-      userName,
+      surprisingResult,
+      describeToColleague,
+      preventingImprovements,
+      userType,
       email,
     }: FeedbackRequest = await req.json();
+
+    console.log("📝 Submitting feedback to Airtable:", {
+      testId,
+      score,
+      website,
+      email,
+    });
 
     const AIRTABLE_API_KEY = Deno.env.get("AIRTABLE_API_KEY");
     const AIRTABLE_BASE_ID = Deno.env.get("AIRTABLE_BASE_ID");
@@ -44,7 +47,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Airtable credentials not configured");
     }
 
-    // Submit to Airtable
+    // Submit to Airtable Feedback table
     const airtableResponse = await fetch(
       `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Feedback`,
       {
@@ -58,12 +61,10 @@ const handler = async (req: Request): Promise<Response> => {
             "Test ID": testId,
             Score: score,
             Website: website,
-            "Accuracy Rating": accuracyRating,
-            "Accuracy Why": accuracyWhy || "",
-            "First Recommendation": firstRecommendation,
-            Improvement: improvement || "",
-            "Permission Level": permissionLevel,
-            "User Name": userName || "",
+            "Surprising Result": surprisingResult,
+            "Describe to Colleague": describeToColleague,
+            "Preventing Improvements": preventingImprovements,
+            "User Type": userType,
             Email: email,
             Timestamp: new Date().toISOString(),
           },
@@ -73,12 +74,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!airtableResponse.ok) {
       const errorText = await airtableResponse.text();
-      console.error("Airtable error:", errorText);
+      console.error("❌ Airtable error:", errorText);
       throw new Error(`Airtable submission failed: ${errorText}`);
     }
 
     const result = await airtableResponse.json();
-    console.log("Feedback submitted successfully:", result.id);
+    console.log("✅ Feedback submitted successfully:", result.id);
 
     return new Response(
       JSON.stringify({ success: true, recordId: result.id }),
@@ -88,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
   } catch (error: any) {
-    console.error("Error in submit-feedback function:", error);
+    console.error("❌ Error in submit-feedback function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {

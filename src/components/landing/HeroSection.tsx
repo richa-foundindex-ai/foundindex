@@ -177,11 +177,8 @@ const HeroSection = () => {
         <div className="container mx-auto max-w-7xl">
         <div className="text-center space-y-6">
           <h1 className="text-[2.56rem] md:text-[3.33rem] font-bold text-foreground leading-tight">
-            Is your business invisible to AI?
+            Is your business visible to AI?
           </h1>
-          <p className="text-editorial-sm text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            When someone asks ChatGPT or Claude for recommendations, will they mention you? Find out in 3 minutes.
-          </p>
 
           <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
             <div className="flex items-center gap-3 text-left">
@@ -194,12 +191,6 @@ const HeroSection = () => {
               <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
               <span className="text-base text-muted-foreground">
                 Get specific, actionable recommendations
-              </span>
-            </div>
-            <div className="flex items-center gap-3 text-left">
-              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-              <span className="text-base text-muted-foreground">
-                Free analysis, no credit card required • 3 free tests per month
               </span>
             </div>
           </div>
@@ -241,7 +232,7 @@ const HeroSection = () => {
                 )}
               </Button>
               <p className="text-sm text-muted-foreground text-center">
-                Free analysis • Takes 3 minutes • No credit card required
+                3 free tests per month • Takes 3 minutes • No credit card required
               </p>
             </div>
           </form>
