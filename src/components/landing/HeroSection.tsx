@@ -32,18 +32,21 @@ const HeroSection = () => {
     null,
   );
 
-  const normalizeUrl = (url: string): string => {
-    let normalized = url.trim().toLowerCase();
+  const normalizeUrl = (input: string): string | null => {
+    let url = input.trim();
 
-    // Remove any trailing slashes
-    normalized = normalized.replace(/\/+$/, "");
-
-    // If it doesn't start with http, add https://
-    if (!normalized.startsWith("http://") && !normalized.startsWith("https://")) {
-      normalized = "https://" + normalized;
+    // Add https:// if no protocol is present
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      url = "https://" + url;
     }
 
-    return normalized;
+    // Validate URL format
+    try {
+      new URL(url);
+      return url;
+    } catch (e) {
+      return null;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,6 +62,15 @@ const HeroSection = () => {
     }
 
     const websiteUrl = normalizeUrl(formData.website);
+
+    if (!websiteUrl) {
+      toast({
+        title: "Invalid URL",
+        description: "Please enter a valid website URL",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // TEMPORARILY COMMENT OUT RATE LIMITING FOR TESTING
     // const rateLimit = checkRateLimit(websiteUrl);
