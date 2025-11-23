@@ -12,8 +12,6 @@ serve(async (req) => {
 
   try {
     const requestData = await req.json();
-
-    // Extract ONLY email and source
     const email = requestData.email;
     const source = requestData.source || "v2_waitlist";
 
@@ -35,7 +33,6 @@ serve(async (req) => {
       });
     }
 
-    // Send to Airtable with ONLY email and source
     const airtableBody = {
       records: [
         {
@@ -47,6 +44,7 @@ serve(async (req) => {
       ],
     };
 
+    // FIXED: Added parenthesis after fetch
     const airtableResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Tracking_Waitlist`, {
       method: "POST",
       headers: {
