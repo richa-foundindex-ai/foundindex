@@ -370,6 +370,12 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
+    // Get client IP for tracking (still record submissions even though rate limiting is disabled)
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
+
+    // RATE LIMITING TEMPORARILY DISABLED FOR TESTING
+    // TODO: Re-enable before launch
+    /*
     // Check rate limit: 3 tests per email per month
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
@@ -425,6 +431,7 @@ serve(async (req) => {
         },
       );
     }
+    */
 
     // Generate test ID
     const testId = crypto.randomUUID();
