@@ -237,7 +237,7 @@ const Methodology = () => {
             <p className="text-muted-foreground mb-4">Questions about our methodology?</p>
             <a 
               href="mailto:hello@foundindex.com" 
-              className="text-primary hover:underline font-medium"
+              className="text-primary hover:underline font-medium cursor-pointer"
             >
               hello@foundindex.com
             </a>
