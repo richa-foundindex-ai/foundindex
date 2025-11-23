@@ -1,10 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.83.0';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.83.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 interface TestSubmission {
@@ -14,14 +14,7 @@ interface TestSubmission {
 }
 
 // Input validation schemas
-const ALLOWED_INDUSTRIES = [
-  'saas',
-  'financial',
-  'ecommerce',
-  'professional',
-  'healthcare',
-  'other',
-];
+const ALLOWED_INDUSTRIES = ["saas", "financial", "ecommerce", "professional", "healthcare", "other"];
 
 const validateEmail = (email: string | undefined): string => {
   if (!email) {
@@ -30,44 +23,39 @@ const validateEmail = (email: string | undefined): string => {
   }
   const trimmed = email.trim().toLowerCase();
   if (trimmed.length > 255) {
-    throw new Error('Email must be less than 255 characters');
+    throw new Error("Email must be less than 255 characters");
   }
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(trimmed)) {
-    throw new Error('Invalid email format');
+    throw new Error("Invalid email format");
   }
   return trimmed;
 };
 
 const validateWebsite = (website: string): string => {
   const trimmed = website.trim();
-  if (trimmed.length > 500) {
-    throw new Error('Website URL must be less than 500 characters');
+  if (trimmed.length === 0) {
+    throw new Error("Please enter a website URL");
   }
-  
-  let normalized = trimmed;
-  if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
-    normalized = 'https://' + normalized;
-  }
-  
-  try {
-    const url = new URL(normalized);
-    if (!url.hostname || url.hostname.length < 3) {
-      throw new Error('Invalid domain');
-    }
+
+  // Use the normalizeUrl function we just fixed
+  const normalized = normalizeUrl(trimmed);
+
+  // Simple check - if it starts with https:// and has a dot, it's probably valid
+  if (normalized.startsWith("https://") && normalized.includes(".")) {
     return normalized;
-  } catch {
-    throw new Error('Invalid website URL format');
   }
+
+  throw new Error('Please enter a valid website URL (like "slack.com")');
 };
 
 const validateIndustry = (industry: string | undefined): string => {
   if (!industry) {
     // Default to 'other' when not provided
-    return 'other';
+    return "other";
   }
   if (!ALLOWED_INDUSTRIES.includes(industry)) {
-    throw new Error('Invalid industry. Must be one of: ' + ALLOWED_INDUSTRIES.join(', '));
+    throw new Error("Invalid industry. Must be one of: " + ALLOWED_INDUSTRIES.join(", "));
   }
   return industry;
 };
@@ -88,7 +76,7 @@ const industryQueries: Record<string, string[]> = {
     "best SaaS tools for business operations",
     "recommended solutions for workflow management",
     "top software for project tracking",
-    "best cloud tools for team collaboration"
+    "best cloud tools for team collaboration",
   ],
   financial: [
     "best accounting software for small business",
@@ -105,7 +93,7 @@ const industryQueries: Record<string, string[]> = {
     "best software for financial reporting",
     "recommended solutions for tax management",
     "top tools for invoicing",
-    "best platforms for financial planning"
+    "best platforms for financial planning",
   ],
   ecommerce: [
     "best e-commerce platforms for startups",
@@ -122,7 +110,7 @@ const industryQueries: Record<string, string[]> = {
     "best software for product catalogs",
     "recommended platforms for multi-channel selling",
     "top tools for order fulfillment",
-    "best solutions for customer reviews"
+    "best solutions for customer reviews",
   ],
   professional: [
     "best software for professional services",
@@ -139,7 +127,7 @@ const industryQueries: Record<string, string[]> = {
     "best solutions for client communication",
     "recommended software for professional reporting",
     "top tools for resource planning",
-    "best platforms for professional workflows"
+    "best platforms for professional workflows",
   ],
   healthcare: [
     "best healthcare management software",
@@ -156,7 +144,7 @@ const industryQueries: Record<string, string[]> = {
     "best solutions for healthcare communication",
     "recommended software for practice management",
     "top tools for healthcare workflows",
-    "best platforms for patient engagement"
+    "best platforms for patient engagement",
   ],
   beauty: [
     "best organic skincare brands",
@@ -173,7 +161,7 @@ const industryQueries: Record<string, string[]> = {
     "best beauty tools and accessories",
     "recommended facial care products",
     "top wellness beauty products",
-    "best beauty products for glowing skin"
+    "best beauty products for glowing skin",
   ],
   education: [
     "best online learning platforms",
@@ -190,7 +178,7 @@ const industryQueries: Record<string, string[]> = {
     "best educational content platforms",
     "recommended tools for teachers",
     "top student engagement platforms",
-    "best online education providers"
+    "best online education providers",
   ],
   legal: [
     "best legal practice management software",
@@ -207,7 +195,7 @@ const industryQueries: Record<string, string[]> = {
     "best law firm management software",
     "recommended tools for legal compliance",
     "top legal workflow automation",
-    "best client intake software for lawyers"
+    "best client intake software for lawyers",
   ],
   telecom: [
     "best business phone systems",
@@ -224,7 +212,7 @@ const industryQueries: Record<string, string[]> = {
     "best cloud communication services",
     "recommended VoIP solutions for remote teams",
     "top telecommunications for small business",
-    "best hosted PBX systems"
+    "best hosted PBX systems",
   ],
   food: [
     "best restaurant management software",
@@ -241,7 +229,7 @@ const industryQueries: Record<string, string[]> = {
     "best food safety management software",
     "recommended restaurant scheduling tools",
     "top food delivery management platforms",
-    "best recipe management software"
+    "best recipe management software",
   ],
   realestate: [
     "best real estate CRM software",
@@ -258,7 +246,7 @@ const industryQueries: Record<string, string[]> = {
     "best real estate website builders",
     "recommended virtual tour software",
     "top real estate data platforms",
-    "best tenant screening software"
+    "best tenant screening software",
   ],
   consulting: [
     "best consulting project management tools",
@@ -275,7 +263,7 @@ const industryQueries: Record<string, string[]> = {
     "best consulting document management",
     "recommended tools for strategic consulting",
     "top consulting workflow automation",
-    "best client portal software for consultants"
+    "best client portal software for consultants",
   ],
   marketing: [
     "best digital marketing platforms",
@@ -292,7 +280,7 @@ const industryQueries: Record<string, string[]> = {
     "best lead generation software",
     "recommended marketing collaboration platforms",
     "top brand management tools",
-    "best customer engagement platforms"
+    "best customer engagement platforms",
   ],
   travel: [
     "best travel booking platforms",
@@ -309,7 +297,7 @@ const industryQueries: Record<string, string[]> = {
     "best flight booking systems",
     "recommended hotel management software",
     "top travel agency software solutions",
-    "best destination marketing platforms"
+    "best destination marketing platforms",
   ],
   manufacturing: [
     "best manufacturing ERP systems",
@@ -326,7 +314,7 @@ const industryQueries: Record<string, string[]> = {
     "best shop floor management software",
     "recommended manufacturing CRM platforms",
     "top manufacturing automation tools",
-    "best product lifecycle management software"
+    "best product lifecycle management software",
   ],
   other: [
     "best software solutions for businesses",
@@ -343,12 +331,12 @@ const industryQueries: Record<string, string[]> = {
     "best solutions for workflow",
     "recommended software for reporting",
     "top tools for data management",
-    "best platforms for business operations"
-  ]
+    "best platforms for business operations",
+  ],
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -360,12 +348,12 @@ serve(async (req) => {
     const validatedWebsite = validateWebsite(website);
     const validatedIndustry = validateIndustry(industry);
 
-    console.log('Processing test for industry:', validatedIndustry);
+    console.log("Processing test for industry:", validatedIndustry);
 
     // Initialize Supabase client with service role for rate limiting
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
     // Check rate limit: 3 tests per email per month
@@ -374,75 +362,79 @@ serve(async (req) => {
     startOfMonth.setHours(0, 0, 0, 0);
 
     const { count: emailCount, error: emailCountError } = await supabaseAdmin
-      .from('test_submissions')
-      .select('*', { count: 'exact', head: true })
-      .eq('email', validatedEmail)
-      .gte('created_at', startOfMonth.toISOString());
+      .from("test_submissions")
+      .select("*", { count: "exact", head: true })
+      .eq("email", validatedEmail)
+      .gte("created_at", startOfMonth.toISOString());
 
     if (emailCountError) {
-      console.error('Rate limit check error:', emailCountError);
-      throw new Error('Unable to process request');
+      console.error("Rate limit check error:", emailCountError);
+      throw new Error("Unable to process request");
     }
 
     if (emailCount !== null && emailCount >= 3) {
-      return new Response(JSON.stringify({ 
-        error: 'Rate limit exceeded. You can test 3 websites per month. Please try again next month.' 
-      }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded. You can test 3 websites per month. Please try again next month.",
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Check IP-based rate limit: 100 tests per IP per day (testing value - change to 10 for production)
-    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown';
-    
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
+
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const { count: ipCount, error: ipCountError } = await supabaseAdmin
-      .from('test_submissions')
-      .select('*', { count: 'exact', head: true })
-      .eq('ip_address', clientIP)
-      .gte('created_at', oneDayAgo.toISOString());
+      .from("test_submissions")
+      .select("*", { count: "exact", head: true })
+      .eq("ip_address", clientIP)
+      .gte("created_at", oneDayAgo.toISOString());
 
     if (ipCountError) {
-      console.error('IP rate limit check error:', ipCountError);
-      throw new Error('Unable to process request');
+      console.error("IP rate limit check error:", ipCountError);
+      throw new Error("Unable to process request");
     }
 
     if (ipCount !== null && ipCount >= 100) {
-      return new Response(JSON.stringify({ 
-        error: 'Rate limit exceeded. Too many requests from your network. Please try again later.' 
-      }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Rate limit exceeded. Too many requests from your network. Please try again later.",
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Generate test ID
     const testId = crypto.randomUUID();
     const testDate = new Date().toISOString();
-    
+
     // Test with OpenAI
-    const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
-    
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+
     console.log(`[${testId}] ===================`);
     console.log(`[${testId}] STEP 1: Fetching website content for AI-readiness audit...`);
     console.log(`[${testId}] ===================`);
 
     // Fetch the user's website
-    let websiteHtml = '';
+    let websiteHtml = "";
     let fetchSuccess = false;
-    
+
     try {
       const websiteResponse = await fetch(validatedWebsite, {
         headers: {
-          'User-Agent': 'FoundIndex-Bot/1.0 (AI Recommendation Analyzer)'
+          "User-Agent": "FoundIndex-Bot/1.0 (AI Recommendation Analyzer)",
         },
-        redirect: 'follow',
+        redirect: "follow",
       });
-      
+
       if (websiteResponse.ok) {
         websiteHtml = await websiteResponse.text();
         fetchSuccess = true;
@@ -515,23 +507,24 @@ Return ONLY valid JSON (no markdown):
   ]
 }`;
 
-    const auditResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    const auditResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${openaiApiKey}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: "gpt-4o-mini",
         messages: [
           {
-            role: 'system',
-            content: 'You are an expert at analyzing websites for AI-readiness. Return only valid JSON with no markdown.'
+            role: "system",
+            content:
+              "You are an expert at analyzing websites for AI-readiness. Return only valid JSON with no markdown.",
           },
           {
-            role: 'user',
-            content: auditPrompt
-          }
+            role: "user",
+            content: auditPrompt,
+          },
         ],
         max_tokens: 1500,
         temperature: 0.3,
@@ -540,20 +533,23 @@ Return ONLY valid JSON (no markdown):
 
     if (!auditResponse.ok) {
       console.error(`[${testId}] OpenAI audit API error:`, auditResponse.status);
-      throw new Error('Failed to perform AI-readiness audit');
+      throw new Error("Failed to perform AI-readiness audit");
     }
 
     const auditData = await auditResponse.json();
-    
+
     // === DEBUG: Log FULL OpenAI API Response ===
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] === FULL OPENAI API RESPONSE ===`);
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] Full auditData object:`, JSON.stringify(auditData, null, 2));
     console.log(`[${testId}] ═══════════════════════════════════════`);
-    
-    let auditText = auditData.choices[0].message.content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    
+
+    let auditText = auditData.choices[0].message.content
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
+      .trim();
+
     // === DEBUG: Log Extracted Content ===
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] === EXTRACTED CONTENT FROM OPENAI ===`);
@@ -563,7 +559,7 @@ Return ONLY valid JSON (no markdown):
     console.log(`[${testId}] ═══════════════════════════════════════`);
 
     const auditResults = JSON.parse(auditText);
-    
+
     // === DEBUG: Log Parsed JSON ===
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] === PARSED JSON FROM OPENAI ===`);
@@ -577,8 +573,8 @@ Return ONLY valid JSON (no markdown):
     const getScore = (primary: any, ...fallbacks: any[]): number => {
       const candidates = [primary, ...fallbacks];
       for (const value of candidates) {
-        if (typeof value === 'number' && !Number.isNaN(value)) return value;
-        if (typeof value === 'string') {
+        if (typeof value === "number" && !Number.isNaN(value)) return value;
+        if (typeof value === "string") {
           const parsed = parseFloat(value);
           if (!Number.isNaN(parsed)) return parsed;
         }
@@ -635,23 +631,47 @@ Return ONLY valid JSON (no markdown):
     console.log(`[${testId}] === INDIVIDUAL SCORE EXTRACTION ===`);
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] contentClarityScore extracted:`, contentClarityScore);
-    console.log(`[${testId}]   - Tried: (auditResults as any).content_clarity_score =`, (auditResults as any).content_clarity_score);
-    console.log(`[${testId}]   - Tried: (auditResults as any).content_clarity =`, (auditResults as any).content_clarity);
+    console.log(
+      `[${testId}]   - Tried: (auditResults as any).content_clarity_score =`,
+      (auditResults as any).content_clarity_score,
+    );
+    console.log(
+      `[${testId}]   - Tried: (auditResults as any).content_clarity =`,
+      (auditResults as any).content_clarity,
+    );
     console.log(`[${testId}]   - Tried: breakdown.content_clarity_score =`, (breakdown as any).content_clarity_score);
     console.log(`[${testId}] structuredDataScore extracted:`, structuredDataScore);
-    console.log(`[${testId}]   - Tried: (auditResults as any).structured_data_score =`, (auditResults as any).structured_data_score);
-    console.log(`[${testId}]   - Tried: (auditResults as any).structured_data =`, (auditResults as any).structured_data);
+    console.log(
+      `[${testId}]   - Tried: (auditResults as any).structured_data_score =`,
+      (auditResults as any).structured_data_score,
+    );
+    console.log(
+      `[${testId}]   - Tried: (auditResults as any).structured_data =`,
+      (auditResults as any).structured_data,
+    );
     console.log(`[${testId}]   - Tried: breakdown.structured_data_score =`, (breakdown as any).structured_data_score);
     console.log(`[${testId}] authorityScore extracted:`, authorityScore);
-    console.log(`[${testId}]   - Tried: (auditResults as any).authority_score =`, (auditResults as any).authority_score);
+    console.log(
+      `[${testId}]   - Tried: (auditResults as any).authority_score =`,
+      (auditResults as any).authority_score,
+    );
     console.log(`[${testId}]   - Tried: (auditResults as any).authority =`, (auditResults as any).authority);
     console.log(`[${testId}]   - Tried: breakdown.authority_score =`, (breakdown as any).authority_score);
     console.log(`[${testId}] discoverabilityScore extracted:`, discoverabilityScore);
-    console.log(`[${testId}]   - Tried: (auditResults as any).discoverability_score =`, (auditResults as any).discoverability_score);
-    console.log(`[${testId}]   - Tried: (auditResults as any).discoverability =`, (auditResults as any).discoverability);
+    console.log(
+      `[${testId}]   - Tried: (auditResults as any).discoverability_score =`,
+      (auditResults as any).discoverability_score,
+    );
+    console.log(
+      `[${testId}]   - Tried: (auditResults as any).discoverability =`,
+      (auditResults as any).discoverability,
+    );
     console.log(`[${testId}]   - Tried: breakdown.discoverability_score =`, (breakdown as any).discoverability_score);
     console.log(`[${testId}] comparisonScore extracted:`, comparisonScore);
-    console.log(`[${testId}]   - Tried: (auditResults as any).comparison_score =`, (auditResults as any).comparison_score);
+    console.log(
+      `[${testId}]   - Tried: (auditResults as any).comparison_score =`,
+      (auditResults as any).comparison_score,
+    );
     console.log(`[${testId}]   - Tried: (auditResults as any).comparison =`, (auditResults as any).comparison);
     console.log(`[${testId}]   - Tried: breakdown.comparison_score =`, (breakdown as any).comparison_score);
     console.log(`[${testId}] totalScore extracted:`, totalScore);
@@ -661,7 +681,8 @@ Return ONLY valid JSON (no markdown):
     console.log(`[${testId}] ═══════════════════════════════════════`);
 
     // === ENHANCED LOGGING: What OpenAI returned ===
-    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] 
+═══════════════════════════════════════`);
     console.log(`[${testId}] === AUDIT RESULTS FROM OPENAI ===`);
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] Raw audit JSON:`, JSON.stringify(auditResults, null, 2));
@@ -672,7 +693,9 @@ Return ONLY valid JSON (no markdown):
     console.log(`[${testId}] Authority (normalized): ${authorityScore}/20`);
     console.log(`[${testId}] Discoverability (normalized): ${discoverabilityScore}/20`);
     console.log(`[${testId}] Comparison (normalized): ${comparisonScore}/15`);
-    console.log(`[${testId}] Recommendations count: ${Array.isArray((auditResults as any).recommendations) ? (auditResults as any).recommendations.length : 0}`);
+    console.log(
+      `[${testId}] Recommendations count: ${Array.isArray((auditResults as any).recommendations) ? (auditResults as any).recommendations.length : 0}`,
+    );
     console.log(`[${testId}] ═══════════════════════════════════════`);
 
     console.log(`[${testId}] AI-Readiness Audit Complete:`);
@@ -687,11 +710,11 @@ Return ONLY valid JSON (no markdown):
     console.log(`[${testId}] ===================`);
     console.log(`[${testId}] STEP 3: Analyzing business type for query generation...`);
     console.log(`[${testId}] ===================`);
-    
+
     // Step 3: Analyze website and generate custom queries
     let businessType = validatedIndustry;
     let queries: string[] = [];
-    
+
     try {
       const analysisPrompt = `Analyze this business website: ${validatedWebsite}
 
@@ -718,24 +741,25 @@ Return ONLY valid JSON:
   ]
 }`;
 
-      const analysisResponse = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
+      const analysisResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${openaiApiKey}`,
+          "Content-Type": "application/json",
         },
         signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: "gpt-4o-mini",
           messages: [
             {
-              role: 'system',
-              content: 'You are an expert at analyzing businesses and buyer search behavior. Return ONLY valid JSON with no markdown formatting.'
+              role: "system",
+              content:
+                "You are an expert at analyzing businesses and buyer search behavior. Return ONLY valid JSON with no markdown formatting.",
             },
             {
-              role: 'user',
-              content: analysisPrompt
-            }
+              role: "user",
+              content: analysisPrompt,
+            },
           ],
           max_tokens: 1000,
           temperature: 0.7,
@@ -748,12 +772,15 @@ Return ONLY valid JSON:
 
       const analysisData = await analysisResponse.json();
       let analysisText = analysisData.choices[0].message.content;
-      
+
       // Clean any markdown formatting (```json or ``` wrappers)
-      analysisText = analysisText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-      
+      analysisText = analysisText
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
+
       console.log(`[${testId}] Raw analysis response:`, analysisText.substring(0, 200));
-      
+
       // Parse JSON response
       try {
         const parsed = JSON.parse(analysisText);
@@ -769,10 +796,10 @@ Return ONLY valid JSON:
           queries = parsed.queries || [];
         }
       }
-      
+
       console.log(`[${testId}] Business type identified:`, businessType);
       console.log(`[${testId}] Generated ${queries.length} custom queries`);
-      
+
       // Fallback to industry queries if generation failed
       if (!queries || queries.length < 10) {
         console.log(`[${testId}] Custom query generation insufficient, falling back to industry queries`);
@@ -784,7 +811,7 @@ Return ONLY valid JSON:
       console.log(`[${testId}] Falling back to industry queries`);
       queries = industryQueries[validatedIndustry] || industryQueries.other;
     }
-    
+
     let totalRecommendations = 0;
     const queryResults = [];
 
@@ -795,24 +822,25 @@ Return ONLY valid JSON:
       console.log(`[${testId}] Processing query ${i + 1}/${queries.length}...`);
 
       try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${openaiApiKey}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${openaiApiKey}`,
+            "Content-Type": "application/json",
           },
           signal: AbortSignal.timeout(10000),
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: "gpt-4o-mini",
             messages: [
               {
-                role: 'system',
-                content: 'You are a helpful assistant that recommends software and services. Provide specific recommendations with brief explanations.'
+                role: "system",
+                content:
+                  "You are a helpful assistant that recommends software and services. Provide specific recommendations with brief explanations.",
               },
               {
-                role: 'user',
-                content: query
-              }
+                role: "user",
+                content: query,
+              },
             ],
             max_tokens: 300,
             temperature: 0.7,
@@ -821,37 +849,44 @@ Return ONLY valid JSON:
 
         const data = await response.json();
         const aiResponse = data.choices[0].message.content;
-        
+
         // Check if website is mentioned (improved domain + brand matching)
         let domain = validatedWebsite;
         try {
           const url = new URL(validatedWebsite);
-          domain = url.hostname.replace(/^www\./, '');
+          domain = url.hostname.replace(/^www\./, "");
         } catch (e) {
-          domain = validatedWebsite.replace(/^https?:\/\/(www\.)?/, '').split('/')[0];
+          domain = validatedWebsite.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
         }
 
-        const brandName = domain.split('.')[0];
+        const brandName = domain.split(".")[0];
         const responseText = aiResponse.toLowerCase();
-        
+
         // Check multiple variations for better matching
         const domainFound = responseText.includes(domain.toLowerCase());
         const brandFound = responseText.includes(brandName.toLowerCase());
-        
+
         // Also check brand with spaces (e.g., "lighttravelaction" -> "light travel action")
-        const brandWithSpaces = brandName.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
+        const brandWithSpaces = brandName.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
         const brandSpacedFound = responseText.includes(brandWithSpaces);
-        
+
         const wasRecommended = domainFound || brandFound || brandSpacedFound;
 
-        console.log('[DOMAIN] Testing for domain:', domain);
-        console.log('[MATCH] Domain:', domain, '| Brand:', brandName, '| Brand with spaces:', brandWithSpaces);
-        console.log('[MATCH] Domain found?', domainFound, '| Brand found?', brandFound, '| Brand spaced found?', brandSpacedFound);
-        console.log('[MATCH] Final result:', wasRecommended);
-        
+        console.log("[DOMAIN] Testing for domain:", domain);
+        console.log("[MATCH] Domain:", domain, "| Brand:", brandName, "| Brand with spaces:", brandWithSpaces);
+        console.log(
+          "[MATCH] Domain found?",
+          domainFound,
+          "| Brand found?",
+          brandFound,
+          "| Brand spaced found?",
+          brandSpacedFound,
+        );
+        console.log("[MATCH] Final result:", wasRecommended);
+
         if (wasRecommended) {
           totalRecommendations++;
-          console.log('[COUNTER] Recommendation found! Total now:', totalRecommendations);
+          console.log("[COUNTER] Recommendation found! Total now:", totalRecommendations);
         }
 
         console.log(`[Query ${i + 1}] Testing:`, query);
@@ -859,28 +894,28 @@ Return ONLY valid JSON:
         console.log(`[Query ${i + 1}] Looking for domain:`, domain);
         console.log(`[Query ${i + 1}] Was recommended:`, wasRecommended);
         console.log(`[Query ${i + 1}] Total recommendations so far:`, totalRecommendations);
-        
+
         // Improve context snippet - extract relevant sentence or take more characters
         let contextSnippet = aiResponse.substring(0, 400);
         if (wasRecommended) {
           const sentences = aiResponse.split(/[.!?]\s+/);
-          const relevantSentence = sentences.find((s: string) => 
-            s.toLowerCase().includes(brandName.toLowerCase()) || 
-            s.toLowerCase().includes(domain.toLowerCase())
+          const relevantSentence = sentences.find(
+            (s: string) =>
+              s.toLowerCase().includes(brandName.toLowerCase()) || s.toLowerCase().includes(domain.toLowerCase()),
           );
           if (relevantSentence && relevantSentence.length < 400) {
             contextSnippet = relevantSentence;
           }
         }
-        
+
         queryResults.push({
           query_number: i + 1,
           query_text: query,
-          engine: 'ChatGPT',
+          engine: "ChatGPT",
           was_recommended: wasRecommended,
           context_snippet: contextSnippet,
           recommendation_position: wasRecommended ? 1 : null,
-          quality_rating: wasRecommended ? 'high' : 'none'
+          quality_rating: wasRecommended ? "high" : "none",
         });
 
         console.log(`[${testId}] Completed query ${i + 1}/${queries.length} - Recommended: ${wasRecommended}`);
@@ -892,43 +927,41 @@ Return ONLY valid JSON:
         queryResults.push({
           query_number: i + 1,
           query_text: query,
-          engine: 'ChatGPT',
+          engine: "ChatGPT",
           was_recommended: false,
-          context_snippet: 'Error occurred during testing',
+          context_snippet: "Error occurred during testing",
           recommendation_position: null,
-          quality_rating: 'none'
+          quality_rating: "none",
         });
       }
     }
 
     console.log(`[${testId}] All queries completed. Total recommendations: ${totalRecommendations}/${queries.length}`);
 
-    console.log('[LOOP] All queries complete');
-    console.log('[SCORE] Final totalRecommendations:', totalRecommendations);
-    console.log('[SCORE] Total queries:', queries.length);
+    console.log("[LOOP] All queries complete");
+    console.log("[SCORE] Final totalRecommendations:", totalRecommendations);
+    console.log("[SCORE] Total queries:", queries.length);
 
     const recommendationRate = (totalRecommendations / queries.length) * 100;
     const foundIndexScore = Math.round(recommendationRate);
 
-    console.log('[SCORE] Recommendation rate:', recommendationRate);
-    console.log('[SCORE] Calculated score:', foundIndexScore);
+    console.log("[SCORE] Recommendation rate:", recommendationRate);
+    console.log("[SCORE] Calculated score:", foundIndexScore);
 
-    console.log('[FINAL] Total recommendations:', totalRecommendations);
-    console.log('[FINAL] Total queries:', queries.length);
-    console.log('[FINAL] Recommendation rate:', recommendationRate);
-    console.log('[FINAL] FoundIndex score:', foundIndexScore);
+    console.log("[FINAL] Total recommendations:", totalRecommendations);
+    console.log("[FINAL] Total queries:", queries.length);
+    console.log("[FINAL] Recommendation rate:", recommendationRate);
+    console.log("[FINAL] FoundIndex score:", foundIndexScore);
 
     console.log(`[${testId}] Test complete: ${totalRecommendations}/${queries.length} recommendations`);
 
     // Record submission in database for rate limiting
-    const { error: insertError } = await supabaseAdmin
-      .from('test_submissions')
-      .insert({
-        email: validatedEmail,
-        ip_address: clientIP,
-        test_id: testId,
-        created_at: testDate
-      });
+    const { error: insertError } = await supabaseAdmin.from("test_submissions").insert({
+      email: validatedEmail,
+      ip_address: clientIP,
+      test_id: testId,
+      created_at: testDate,
+    });
 
     if (insertError) {
       console.error(`[${testId}] Failed to record submission:`, insertError);
@@ -936,33 +969,35 @@ Return ONLY valid JSON:
 
     // Store in Airtable
     console.log(`[${testId}] Writing results to Airtable...`);
-    const airtableApiKey = Deno.env.get('AIRTABLE_API_KEY');
-    const airtableBaseId = Deno.env.get('AIRTABLE_BASE_ID');
+    const airtableApiKey = Deno.env.get("AIRTABLE_API_KEY");
+    const airtableBaseId = Deno.env.get("AIRTABLE_BASE_ID");
 
-    console.log(`[${testId}] Airtable config - Base ID exists: ${!!airtableBaseId}, API Key exists: ${!!airtableApiKey}`);
+    console.log(
+      `[${testId}] Airtable config - Base ID exists: ${!!airtableBaseId}, API Key exists: ${!!airtableApiKey}`,
+    );
 
     // Store test record - Airtable field mapping
     const airtableFieldMapping: Record<string, string> = {
-      testId: 'test_id',
-      email: 'user_email',
-      website: 'website_url',
-      industry: 'industry',
-      testDate: 'test_date',
-      foundIndexTotalScore: 'foundindex_score',
-      contentClarity: 'content_clarity_score',
-      structuredData: 'structured_data_score',
-      authority: 'authority_score',
-      discoverability: 'discoverability_score',
-      comparison: 'comparison_score',
-      analysisDetails: 'analysis_details',
-      recommendations: 'recommendations',
-      businessType: 'business_type',
-      queries: 'generated_queries',
-      chatGptScore: 'chatgpt_score',
-      claudeScore: 'claude_score',
-      perplexityScore: 'perplexity_score',
-      recommendationsCount: 'recommendations_count',
-      recommendationRate: 'recommendation_rate',
+      testId: "test_id",
+      email: "user_email",
+      website: "website_url",
+      industry: "industry",
+      testDate: "test_date",
+      foundIndexTotalScore: "foundindex_score",
+      contentClarity: "content_clarity_score",
+      structuredData: "structured_data_score",
+      authority: "authority_score",
+      discoverability: "discoverability_score",
+      comparison: "comparison_score",
+      analysisDetails: "analysis_details",
+      recommendations: "recommendations",
+      businessType: "business_type",
+      queries: "generated_queries",
+      chatGptScore: "chatgpt_score",
+      claudeScore: "claude_score",
+      perplexityScore: "perplexity_score",
+      recommendationsCount: "recommendations_count",
+      recommendationRate: "recommendation_rate",
     };
 
     const internalPayload = {
@@ -971,7 +1006,7 @@ Return ONLY valid JSON:
       website: validatedWebsite,
       industry: validatedIndustry, // Maps to single-select: "saas", "financial", "ecommerce", "professional", "healthcare", "other"
       testDate,
-      
+
       // AI Readiness Scores (PRIMARY) - Use audit-based score as main score
       foundIndexTotalScore: totalScore, // This is the AI-readiness audit score (0-100)
       contentClarity: contentClarityScore,
@@ -981,7 +1016,7 @@ Return ONLY valid JSON:
       comparison: comparisonScore,
       analysisDetails: (auditResults as any).analysis_details,
       recommendations: (auditResults as any).recommendations,
-      
+
       // Query-Based Visibility (SECONDARY)
       businessType, // AI-identified business type
       queries, // Store custom queries as formatted JSON
@@ -1007,7 +1042,7 @@ Return ONLY valid JSON:
 
       // Transform complex objects to JSON strings where needed
       let finalValue = value;
-      if (internalKey === 'analysisDetails' || internalKey === 'recommendations' || internalKey === 'queries') {
+      if (internalKey === "analysisDetails" || internalKey === "recommendations" || internalKey === "queries") {
         try {
           finalValue = JSON.stringify(value, null, 2);
         } catch (err) {
@@ -1021,7 +1056,7 @@ Return ONLY valid JSON:
     });
 
     console.log(`[${testId}] ═══════════════════════════════════════`);
-    
+
     // === DEBUG: Log Final Scores Object Before Airtable Write ===
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] === FINAL SCORES OBJECT BEFORE AIRTABLE WRITE ===`);
@@ -1037,22 +1072,24 @@ Return ONLY valid JSON:
     console.log(`[${testId}]   recommendations_count:`, totalRecommendations);
     console.log(`[${testId}]   recommendation_rate:`, parseFloat(recommendationRate.toFixed(3)));
     console.log(`[${testId}] ═══════════════════════════════════════`);
-    
+
     // === ENHANCED LOGGING: What we're writing to Airtable ===
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] === PREPARING AIRTABLE WRITE ===`);
     console.log(`[${testId}] ═══════════════════════════════════════`);
-    
+
     // Log EVERY field individually
     console.log(`[${testId}] FIELD-BY-FIELD BREAKDOWN:`);
     Object.entries(testRecordFields).forEach(([key, value]) => {
-      console.log(`[${testId}]   - ${key}: ${typeof value === 'string' && value.length > 100 ? value.substring(0, 100) + '...' : JSON.stringify(value)} (type: ${typeof value})`);
+      console.log(
+        `[${testId}]   - ${key}: ${typeof value === "string" && value.length > 100 ? value.substring(0, 100) + "..." : JSON.stringify(value)} (type: ${typeof value})`,
+      );
     });
-    
+
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] COMPLETE AIRTABLE REQUEST BODY (before validation):`);
     let requestBody = {
-      fields: testRecordFields
+      fields: testRecordFields,
     };
     console.log(`[${testId}]`, JSON.stringify(requestBody, null, 2));
     console.log(`[${testId}] ═══════════════════════════════════════`);
@@ -1063,53 +1100,56 @@ Return ONLY valid JSON:
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] Airtable Base ID: ${airtableBaseId}`);
     console.log(`[${testId}] Table Name: Tests`);
-    
+
     // Start with all fields we want to send
     let validatedFields = { ...testRecordFields };
-    
+
     // Fetch the actual table schema from Airtable
     try {
       console.log(`[${testId}] Fetching table schema from Airtable...`);
       const schemaResponse = await fetch(`https://api.airtable.com/v0/meta/bases/${airtableBaseId}/tables`, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${airtableApiKey}`,
+          Authorization: `Bearer ${airtableApiKey}`,
         },
       });
-      
+
       if (schemaResponse.ok) {
         const schemaData = await schemaResponse.json();
-        const testsTable = schemaData.tables?.find((t: any) => t.name === 'Tests');
-        
+        const testsTable = schemaData.tables?.find((t: any) => t.name === "Tests");
+
         if (testsTable) {
           console.log(`[${testId}] ✅ Found 'Tests' table in Airtable base`);
-          
+
           // Get list of all available field names
           const availableFieldNames = testsTable.fields?.map((f: any) => f.name) || [];
-          console.log(`[${testId}] Fields that actually exist in Airtable:`, availableFieldNames.join(', '));
-          
+          console.log(`[${testId}] Fields that actually exist in Airtable:`, availableFieldNames.join(", "));
+
           // Get list of fields we're trying to send
           const ourFieldNames = Object.keys(testRecordFields);
-          console.log(`[${testId}] Fields we're trying to send:`, ourFieldNames.join(', '));
-          
+          console.log(`[${testId}] Fields we're trying to send:`, ourFieldNames.join(", "));
+
           // Find fields that exist and fields that don't
-          const validFields = ourFieldNames.filter(f => availableFieldNames.includes(f));
-          const invalidFields = ourFieldNames.filter(f => !availableFieldNames.includes(f));
-          
+          const validFields = ourFieldNames.filter((f) => availableFieldNames.includes(f));
+          const invalidFields = ourFieldNames.filter((f) => !availableFieldNames.includes(f));
+
           console.log(`[${testId}] ═══════════════════════════════════════`);
           console.log(`[${testId}] FIELD VALIDATION RESULTS:`);
-          console.log(`[${testId}]   ✅ Valid fields (${validFields.length}):`, validFields.join(', '));
-          
+          console.log(`[${testId}]   ✅ Valid fields (${validFields.length}):`, validFields.join(", "));
+
           if (invalidFields.length > 0) {
-            console.warn(`[${testId}]   ⚠️ Skipping invalid fields (${invalidFields.length}):`, invalidFields.join(', '));
-            
+            console.warn(
+              `[${testId}]   ⚠️ Skipping invalid fields (${invalidFields.length}):`,
+              invalidFields.join(", "),
+            );
+
             // Remove invalid fields from our payload
-            invalidFields.forEach(fieldName => {
+            invalidFields.forEach((fieldName) => {
               delete validatedFields[fieldName];
             });
-            
+
             console.log(`[${testId}]   🔧 These fields should be added to your Airtable 'Tests' table:`);
-            invalidFields.forEach(f => {
+            invalidFields.forEach((f) => {
               console.log(`[${testId}]      - ${f}`);
             });
           } else {
@@ -1117,7 +1157,7 @@ Return ONLY valid JSON:
           }
         } else {
           console.error(`[${testId}] ❌ 'Tests' table NOT FOUND in Airtable base`);
-          console.error(`[${testId}] Available tables:`, schemaData.tables?.map((t: any) => t.name).join(', '));
+          console.error(`[${testId}] Available tables:`, schemaData.tables?.map((t: any) => t.name).join(", "));
           console.warn(`[${testId}] ⚠️ Proceeding with all fields (unvalidated)`);
         }
       } else {
@@ -1130,88 +1170,93 @@ Return ONLY valid JSON:
       console.error(`[${testId}] Exception fetching Airtable schema:`, schemaError);
       console.warn(`[${testId}] ⚠️ Proceeding with all fields (unvalidated)`);
     }
-    
+
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] FINAL VALIDATED FIELDS TO SEND (${Object.keys(validatedFields).length} fields):`);
-    Object.keys(validatedFields).forEach(key => {
+    Object.keys(validatedFields).forEach((key) => {
       console.log(`[${testId}]   ✓ ${key}`);
     });
     console.log(`[${testId}] ═══════════════════════════════════════`);
     // ============ END VALIDATION ============
-    
+
     // Update request body with validated fields only
     requestBody.fields = validatedFields;
-    
+
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] FINAL REQUEST BODY TO SEND TO AIRTABLE:`);
     console.log(`[${testId}]`, JSON.stringify(requestBody, null, 2));
     console.log(`[${testId}] ═══════════════════════════════════════`);
 
     let testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${airtableApiKey}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${airtableApiKey}`,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
     });
 
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] AIRTABLE RESPONSE RECEIVED`);
     console.log(`[${testId}] Status Code: ${testRecordResponse.status}`);
     console.log(`[${testId}] Status Text: ${testRecordResponse.statusText}`);
-    
+
     if (!testRecordResponse.ok) {
       const errorText = await testRecordResponse.text();
       console.error(`[${testId}] ❌ AIRTABLE WRITE FAILED ❌`);
       console.error(`[${testId}] Response Status: ${testRecordResponse.status}`);
       console.error(`[${testId}] Response Body:`, errorText);
-      console.error(`[${testId}] Full Error Details:`, JSON.stringify({
-        status: testRecordResponse.status,
-        statusText: testRecordResponse.statusText,
-        headers: Object.fromEntries(testRecordResponse.headers.entries()),
-        body: errorText
-      }, null, 2));
+      console.error(
+        `[${testId}] Full Error Details:`,
+        JSON.stringify(
+          {
+            status: testRecordResponse.status,
+            statusText: testRecordResponse.statusText,
+            headers: Object.fromEntries(testRecordResponse.headers.entries()),
+            body: errorText,
+          },
+          null,
+          2,
+        ),
+      );
 
       // Handle UNKNOWN_FIELD_NAME by removing ONLY the problematic field
       let retried = false;
       try {
         const errorJson = JSON.parse(errorText);
-        const isUnknownField =
-          testRecordResponse.status === 422 &&
-          errorJson?.error?.type === 'UNKNOWN_FIELD_NAME';
+        const isUnknownField = testRecordResponse.status === 422 && errorJson?.error?.type === "UNKNOWN_FIELD_NAME";
 
         if (isUnknownField) {
           retried = true;
-          
+
           // Extract the specific field name from the error message
           // Error format: "Unknown field name: \"field_name\""
-          const errorMessage = errorJson?.error?.message || '';
+          const errorMessage = errorJson?.error?.message || "";
           const fieldNameMatch = errorMessage.match(/Unknown field name: "([^"]+)"/);
           const problematicField = fieldNameMatch ? fieldNameMatch[1] : null;
-          
+
           console.error(`[${testId}] ═══════════════════════════════════════`);
           console.error(`[${testId}] ❌ AIRTABLE FIELD ERROR DETECTED`);
           console.error(`[${testId}] Full Airtable Error:`, JSON.stringify(errorJson, null, 2));
-          
+
           let fallbackFields = { ...testRecordFields };
-          
+
           if (problematicField) {
             console.error(`[${testId}] ❌ Problematic Field: "${problematicField}"`);
             console.error(`[${testId}] This field needs to be added to your Airtable 'Tests' table`);
             console.warn(`[${testId}] Retrying without the "${problematicField}" field...`);
-            
+
             // Remove ONLY the problematic field
             delete fallbackFields[problematicField];
-            
+
             console.log(`[${testId}] Field "${problematicField}" removed from payload`);
-            console.log(`[${testId}] Remaining fields:`, Object.keys(fallbackFields).join(', '));
+            console.log(`[${testId}] Remaining fields:`, Object.keys(fallbackFields).join(", "));
           } else {
             // Fallback: if we can't identify the specific field, remove all optional fields
             console.error(`[${testId}] ⚠️ Could not identify specific problematic field from error message`);
             console.error(`[${testId}] Error message was: "${errorMessage}"`);
             console.warn(`[${testId}] Removing all optional fields as fallback...`);
-            
+
             delete fallbackFields.content_clarity_score;
             delete fallbackFields.structured_data_score;
             delete fallbackFields.authority_score;
@@ -1222,19 +1267,19 @@ Return ONLY valid JSON:
             delete fallbackFields.business_type;
             delete fallbackFields.generated_queries;
           }
-          
+
           console.log(`[${testId}] RETRY REQUEST BODY:`, JSON.stringify({ fields: fallbackFields }, null, 2));
           console.log(`[${testId}] ═══════════════════════════════════════`);
-          
+
           testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Authorization': `Bearer ${airtableApiKey}`,
-              'Content-Type': 'application/json',
+              Authorization: `Bearer ${airtableApiKey}`,
+              "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              fields: fallbackFields
-            })
+              fields: fallbackFields,
+            }),
           });
 
           console.log(`[${testId}] RETRY RESPONSE - Status: ${testRecordResponse.status}`);
@@ -1247,11 +1292,14 @@ Return ONLY valid JSON:
 
       if (!testRecordResponse.ok) {
         const finalErrorText = retried ? await testRecordResponse.text() : errorText;
-        console.error(`[${testId}] Airtable Tests write FINAL failure - Status: ${testRecordResponse.status}, Response:`, finalErrorText);
+        console.error(
+          `[${testId}] Airtable Tests write FINAL failure - Status: ${testRecordResponse.status}, Response:`,
+          finalErrorText,
+        );
         throw new Error(`Airtable Tests write failed: ${finalErrorText}`);
       }
     }
-    
+
     const testRecordData = await testRecordResponse.json();
     const airtableRecordId = testRecordData.id;
     console.log(`[${testId}] ✅ AIRTABLE WRITE SUCCESS ✅`);
@@ -1262,47 +1310,61 @@ Return ONLY valid JSON:
     // Store query results in batches
     const batchSize = 10;
     console.log(`[${testId}] Writing ${queryResults.length} query results in batches of ${batchSize}...`);
-    
+
     for (let i = 0; i < queryResults.length; i += batchSize) {
       const batch = queryResults.slice(i, i + batchSize);
       const batchNumber = Math.floor(i / batchSize) + 1;
       const totalBatches = Math.ceil(queryResults.length / batchSize);
-      console.log(`[Airtable] Writing Query_Results batch: ${batchNumber} of ${totalBatches} (${batch.length} records)`);
-      console.log(`[Airtable] Batch ${batchNumber} sample record:`, JSON.stringify({
-        test_id: testId,
-        query_number: batch[0].query_number,
-        query_text: batch[0].query_text.substring(0, 50) + '...',
-        engine: batch[0].engine,
-        was_recommended: batch[0].was_recommended,
-        quality_rating: batch[0].quality_rating
-      }, null, 2));
-      
+      console.log(
+        `[Airtable] Writing Query_Results batch: ${batchNumber} of ${totalBatches} (${batch.length} records)`,
+      );
+      console.log(
+        `[Airtable] Batch ${batchNumber} sample record:`,
+        JSON.stringify(
+          {
+            test_id: testId,
+            query_number: batch[0].query_number,
+            query_text: batch[0].query_text.substring(0, 50) + "...",
+            engine: batch[0].engine,
+            was_recommended: batch[0].was_recommended,
+            quality_rating: batch[0].quality_rating,
+          },
+          null,
+          2,
+        ),
+      );
+
       const batchResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Query_Results`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${airtableApiKey}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${airtableApiKey}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          records: batch.map(result => ({
+          records: batch.map((result) => ({
             fields: {
               test_id: testId,
-              ...result
-            }
-          }))
-        })
+              ...result,
+            },
+          })),
+        }),
       });
 
       console.log(`[${testId}] Batch ${batchNumber} - Status: ${batchResponse.status}`);
-      
+
       if (!batchResponse.ok) {
         const errorText = await batchResponse.text();
-        console.error(`[${testId}] Airtable Query_Results batch ${batchNumber} write FAILED - Status: ${batchResponse.status}, Response:`, errorText);
+        console.error(
+          `[${testId}] Airtable Query_Results batch ${batchNumber} write FAILED - Status: ${batchResponse.status}, Response:`,
+          errorText,
+        );
         throw new Error(`Airtable Query_Results write failed: ${errorText}`);
       }
-      
+
       const batchData = await batchResponse.json();
-      console.log(`[Airtable] Query_Results batch ${batchNumber} of ${totalBatches} successful - Wrote ${batchData.records?.length || 0} records`);
+      console.log(
+        `[Airtable] Query_Results batch ${batchNumber} of ${totalBatches} successful - Wrote ${batchData.records?.length || 0} records`,
+      );
     }
 
     console.log(`[${testId}] All ${queryResults.length} query results stored successfully in Airtable`);
@@ -1310,23 +1372,23 @@ Return ONLY valid JSON:
     // Send email notification using service role key
     console.log(`[${testId}] Sending email notification to ${validatedEmail}...`);
     try {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL');
-      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-      
+      const supabaseUrl = Deno.env.get("SUPABASE_URL");
+      const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
       await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${serviceRoleKey}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${serviceRoleKey}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           to: validatedEmail,
           testId: testId,
           score: foundIndexScore,
-          website: validatedWebsite
-        })
+          website: validatedWebsite,
+        }),
       });
-      
+
       console.log(`[${testId}] Email sent successfully`);
     } catch (emailError) {
       console.error(`[${testId}] Email send failed:`, emailError);
@@ -1334,46 +1396,56 @@ Return ONLY valid JSON:
 
     console.log(`[${testId}] SUCCESS! Test ID: ${testId}, FoundIndex Score: ${foundIndexScore}`);
 
-    return new Response(JSON.stringify({
-      success: true,
-      testId,
-      foundIndexScore,
-      totalRecommendations,
-      totalQueries: queries.length
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return new Response(
+      JSON.stringify({
+        success: true,
+        testId,
+        foundIndexScore,
+        totalRecommendations,
+        totalQueries: queries.length,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  } catch (error) {
+    console.error("Request processing error:", error);
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : "No stack trace",
+      type: typeof error,
+      raw: error,
     });
 
-  } catch (error) {
-    console.error('Request processing error:', error);
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace',
-      type: typeof error,
-      raw: error
-    });
-    
     // Return specific validation errors
-    if (error instanceof Error && 
-        (error.message.includes('Email') || 
-         error.message.includes('Website') || 
-         error.message.includes('Industry') ||
-         error.message.includes('Rate limit'))) {
-      return new Response(JSON.stringify({ 
-        error: error.message
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (
+      error instanceof Error &&
+      (error.message.includes("Email") ||
+        error.message.includes("Website") ||
+        error.message.includes("Industry") ||
+        error.message.includes("Rate limit"))
+    ) {
+      return new Response(
+        JSON.stringify({
+          error: error.message,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
-    
+
     // Return more detailed error for debugging
-    return new Response(JSON.stringify({ 
-      error: 'An error occurred processing your request. Please try again.',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        error: "An error occurred processing your request. Please try again.",
+        details: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
