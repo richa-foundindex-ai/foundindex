@@ -31,33 +31,39 @@ serve(async (req) => {
       });
     }
 
-    console.log("📤 Sending to Airtable:", { email, source: source || "v2_waitlist" });
+    console.log("📤 Attempting to send to Airtable");
+    console.log("Base ID:", AIRTABLE_BASE_ID);
+    console.log("Email:", email);
+    console.log("Source:", source || "v2_waitlist");
 
-    // SEND TO AIRTABLE - ONLY email and source
-    // signup_date will auto-populate because it's a "Created time" field
+    const requestBody = {
+      records: [
+        {
+          fields: {
+            email: email,
+            source: source || "v2_waitlist",
+          },
+        },
+      ],
+    };
+
+    console.log("📤 Request body:", JSON.stringify(requestBody, null, 2));
+
     const airtableResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Tracking_Waitlist`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${AIRTABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        records: [
-          {
-            fields: {
-              email: email,
-              source: source || "v2_waitlist",
-            },
-          },
-        ],
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     const responseText = await airtableResponse.text();
+    console.log("📥 Airtable status:", airtableResponse.status);
     console.log("📥 Airtable response:", responseText);
 
     if (!airtableResponse.ok) {
-      console.error("❌ Airtable API error:", airtableResponse.status, responseText);
+      console.error("❌ Airtable rejected the request");
       return new Response(
         JSON.stringify({
           error: `Airtable API error: ${airtableResponse.status}`,
@@ -67,7 +73,7 @@ serve(async (req) => {
       );
     }
 
-    console.log("✅ Waitlist signup saved to Airtable");
+    console.log("✅ Success! Data saved to Airtable");
 
     return new Response(
       JSON.stringify({
@@ -77,11 +83,12 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
-    console.error("❌ Error:", error);
+    console.error("❌ Catch block error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
       JSON.stringify({
         error: "Server error",
-        message: error.message,
+        message: errorMessage,
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
