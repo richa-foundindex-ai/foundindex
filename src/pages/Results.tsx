@@ -6,7 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Loader2, CheckCircle2, XCircle, Share2, Download, BarChart3, Target, Globe2, Sparkles, Info, ArrowLeft } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  Share2,
+  Download,
+  BarChart3,
+  Target,
+  Globe2,
+  Sparkles,
+  Info,
+  ArrowLeft,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UnlockTestsModal } from "@/components/results/UnlockTestsModal";
@@ -88,23 +100,21 @@ const Results = () => {
         if (fetchError) throw new Error(fetchError.message);
         if (data?.error) throw new Error(data.error);
 
-        // === ENHANCED LOGGING: What frontend received ===
-        console.log('═══════════════════════════════════════');
-        console.log('=== RESULTS PAGE - DATA RECEIVED ===');
-        console.log('═══════════════════════════════════════');
-        console.log('Full data object:', data);
-        console.log('foundIndexScore:', data?.foundIndexScore);
-        console.log('contentClarityScore:', data?.contentClarityScore);
-        console.log('structuredDataScore:', data?.structuredDataScore);
-        console.log('authorityScore:', data?.authorityScore);
-        console.log('discoverabilityScore:', data?.discoverabilityScore);
-        console.log('comparisonScore:', data?.comparisonScore);
-        console.log('recommendations:', data?.recommendations);
-        console.log('═══════════════════════════════════════');
+        console.log("═══════════════════════════════════════");
+        console.log("=== RESULTS PAGE - DATA RECEIVED ===");
+        console.log("═══════════════════════════════════════");
+        console.log("Full data object:", data);
+        console.log("foundIndexScore:", data?.foundIndexScore);
+        console.log("contentClarityScore:", data?.contentClarityScore);
+        console.log("structuredDataScore:", data?.structuredDataScore);
+        console.log("authorityScore:", data?.authorityScore);
+        console.log("discoverabilityScore:", data?.discoverabilityScore);
+        console.log("comparisonScore:", data?.comparisonScore);
+        console.log("recommendations:", data?.recommendations);
+        console.log("═══════════════════════════════════════");
 
         setResult(data as TestResult);
-        
-        // Show unlock modal after a short delay
+
         setTimeout(() => {
           setShowUnlockModal(true);
         }, 2000);
@@ -141,48 +151,35 @@ const Results = () => {
   const handleShare = () => {
     if (!result) return;
     const score = result.foundIndexScore ?? 0;
-    
-    // Get the first recommendation as the most surprising insight
-    const firstRecommendation = result.recommendations?.[0] || "AI readability improvements needed";
-    
-    const linkedInText = `My website scored ${score}/100 for AI visibility.
+    const topRecommendation = result.recommendations?.[0] || "AI readability improvements needed";
 
-Most surprising insight: ${firstRecommendation}
+    const linkedInText = `Always trying to stay ahead of how AI affects our brand visibility, so I ran my site through FoundIndex.
 
-Check how AI 'reads' your business (free, 3 minutes): https://foundindex.com
+My AI Visibility Score: ${score}/100  
+Key insight: ${topRecommendation}
 
-#AIvisibility`;
-    
-    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://foundindex.com')}`;
-    window.open(linkedInUrl, '_blank', 'width=600,height=600');
-    
-    // Also copy text to clipboard for easy pasting
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(linkedInText).then(
-        () => toast.success("Share text copied! Paste it in your LinkedIn post"),
-        () => {}
-      );
-    }
-  };
+With AI-led search replacing traditional SEO, this was genuinely eye-opening. If you care about staying ahead of AI-driven discovery, this 3-minute test is worth it.
 
-  const handleCopyShare = async () => {
-    if (!result) return;
-    const score = result.foundIndexScore ?? 0;
-    const shareText = `I just analyzed my website's AI visibility with FoundIndex. Score: ${score}/100
+Try it: foundindex.com
 
-Test yours: [foundindex.com will be here after launch]`;
-    
-    try {
-      await navigator.clipboard.writeText(shareText);
-      toast.success('✅ Link copied to clipboard!', { duration: 5000 });
-    } catch (err) {
-      toast.error('Failed to copy to clipboard');
-    }
+#AIVisibility #SEO #FutureOfSearch`;
+
+    navigator.clipboard.writeText(linkedInText).then(
+      () => {
+        toast.success("✅ LinkedIn post copied to clipboard!", {
+          description: "Paste it on LinkedIn and share your score",
+          duration: 5000,
+        });
+      },
+      () => {
+        toast.error("Failed to copy text");
+      },
+    );
   };
 
   const handleProInterestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!proEmail || !proEmail.trim()) {
       toast.error("Please enter your email");
       return;
@@ -197,12 +194,10 @@ Test yours: [foundindex.com will be here after launch]`;
     setIsSubmittingProInterest(true);
 
     try {
-      const { error } = await supabase
-        .from('test_submissions')
-        .insert({
-          test_id: `pro-interest-${Date.now()}`,
-          email: proEmail.trim(),
-        });
+      const { error } = await supabase.from("test_submissions").insert({
+        test_id: `pro-interest-${Date.now()}`,
+        email: proEmail.trim(),
+      });
 
       if (error) throw error;
 
@@ -217,7 +212,7 @@ Test yours: [foundindex.com will be here after launch]`;
           <a href="mailto:hello@foundindex.com" className="underline cursor-pointer">
             hello@foundindex.com
           </a>
-        </span>
+        </span>,
       );
     } finally {
       setIsSubmittingProInterest(false);
@@ -252,7 +247,9 @@ Test yours: [foundindex.com will be here after launch]`;
           <XCircle className="h-10 w-10 text-destructive mx-auto" />
           <h1 className="text-xl font-semibold">Couldn&apos;t load results</h1>
           <p className="text-sm text-muted-foreground">{error ?? "Something went wrong"}</p>
-          <Button asChild><Link to="/">Run new test</Link></Button>
+          <Button asChild>
+            <Link to="/">Run new test</Link>
+          </Button>
         </Card>
       </div>
     );
@@ -264,25 +261,16 @@ Test yours: [foundindex.com will be here after launch]`;
     <div className="min-h-screen bg-background/40">
       <main className="max-w-5xl mx-auto px-4 py-10 space-y-8">
         <div className="flex items-center justify-between mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/")}
-            className="gap-2"
-          >
+          <Button variant="ghost" onClick={() => navigate("/")} className="gap-2">
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-          
+
           <div className="flex items-center gap-4">
             {testsRemaining < 999 && (
-              <span className="text-sm text-muted-foreground">
-                Tests remaining: {testsRemaining}/3
-              </span>
+              <span className="text-sm text-muted-foreground">Tests remaining: {testsRemaining}/3</span>
             )}
-            <Button
-              variant="outline"
-              onClick={() => setShowFeedbackModal(true)}
-            >
+            <Button variant="outline" onClick={() => setShowFeedbackModal(true)}>
               Give feedback
             </Button>
           </div>
@@ -296,14 +284,9 @@ Test yours: [foundindex.com will be here after launch]`;
             </p>
           </div>
 
-          {/* How FoundIndex scored your site */}
           <Card className="p-6 bg-accent-gray-light border-none">
-            <h2 className="text-xl font-semibold mb-4 text-foreground">
-              How FoundIndex scored your site
-            </h2>
-            <p className="text-muted-foreground mb-4">
-              We tested how AI systems would describe your business:
-            </p>
+            <h2 className="text-xl font-semibold mb-4 text-foreground">How FoundIndex scored your site</h2>
+            <p className="text-muted-foreground mb-4">We tested how AI systems would describe your business:</p>
             <ul className="space-y-2 text-muted-foreground">
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold">✓</span>
@@ -318,9 +301,7 @@ Test yours: [foundindex.com will be here after launch]`;
                 <span>Can they explain why someone should choose you?</span>
               </li>
             </ul>
-            <p className="text-muted-foreground mt-4">
-              Your score reflects how clearly AI grasped these core details.
-            </p>
+            <p className="text-muted-foreground mt-4">Your score reflects how clearly AI grasped these core details.</p>
           </Card>
 
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -357,14 +338,16 @@ Test yours: [foundindex.com will be here after launch]`;
             ].map((item, i) => (
               <div key={i} className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">{item.label} ({item.score ?? 0}/{item.max})</span>
+                  <span className="text-sm">
+                    {item.label} ({item.score ?? 0}/{item.max})
+                  </span>
                   <span className="text-xs text-muted-foreground">
                     {item.score ?? 0}/{item.max}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Progress value={((item.score ?? 0) / item.max) * 100} className="h-1.5 flex-1" />
-                  {(item.score ?? 0) > (item.max * 0.7) ? (
+                  {(item.score ?? 0) > item.max * 0.7 ? (
                     <CheckCircle2 className="h-4 w-4 text-emerald-500" />
                   ) : (
                     <XCircle className="h-4 w-4 text-destructive" />
@@ -382,20 +365,20 @@ Test yours: [foundindex.com will be here after launch]`;
           </Card>
         </section>
 
-        {/* About This Analysis Section */}
         <Card className="p-6 space-y-4 bg-muted/30 border-dashed">
           <div className="flex items-start gap-3">
             <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <div className="space-y-2">
               <h2 className="text-lg font-semibold">About this analysis</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                FoundIndex is a v1 diagnostic tool. We analyze your homepage only (multi-page coming in v2). Scores may vary ±2 points between tests—this is normal with AI-powered analysis. We're building in public and learning from your feedback.
+                FoundIndex is a v1 diagnostic tool. We analyze your homepage only (multi-page coming in v2). Scores may
+                vary ±2 points between tests—this is normal with AI-powered analysis. We're building in public and
+                learning from your feedback.
               </p>
             </div>
           </div>
         </Card>
 
-        {/* Understanding Your Score Section */}
         <Card className="p-6 space-y-4 bg-muted/30">
           <div className="flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
@@ -403,35 +386,47 @@ Test yours: [foundindex.com will be here after launch]`;
           </div>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Your AI visibility score is based on content analysis. Slight variations (±1-2 points) can occur naturally, even without changes. This is normal—AI-powered analysis isn't perfectly deterministic.
+              Your AI visibility score is based on content analysis. Slight variations (±1-2 points) can occur
+              naturally, even without changes. This is normal—AI-powered analysis isn't perfectly deterministic.
             </p>
             <div className="space-y-3">
               <p className="text-sm font-medium">Real improvements require 5+ point changes. These come from:</p>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">•</span>
-                  <span>Adding customer testimonials <span className="text-emerald-600 font-medium">(+3-8 points)</span></span>
+                  <span>
+                    Adding customer testimonials <span className="text-emerald-600 font-medium">(+3-8 points)</span>
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">•</span>
-                  <span>Creating comparison pages <span className="text-emerald-600 font-medium">(+5-8 points)</span></span>
+                  <span>
+                    Creating comparison pages <span className="text-emerald-600 font-medium">(+5-8 points)</span>
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">•</span>
-                  <span>Improving your FAQ <span className="text-emerald-600 font-medium">(+2-4 points)</span></span>
+                  <span>
+                    Improving your FAQ <span className="text-emerald-600 font-medium">(+2-4 points)</span>
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">•</span>
-                  <span>Adding structured data <span className="text-emerald-600 font-medium">(+4-6 points)</span></span>
+                  <span>
+                    Adding structured data <span className="text-emerald-600 font-medium">(+4-6 points)</span>
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary mt-0.5">•</span>
-                  <span>Publishing case studies <span className="text-emerald-600 font-medium">(+5-8 points)</span></span>
+                  <span>
+                    Publishing case studies <span className="text-emerald-600 font-medium">(+5-8 points)</span>
+                  </span>
                 </li>
               </ul>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              These changes take days or weeks to show up because Google needs to recrawl your site. This is why monthly tracking helps—you'll see meaningful progress over time, not day-to-day fluctuations.
+              These changes take days or weeks to show up because Google needs to recrawl your site. This is why monthly
+              tracking helps—you'll see meaningful progress over time, not day-to-day fluctuations.
             </p>
           </div>
         </Card>
@@ -458,7 +453,8 @@ Test yours: [foundindex.com will be here after launch]`;
               ) : (
                 <div className="rounded-lg border bg-card p-4">
                   <p className="text-sm text-muted-foreground">
-                    Great score! Your site is already well-optimized for AI readability. Keep your content fresh and continue building authority.
+                    Great score! Your site is already well-optimized for AI readability. Keep your content fresh and
+                    continue building authority.
                   </p>
                 </div>
               )}
@@ -472,11 +468,11 @@ Test yours: [foundindex.com will be here after launch]`;
                 <h2 className="text-sm font-semibold">Share your score</h2>
               </div>
               <div className="rounded-md bg-background border px-3 py-2 text-xs">
-                <p className="font-medium">I just analyzed my website's AI visibility with FoundIndex. Score: {score}/100</p>
-                <p className="mt-1 text-xs text-primary">Test yours: [foundindex.com will be here after launch]</p>
+                <p className="font-medium">Always trying to stay ahead of how AI affects our brand visibility...</p>
+                <p className="mt-1 text-xs text-primary">My AI Visibility Score: {score}/100</p>
               </div>
-              <Button size="sm" className="w-full" variant="outline" onClick={handleCopyShare}>
-                Copy share text
+              <Button size="sm" className="w-full" variant="outline" onClick={handleShare}>
+                Copy LinkedIn post
               </Button>
             </Card>
 
@@ -511,7 +507,7 @@ Test yours: [foundindex.com will be here after launch]`;
             variant="link"
             className="text-primary hover:underline text-sm font-medium"
             onClick={() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              window.scrollTo({ top: 0, behavior: "smooth" });
             }}
           >
             Back to results ↑
@@ -519,16 +515,13 @@ Test yours: [foundindex.com will be here after launch]`;
         </section>
       </main>
 
-      {/* Pro Features Coming Soon Modal */}
       <Dialog open={showProModal} onOpenChange={setShowProModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-2xl">Monthly tracking coming soon! 🚀</DialogTitle>
-            <DialogDescription className="text-base pt-2">
-              We're building Pro features including:
-            </DialogDescription>
+            <DialogDescription className="text-base pt-2">We're building Pro features including:</DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-3 py-4">
             <div className="flex items-start gap-3">
               <div className="mt-1">✅</div>
@@ -537,7 +530,7 @@ Test yours: [foundindex.com will be here after launch]`;
                 <p className="text-sm text-muted-foreground">Track your score over time automatically</p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <div className="mt-1">📊</div>
               <div>
@@ -545,7 +538,7 @@ Test yours: [foundindex.com will be here after launch]`;
                 <p className="text-sm text-muted-foreground">See how your AI visibility improves month over month</p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
               <div className="mt-1">🎯</div>
               <div>
@@ -570,12 +563,8 @@ Test yours: [foundindex.com will be here after launch]`;
                 required
               />
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isSubmittingProInterest}
-            >
+
+            <Button type="submit" className="w-full" disabled={isSubmittingProInterest}>
               {isSubmittingProInterest ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -589,7 +578,6 @@ Test yours: [foundindex.com will be here after launch]`;
         </DialogContent>
       </Dialog>
 
-      {/* Unlock Tests Modal */}
       <UnlockTestsModal
         open={showUnlockModal}
         onOpenChange={setShowUnlockModal}
@@ -599,7 +587,6 @@ Test yours: [foundindex.com will be here after launch]`;
         recommendations={result.recommendations}
       />
 
-      {/* Feedback Modal */}
       <UnlockTestsModal
         open={showFeedbackModal}
         onOpenChange={setShowFeedbackModal}
@@ -609,7 +596,6 @@ Test yours: [foundindex.com will be here after launch]`;
         recommendations={result.recommendations}
       />
 
-      {/* Permanent CTAs Section */}
       <section className="py-16 px-4 bg-accent-gray-light border-t">
         <div className="container mx-auto max-w-4xl">
           <h2 className="text-2xl font-semibold text-center mb-8">What's next?</h2>
@@ -619,24 +605,38 @@ Test yours: [foundindex.com will be here after launch]`;
               variant="outline"
               className="w-full h-auto py-6 flex flex-col items-center gap-2"
               onClick={() => {
-                const keyInsight = result.recommendations?.[0] || "AI readability improvements needed";
-                const linkedInText = `Just tested my website's AI visibility with FoundIndex. ${score}/100. ${keyInsight}. Worth checking if AI systems understand your business. foundindex.com`;
-                const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://foundindex.com')}`;
-                window.open(linkedInUrl, '_blank', 'width=600,height=600');
-                
-                if (navigator.clipboard) {
-                  navigator.clipboard.writeText(linkedInText).then(
-                    () => toast.success("Share text copied! Paste it in your LinkedIn post"),
-                    () => {}
-                  );
-                }
-                unlockTests();
+                if (!result) return;
+                const topRecommendation = result.recommendations?.[0] || "AI readability improvements needed";
+
+                const linkedInText = `Always trying to stay ahead of how AI affects our brand visibility, so I ran my site through FoundIndex.
+
+My AI Visibility Score: ${score}/100  
+Key insight: ${topRecommendation}
+
+With AI-led search replacing traditional SEO, this was genuinely eye-opening. If you care about staying ahead of AI-driven discovery, this 3-minute test is worth it.
+
+Try it: foundindex.com
+
+#AIVisibility #SEO #FutureOfSearch`;
+
+                navigator.clipboard.writeText(linkedInText).then(
+                  () => {
+                    toast.success("✅ LinkedIn post copied to clipboard!", {
+                      description: "Paste it on LinkedIn and share your score",
+                      duration: 5000,
+                    });
+                    unlockTests();
+                  },
+                  () => {
+                    toast.error("Failed to copy text");
+                  },
+                );
               }}
             >
               <span className="font-semibold">Share on LinkedIn</span>
               <span className="text-xs text-muted-foreground">Unlock unlimited tests</span>
             </Button>
-            
+
             <Button
               size="lg"
               variant="outline"
@@ -646,12 +646,12 @@ Test yours: [foundindex.com will be here after launch]`;
               <span className="font-semibold">Give Feedback</span>
               <span className="text-xs text-muted-foreground">Help us improve</span>
             </Button>
-            
+
             <Button
               size="lg"
               className="w-full h-auto py-6 flex flex-col items-center gap-2"
               onClick={() => {
-                navigate('/#waitlist');
+                navigate("/#waitlist");
                 window.scrollTo(0, document.body.scrollHeight);
               }}
             >
