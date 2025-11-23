@@ -1,7 +1,7 @@
 // Cookie-based rate limiting utilities
 
 const COOKIE_NAME = 'foundindex_tests';
-const TESTS_PER_MONTH = 1;
+const TESTS_PER_MONTH = 3;
 const COOKIE_EXPIRY_DAYS = 30;
 
 interface TestRecord {
@@ -42,8 +42,44 @@ export const setCookieData = (data: CookieData) => {
 };
 
 export const checkRateLimit = (url: string): { allowed: boolean; previousScore?: number; remainingTests: number } => {
-  // Beta testing: unlimited tests for everyone
-  return { allowed: true, remainingTests: 999 };
+  const data = getCookieData();
+  
+  // If unlocked, allow unlimited tests
+  if (data.unlocked) {
+    return { allowed: true, remainingTests: 999 };
+  }
+  
+  // Remove tests older than 30 days
+  const now = Date.now();
+  const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
+  data.tests = data.tests.filter(test => test.date > thirtyDaysAgo);
+  
+  // Check if this URL was already tested (case-insensitive)
+  const normalizedUrl = url.toLowerCase();
+  const existingTest = data.tests.find(test => test.url.toLowerCase() === normalizedUrl);
+  
+  if (existingTest) {
+    // URL already tested - return previous score and remaining tests
+    return {
+      allowed: false,
+      previousScore: existingTest.score,
+      remainingTests: Math.max(0, TESTS_PER_MONTH - data.tests.length)
+    };
+  }
+  
+  // Check if user has remaining tests
+  if (data.tests.length >= TESTS_PER_MONTH) {
+    return {
+      allowed: false,
+      remainingTests: 0
+    };
+  }
+  
+  // Allow the test
+  return {
+    allowed: true,
+    remainingTests: TESTS_PER_MONTH - data.tests.length - 1
+  };
 };
 
 export const recordTest = (url: string, score: number) => {

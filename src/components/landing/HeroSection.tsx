@@ -72,26 +72,26 @@ const HeroSection = () => {
       return;
     }
 
-    // TEMPORARILY COMMENT OUT RATE LIMITING FOR TESTING
-    // const rateLimit = checkRateLimit(websiteUrl);
-    // if (!rateLimit.allowed) {
-    //   if (rateLimit.previousScore !== undefined) {
-    //     setRateLimitInfo({
-    //       url: websiteUrl,
-    //       score: rateLimit.previousScore,
-    //       remainingTests: rateLimit.remainingTests,
-    //     });
-    //     setShowRateLimitModal(true);
-    //     return;
-    //   } else {
-    //     toast({
-    //       title: "Monthly limit reached",
-    //       description: "Share on LinkedIn or give feedback to unlock more tests!",
-    //       variant: "destructive",
-    //     });
-    //     return;
-    //   }
-    // }
+    // Check rate limiting
+    const rateLimit = checkRateLimit(websiteUrl);
+    if (!rateLimit.allowed) {
+      if (rateLimit.previousScore !== undefined) {
+        setRateLimitInfo({
+          url: websiteUrl,
+          score: rateLimit.previousScore,
+          remainingTests: rateLimit.remainingTests,
+        });
+        setShowRateLimitModal(true);
+        return;
+      } else {
+        toast({
+          title: "Monthly limit reached",
+          description: "Share on LinkedIn or give feedback to unlock more tests!",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
 
     setIsSubmitting(true);
 
