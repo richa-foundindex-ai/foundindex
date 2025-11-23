@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Loader2, CheckCircle2, XCircle, Share2, Download, BarChart3, Target, Globe2, Sparkles, Info } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Share2, Download, BarChart3, Target, Globe2, Sparkles, Info, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UnlockTestsModal } from "@/components/results/UnlockTestsModal";
+import { getRemainingTests, unlockTests } from "@/utils/rateLimiting";
+import Footer from "@/components/landing/Footer";
 
 interface QueryResult {
   queryNumber: number;
@@ -51,6 +53,7 @@ interface TestResult {
 }
 
 const Results = () => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const testId = searchParams.get("testId");
   const [loading, setLoading] = useState(true);
@@ -61,8 +64,15 @@ const Results = () => {
   const [isSubmittingProInterest, setIsSubmittingProInterest] = useState(false);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [testsUsed, setTestsUsed] = useState(0);
+  const [testsRemaining, setTestsRemaining] = useState(999);
 
   useEffect(() => {
+    // Update test counter
+    const remaining = getRemainingTests();
+    setTestsRemaining(remaining);
+    setTestsUsed(999 - remaining);
+
     const fetchResults = async () => {
       if (!testId) {
         setError("No test ID provided");
@@ -246,6 +256,31 @@ Test yours: [foundindex.com will be here after launch]`;
   return (
     <div className="min-h-screen bg-background/40">
       <main className="max-w-5xl mx-auto px-4 py-10 space-y-8">
+        <div className="flex items-center justify-between mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/")}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
+          
+          <div className="flex items-center gap-4">
+            {testsRemaining < 999 && (
+              <span className="text-sm text-muted-foreground">
+                Tests remaining: {testsRemaining}/3
+              </span>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => setShowFeedbackModal(true)}
+            >
+              Give feedback
+            </Button>
+          </div>
+        </div>
+
         <section className="space-y-8">
           <div className="text-center space-y-4">
             <h1 className="text-editorial-xl">Your AI visibility score</h1>
@@ -281,19 +316,9 @@ Test yours: [foundindex.com will be here after launch]`;
             </p>
           </Card>
 
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-              {result.website && <Badge variant="outline">{result.website}</Badge>}
-              {result.industry && <Badge variant="secondary">Industry: {result.industry}</Badge>}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleShare}>
-                <Share2 className="mr-2 h-4 w-4" /> Share on LinkedIn
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowFeedbackModal(true)}>
-                Give feedback
-              </Button>
-            </div>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            {result.website && <Badge variant="outline">{result.website}</Badge>}
+            {result.industry && <Badge variant="secondary">Industry: {result.industry}</Badge>}
           </div>
         </section>
 
@@ -576,6 +601,64 @@ Test yours: [foundindex.com will be here after launch]`;
         website={result.website || ""}
         recommendations={result.recommendations}
       />
+
+      {/* Permanent CTAs Section */}
+      <section className="py-16 px-4 bg-accent-gray-light border-t">
+        <div className="container mx-auto max-w-4xl">
+          <h2 className="text-2xl font-semibold text-center mb-8">What's next?</h2>
+          <div className="grid md:grid-cols-3 gap-4">
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-full h-auto py-6 flex flex-col items-center gap-2"
+              onClick={() => {
+                const linkedInText = `I tested ${result.website} on FoundIndex and scored ${score}/100 for AI visibility.
+
+Free test: foundindex.com
+
+#AIvisibility`;
+                const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://foundindex.com')}`;
+                window.open(linkedInUrl, '_blank', 'width=600,height=600');
+                
+                if (navigator.clipboard) {
+                  navigator.clipboard.writeText(linkedInText).then(
+                    () => toast.success("Share text copied! Paste it in your LinkedIn post"),
+                    () => {}
+                  );
+                }
+                unlockTests();
+              }}
+            >
+              <span className="font-semibold">Share on LinkedIn</span>
+              <span className="text-xs text-muted-foreground">Unlock unlimited tests</span>
+            </Button>
+            
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-full h-auto py-6 flex flex-col items-center gap-2"
+              onClick={() => setShowFeedbackModal(true)}
+            >
+              <span className="font-semibold">Give Feedback</span>
+              <span className="text-xs text-muted-foreground">Help us improve</span>
+            </Button>
+            
+            <Button
+              size="lg"
+              className="w-full h-auto py-6 flex flex-col items-center gap-2"
+              onClick={() => {
+                navigate('/#waitlist');
+                window.scrollTo(0, document.body.scrollHeight);
+              }}
+            >
+              <span className="font-semibold">Get Detailed Report</span>
+              <span className="text-xs text-muted-foreground">Join v2 waitlist</span>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
     </div>
   );
 };

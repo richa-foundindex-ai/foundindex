@@ -199,7 +199,7 @@ const HeroSection = () => {
             <div className="flex items-center gap-3 text-left">
               <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
               <span className="text-base text-muted-foreground">
-                Free analysis, no credit card required
+                Free analysis, no credit card required • 3 free tests per month
               </span>
             </div>
           </div>
