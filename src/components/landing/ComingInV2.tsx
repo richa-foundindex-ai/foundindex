@@ -20,7 +20,7 @@ const ComingInV2 = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email || !email.trim()) {
       toast.error("Please enter your email");
       return;
@@ -34,17 +34,28 @@ const ComingInV2 = () => {
 
     setIsSubmitting(true);
 
+    // TEMPORARY DEBUG - ADD THESE LINES
+    console.log("=== DEBUG WAITLIST FORM ===");
+    console.log("1. Email entered:", email.trim());
+    console.log("2. About to call submit-waitlist function");
+
     try {
-      console.log('🚀 Submitting waitlist email:', email.trim());
-      
+      console.log("🚀 Submitting waitlist email:", email.trim());
+
       const { data, error } = await supabase.functions.invoke("submit-waitlist", {
         body: {
           email: email.trim(),
-          source: 'v2_waitlist'
-        }
+          source: "v2_waitlist",
+        },
       });
 
-      console.log('Response:', { data, error });
+      // TEMPORARY DEBUG - ADD THESE LINES
+      console.log("3. Function response received");
+      console.log("4. Response data:", data);
+      console.log("5. Response error:", error);
+      console.log("=== END DEBUG ===");
+
+      console.log("Response:", { data, error });
 
       if (error) throw error;
 
@@ -53,6 +64,8 @@ const ComingInV2 = () => {
       toast.success("Thanks! We'll notify you when v2 launches.");
     } catch (err) {
       console.error("❌ Failed to save waitlist email:", err);
+      // TEMPORARY DEBUG - ADD THIS LINE
+      console.log("6. Error details:", err);
       toast.error("Couldn't save email. Please try again or email us directly at hello@foundindex.com");
     } finally {
       setIsSubmitting(false);
@@ -65,14 +78,14 @@ const ComingInV2 = () => {
 Free v1 homepage test: foundindex.com
 
 #AIvisibility`;
-    
-    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://foundindex.com')}`;
-    window.open(linkedInUrl, '_blank', 'width=600,height=600');
-    
+
+    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent("https://foundindex.com")}`;
+    window.open(linkedInUrl, "_blank", "width=600,height=600");
+
     if (navigator.clipboard) {
       navigator.clipboard.writeText(linkedInText).then(
         () => toast.success("Share text copied! Paste it in your LinkedIn post"),
-        () => {}
+        () => {},
       );
     }
   };
@@ -80,15 +93,11 @@ Free v1 homepage test: foundindex.com
   return (
     <section className="py-20 px-4 bg-background" data-waitlist-section>
       <div className="container mx-auto max-w-4xl">
-        <h2 className="text-editorial-lg text-center mb-8">
-          What's coming next
-        </h2>
+        <h2 className="text-editorial-lg text-center mb-8">What's coming next</h2>
 
         <Card className="p-8 bg-accent-gray-light border-none">
           <div className="space-y-6">
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              We're building v2 based on your feedback:
-            </p>
+            <p className="text-lg text-muted-foreground leading-relaxed">We're building v2 based on your feedback:</p>
 
             <ul className="space-y-3">
               {features.map((feature, index) => (
@@ -100,9 +109,7 @@ Free v1 homepage test: foundindex.com
             </ul>
 
             <div className="pt-6">
-              <p className="text-lg font-medium text-foreground mb-4">
-                Join the v2 waitlist:
-              </p>
+              <p className="text-lg font-medium text-foreground mb-4">Join the v2 waitlist:</p>
               {!showSuccess ? (
                 <form onSubmit={handleSubmit} className="flex gap-2">
                   <Input
@@ -119,9 +126,7 @@ Free v1 homepage test: foundindex.com
                 </form>
               ) : (
                 <div className="space-y-4">
-                  <p className="text-lg text-foreground">
-                    Thanks! We'll notify you when v2 launches.
-                  </p>
+                  <p className="text-lg text-foreground">Thanks! We'll notify you when v2 launches.</p>
                   <Button onClick={handleLinkedInShare} className="w-full">
                     Share on LinkedIn
                   </Button>
