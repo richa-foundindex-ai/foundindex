@@ -42,41 +42,8 @@ export const setCookieData = (data: CookieData) => {
 };
 
 export const checkRateLimit = (url: string): { allowed: boolean; previousScore?: number; remainingTests: number } => {
-  const data = getCookieData();
-  
-  // If unlocked via share/feedback, allow unlimited tests
-  if (data.unlocked) {
-    return { allowed: true, remainingTests: 999 };
-  }
-  
-  // Check if this URL was tested recently
-  const existingTest = data.tests.find(test => test.url === url);
-  if (existingTest) {
-    return { 
-      allowed: false, 
-      previousScore: existingTest.score,
-      remainingTests: TESTS_PER_MONTH - data.tests.length
-    };
-  }
-  
-  // Check monthly limit
-  const now = Date.now();
-  const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000);
-  
-  // Remove tests older than 30 days
-  data.tests = data.tests.filter(test => test.date > thirtyDaysAgo);
-  
-  if (data.tests.length >= TESTS_PER_MONTH) {
-    return { 
-      allowed: false, 
-      remainingTests: 0
-    };
-  }
-  
-  return { 
-    allowed: true, 
-    remainingTests: TESTS_PER_MONTH - data.tests.length
-  };
+  // Beta testing: unlimited tests for everyone
+  return { allowed: true, remainingTests: 999 };
 };
 
 export const recordTest = (url: string, score: number) => {

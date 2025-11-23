@@ -8,7 +8,7 @@ const Footer = () => {
             Built by Richa Deo — UX researcher focused on how AI interprets information
           </p>
           <p>
-            Contact: hello@foundindex.com
+            Contact: <a href="mailto:hello@foundindex.com" className="hover:text-foreground transition-colors">hello@foundindex.com</a>
           </p>
           <p>
             Uses OpenAI models • We don't store your website content

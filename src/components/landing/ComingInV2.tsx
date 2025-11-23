@@ -78,7 +78,7 @@ Free v1 homepage test: foundindex.com
   };
 
   return (
-    <section className="py-20 px-4 bg-background">
+    <section className="py-20 px-4 bg-background" data-waitlist-section>
       <div className="container mx-auto max-w-4xl">
         <h2 className="text-editorial-lg text-center mb-8">
           What's coming next
