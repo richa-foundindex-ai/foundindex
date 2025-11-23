@@ -22,6 +22,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { UnlockTestsModal } from "@/components/results/UnlockTestsModal";
+import { LinkedInCopySuccessDialog } from "@/components/results/LinkedInCopySuccessDialog";
 import { getRemainingTests, unlockTests } from "@/utils/rateLimiting";
 import Footer from "@/components/landing/Footer";
 
@@ -76,6 +77,7 @@ const Results = () => {
   const [isSubmittingProInterest, setIsSubmittingProInterest] = useState(false);
   const [showUnlockModal, setShowUnlockModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showLinkedInSuccess, setShowLinkedInSuccess] = useState(false);
   const [testsUsed, setTestsUsed] = useState(0);
   const [testsRemaining, setTestsRemaining] = useState(999);
 
@@ -156,6 +158,7 @@ const Results = () => {
     const linkedInText = `Always trying to stay ahead of how AI affects our brand visibility, so I ran my site through FoundIndex.
 
 My AI Visibility Score: ${score}/100  
+
 Key insight: ${topRecommendation}
 
 With AI-led search replacing traditional SEO, this was genuinely eye-opening. If you care about staying ahead of AI-driven discovery, this 3-minute test is worth it.
@@ -166,10 +169,7 @@ Try it: foundindex.com
 
     navigator.clipboard.writeText(linkedInText).then(
       () => {
-        toast.success("✅ LinkedIn post copied to clipboard!", {
-          description: "Paste it on LinkedIn and share your score",
-          duration: 5000,
-        });
+        setShowLinkedInSuccess(true);
       },
       () => {
         toast.error("Failed to copy text");
@@ -286,7 +286,6 @@ Try it: foundindex.com
 
           <Card className="p-6 bg-accent-gray-light border-none">
             <h2 className="text-xl font-semibold mb-4 text-foreground">How FoundIndex scored your site</h2>
-            <p className="text-muted-foreground mb-4">We tested how AI systems would describe your business:</p>
             <ul className="space-y-2 text-muted-foreground">
               <li className="flex items-start gap-2">
                 <span className="text-primary font-bold">✓</span>
@@ -596,6 +595,8 @@ Try it: foundindex.com
         recommendations={result.recommendations}
       />
 
+      <LinkedInCopySuccessDialog open={showLinkedInSuccess} onOpenChange={setShowLinkedInSuccess} />
+
       <section className="py-16 px-4 bg-accent-gray-light border-t">
         <div className="container mx-auto max-w-4xl">
           <h2 className="text-2xl font-semibold text-center mb-8">What's next?</h2>
@@ -611,6 +612,7 @@ Try it: foundindex.com
                 const linkedInText = `Always trying to stay ahead of how AI affects our brand visibility, so I ran my site through FoundIndex.
 
 My AI Visibility Score: ${score}/100  
+
 Key insight: ${topRecommendation}
 
 With AI-led search replacing traditional SEO, this was genuinely eye-opening. If you care about staying ahead of AI-driven discovery, this 3-minute test is worth it.
@@ -621,10 +623,7 @@ Try it: foundindex.com
 
                 navigator.clipboard.writeText(linkedInText).then(
                   () => {
-                    toast.success("✅ LinkedIn post copied to clipboard!", {
-                      description: "Paste it on LinkedIn and share your score",
-                      duration: 5000,
-                    });
+                    setShowLinkedInSuccess(true);
                     unlockTests();
                   },
                   () => {
