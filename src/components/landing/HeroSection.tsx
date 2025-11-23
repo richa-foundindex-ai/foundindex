@@ -199,7 +199,7 @@ const HeroSection = () => {
                 </Label>
                 <Input
                   id="website"
-                  type="url"
+                  type="text"
                   placeholder="slack.com or https://yourwebsite.com"
                   value={formData.website}
                   onChange={(e) => setFormData({ ...formData, website: e.target.value })}
