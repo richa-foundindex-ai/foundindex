@@ -3,6 +3,13 @@
 const COOKIE_NAME = 'foundindex_tests';
 const TESTS_PER_MONTH = 3;
 const COOKIE_EXPIRY_DAYS = 30;
+const BYPASS_CODE = 'test123';
+
+const isBypassActive = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.get('bypass') === BYPASS_CODE;
+};
 
 interface TestRecord {
   url: string;
@@ -42,6 +49,11 @@ export const setCookieData = (data: CookieData) => {
 };
 
 export const checkRateLimit = (url: string): { allowed: boolean; previousScore?: number; remainingTests: number } => {
+  // Check for bypass code first
+  if (isBypassActive()) {
+    return { allowed: true, remainingTests: 999 };
+  }
+  
   const data = getCookieData();
   
   // If unlocked, allow unlimited tests
