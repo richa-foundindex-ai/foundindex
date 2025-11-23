@@ -2,14 +2,35 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Share2, Twitter, Linkedin, Mail, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useState } from "react";
 
 const SocialShare = () => {
+  const [showLinkedInModal, setShowLinkedInModal] = useState(false);
   const shareUrl = "https://foundindex.com";
   const shareText = "🎯 Found this tool: FoundIndex\n\nMeasures if ChatGPT recommends your business when buyers search.\n\nFirst standardized AI visibility benchmark.\n\nFree test:";
+  const linkedInShareText = "Just tested my website's AI visibility with FoundIndex. Worth checking if AI systems understand your business.\n\nfoundindex.com\n\n#AIVisibility #ContentStrategy";
   
-  const handleLinkedInShare = () => {
-    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
-    window.open(linkedInUrl, '_blank', 'width=600,height=600');
+  const handleLinkedInShare = async () => {
+    try {
+      // Copy text to clipboard
+      await navigator.clipboard.writeText(linkedInShareText);
+      
+      // Open LinkedIn share window
+      const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+      window.open(linkedInUrl, '_blank', 'width=600,height=600');
+      
+      // Show modal with instructions
+      setShowLinkedInModal(true);
+    } catch (err) {
+      toast.error('Failed to copy text to clipboard');
+    }
   };
 
   const handleTwitterShare = () => {
@@ -44,60 +65,85 @@ const SocialShare = () => {
   };
 
   return (
-    <section className="py-20 px-4 bg-accent/50">
-      <div className="container mx-auto max-w-4xl">
-        <Card className="p-8 text-center">
-          <h2 className="text-editorial-lg mb-4">
-            Help Others Discover FoundIndex
-          </h2>
-          <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Know someone who should test their AI visibility? Share FoundIndex with your network.
-          </p>
+    <>
+      <section className="py-20 px-4 bg-accent/50">
+        <div className="container mx-auto max-w-4xl">
+          <Card className="p-8 text-center">
+            <h2 className="text-editorial-lg mb-4">
+              Help Others Discover FoundIndex
+            </h2>
+            <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Know someone who should test their AI visibility? Share FoundIndex with your network.
+            </p>
 
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Button 
-              onClick={handleLinkedInShare}
-              className="bg-[#0077B5] hover:bg-[#006399] text-white"
-            >
-              <Linkedin className="mr-2 h-4 w-4" />
-              Share on LinkedIn
-            </Button>
+            <div className="flex flex-wrap gap-4 justify-center">
+              <Button 
+                onClick={handleLinkedInShare}
+                className="bg-[#0077B5] hover:bg-[#006399] text-white"
+              >
+                <Linkedin className="mr-2 h-4 w-4" />
+                Share on LinkedIn
+              </Button>
 
-            <Button 
-              onClick={handleTwitterShare}
-              className="bg-[#1DA1F2] hover:bg-[#1a8cd8] text-white"
-            >
-              <Twitter className="mr-2 h-4 w-4" />
-              Share on Twitter
-            </Button>
+              <Button 
+                onClick={handleTwitterShare}
+                className="bg-[#1DA1F2] hover:bg-[#1a8cd8] text-white"
+              >
+                <Twitter className="mr-2 h-4 w-4" />
+                Share on Twitter
+              </Button>
 
-            <Button 
-              onClick={handleWhatsAppShare}
-              className="bg-[#25D366] hover:bg-[#20bd5a] text-white"
-            >
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Share on WhatsApp
-            </Button>
+              <Button 
+                onClick={handleWhatsAppShare}
+                className="bg-[#25D366] hover:bg-[#20bd5a] text-white"
+              >
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Share on WhatsApp
+              </Button>
 
-            <Button 
-              onClick={handleEmailShare}
-              variant="outline"
-            >
-              <Mail className="mr-2 h-4 w-4" />
-              Share via Email
-            </Button>
+              <Button 
+                onClick={handleEmailShare}
+                variant="outline"
+              >
+                <Mail className="mr-2 h-4 w-4" />
+                Share via Email
+              </Button>
 
-            <Button 
-              onClick={handleCopyLink}
-              variant="outline"
-            >
-              <Share2 className="mr-2 h-4 w-4" />
-              Copy Link
-            </Button>
+              <Button 
+                onClick={handleCopyLink}
+                variant="outline"
+              >
+                <Share2 className="mr-2 h-4 w-4" />
+                Copy Link
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </section>
+
+      <Dialog open={showLinkedInModal} onOpenChange={setShowLinkedInModal}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Share on LinkedIn</DialogTitle>
+            <DialogDescription>
+              We've copied this text to your clipboard. Paste it into your LinkedIn post:
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="my-6">
+            <div className="bg-muted/50 border border-border rounded-lg p-6">
+              <p className="text-base leading-relaxed whitespace-pre-line text-foreground">
+                {linkedInShareText}
+              </p>
+            </div>
           </div>
-        </Card>
-      </div>
-    </section>
+
+          <Button onClick={() => setShowLinkedInModal(false)} className="w-full">
+            Got it
+          </Button>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
