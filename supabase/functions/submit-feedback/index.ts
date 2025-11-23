@@ -58,7 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Preventing Improvements": preventingImprovements,
         "User Type": userType,
         Email: email,
-        Timestamp: new Date().toISOString(),
+        // Timestamp is auto-populated by Airtable (Created time field)
       },
     };
 
