@@ -50,7 +50,7 @@ const ComingInV2 = () => {
 
       setEmail("");
       setShowSuccess(true);
-      toast.success("✓ You're on the list!");
+      toast.success("Thanks! We'll notify you when v2 launches.");
     } catch (err) {
       console.error("❌ Failed to save waitlist email:", err);
       toast.error("Couldn't save email. Please try again or email us directly at hello@foundindex.com");
@@ -120,7 +120,7 @@ Free v1 homepage test: foundindex.com
               ) : (
                 <div className="space-y-4">
                   <p className="text-lg text-foreground">
-                    You're on the list! Share on LinkedIn to help others discover AI visibility
+                    Thanks! We'll notify you when v2 launches.
                   </p>
                   <Button onClick={handleLinkedInShare} className="w-full">
                     Share on LinkedIn
