@@ -381,7 +381,6 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
                 <li>✓ Unlimited tests for 30 days</li>
                 <li>✓ Detailed rewrite guide</li>
                 <li>✓ Priority v2 beta access</li>
-                <li>✓ 20% off consulting</li>
               </ul>
             </div>
             <Button className="w-full" onClick={handleDoBoth}>

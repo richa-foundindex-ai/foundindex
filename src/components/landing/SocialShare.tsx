@@ -122,25 +122,33 @@ const SocialShare = () => {
       </section>
 
       <Dialog open={showLinkedInModal} onOpenChange={setShowLinkedInModal}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl">Share on LinkedIn</DialogTitle>
-            <DialogDescription>
-              We've copied this text to your clipboard. Paste it into your LinkedIn post:
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="my-6">
-            <div className="bg-muted/50 border border-border rounded-lg p-6">
-              <p className="text-base leading-relaxed whitespace-pre-line text-foreground">
-                {linkedInShareText}
-              </p>
+        <DialogContent className="sm:max-w-[500px] p-0">
+          <div className="p-8">
+            <DialogHeader className="space-y-4">
+              <DialogTitle className="text-3xl font-bold text-center">
+                📋 Text copied to clipboard
+              </DialogTitle>
+              <DialogDescription className="text-lg text-center">
+                Paste this into your LinkedIn post:
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="my-8">
+              <div className="bg-white border-2 border-border rounded-lg p-6 shadow-sm">
+                <p className="text-[16px] leading-relaxed whitespace-pre-line text-gray-900 font-normal">
+                  {linkedInShareText}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <Button onClick={() => setShowLinkedInModal(false)} className="w-full">
-            Got it
-          </Button>
+            <Button 
+              onClick={() => setShowLinkedInModal(false)} 
+              className="w-full text-lg py-6"
+              size="lg"
+            >
+              Got it
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>
