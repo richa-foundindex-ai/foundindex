@@ -1,5 +1,8 @@
 // Cookie-based rate limiting utilities
 
+// TEMPORARY: Set to true to disable rate limiting for testing
+const RATE_LIMITING_DISABLED = true;
+
 const COOKIE_NAME = 'foundindex_tests';
 const TESTS_PER_MONTH = 3;
 const COOKIE_EXPIRY_DAYS = 30;
@@ -49,6 +52,11 @@ export const setCookieData = (data: CookieData) => {
 };
 
 export const checkRateLimit = (url: string): { allowed: boolean; previousScore?: number; remainingTests: number } => {
+  // TEMPORARY: Bypass all rate limiting for testing
+  if (RATE_LIMITING_DISABLED) {
+    return { allowed: true, remainingTests: 999 };
+  }
+  
   // Check for bypass code first
   if (isBypassActive()) {
     return { allowed: true, remainingTests: 999 };
