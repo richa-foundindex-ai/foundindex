@@ -32,7 +32,7 @@ const HeroSection = () => {
     null,
   );
 
-  const normalizeUrl = (url) => {
+  const normalizeUrl = (url: string): string => {
     let normalized = url.trim().toLowerCase();
 
     // Remove any trailing slashes
