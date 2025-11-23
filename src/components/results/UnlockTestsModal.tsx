@@ -122,7 +122,14 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
       toast.success("✓ Feedback submitted! Check your email for the detailed rewrite guide.");
     } catch (err) {
       console.error("Failed to submit feedback:", err);
-      toast.error("Couldn't submit feedback. Please try again or email us directly at hello@foundindex.com");
+      toast.error(
+        <span>
+          Couldn't submit feedback. Please try again or email us at{" "}
+          <a href="mailto:hello@foundindex.com" className="underline cursor-pointer">
+            hello@foundindex.com
+          </a>
+        </span>
+      );
     } finally {
       setIsSubmitting(false);
     }

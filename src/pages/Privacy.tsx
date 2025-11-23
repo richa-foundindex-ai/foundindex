@@ -19,7 +19,7 @@ const Privacy = () => {
           </ul>
           
           <p className="pt-4">
-            Questions? Email: <a href="mailto:hello@foundindex.com" className="text-primary hover:underline">hello@foundindex.com</a>
+            Questions? Email: <a href="mailto:hello@foundindex.com" className="text-primary hover:underline cursor-pointer">hello@foundindex.com</a>
           </p>
           
           <p className="pt-2">Full privacy policy coming with v2 launch.</p>

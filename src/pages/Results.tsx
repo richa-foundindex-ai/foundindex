@@ -211,7 +211,14 @@ Test yours: [foundindex.com will be here after launch]`;
       setShowProModal(false);
     } catch (err) {
       console.error("Failed to save Pro interest:", err);
-      toast.error("Couldn't save email. Please try again or email us directly at hello@foundindex.com");
+      toast.error(
+        <span>
+          Couldn't save email. Please try again or email us at{" "}
+          <a href="mailto:hello@foundindex.com" className="underline cursor-pointer">
+            hello@foundindex.com
+          </a>
+        </span>
+      );
     } finally {
       setIsSubmittingProInterest(false);
     }
