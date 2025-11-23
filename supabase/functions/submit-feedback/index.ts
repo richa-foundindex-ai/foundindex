@@ -48,6 +48,24 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Submit to Airtable Feedback table
+    const requestBody = {
+      fields: {
+        "Test ID": testId,
+        Score: score,
+        Website: website,
+        "Surprising Result": surprisingResult,
+        "Describe to Colleague": describeToColleague,
+        "Preventing Improvements": preventingImprovements,
+        "User Type": userType,
+        Email: email,
+        Timestamp: new Date().toISOString(),
+      },
+    };
+
+    console.log("🔍 Complete request body being sent to Airtable:");
+    console.log(JSON.stringify(requestBody, null, 2));
+    console.log("🔍 Field names:", Object.keys(requestBody.fields));
+
     const airtableResponse = await fetch(
       `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Feedback`,
       {
@@ -56,19 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
           Authorization: `Bearer ${AIRTABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          fields: {
-            "Test ID": testId,
-            Score: score,
-            Website: website,
-            "Surprising Result": surprisingResult,
-            "Describe to Colleague": describeToColleague,
-            "Preventing Improvements": preventingImprovements,
-            "User Type": userType,
-            Email: email,
-            Timestamp: new Date().toISOString(),
-          },
-        }),
+        body: JSON.stringify(requestBody),
       }
     );
 
