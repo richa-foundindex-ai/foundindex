@@ -1,4 +1,10 @@
-const Footer = () => {
+import { Button } from "@/components/ui/button";
+
+interface FooterProps {
+  onOpenFeedback?: () => void;
+}
+
+const Footer = ({ onOpenFeedback }: FooterProps) => {
 
   return (
     <footer className="py-16 px-4 bg-accent-gray-light border-t">
@@ -17,6 +23,17 @@ const Footer = () => {
             <a href="/privacy" className="hover:text-foreground transition-colors">Privacy</a>
             <a href="/privacy" className="hover:text-foreground transition-colors">Terms</a>
           </div>
+          {onOpenFeedback && (
+            <div className="pt-4">
+              <Button 
+                variant="outline" 
+                onClick={onOpenFeedback}
+                className="text-sm"
+              >
+                Give Feedback
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </footer>
