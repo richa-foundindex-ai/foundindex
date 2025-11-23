@@ -44,7 +44,8 @@ serve(async (req) => {
       ],
     };
 
-    // FIXED: Added parenthesis after fetch
+    console.log("📧 Exact body being sent to Airtable:", JSON.stringify(airtableBody, null, 2));
+
     const airtableResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Tracking_Waitlist`, {
       method: "POST",
       headers: {
