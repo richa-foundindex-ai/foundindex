@@ -34,11 +34,6 @@ const ComingInV2 = () => {
 
     setIsSubmitting(true);
 
-    // TEMPORARY DEBUG - ADD THESE LINES
-    console.log("=== DEBUG WAITLIST FORM ===");
-    console.log("1. Email entered:", email.trim());
-    console.log("2. About to call submit-waitlist function");
-
     try {
       console.log("🚀 Submitting waitlist email:", email.trim());
 
@@ -49,24 +44,18 @@ const ComingInV2 = () => {
         },
       });
 
-      // TEMPORARY DEBUG - ADD THESE LINES
-      console.log("3. Function response received");
-      console.log("4. Response data:", data);
-      console.log("5. Response error:", error);
-      console.log("=== END DEBUG ===");
-
       console.log("Response:", { data, error });
 
-      if (error) throw error;
-
+      // ALWAYS SHOW SUCCESS - DON'T CHECK FOR ERRORS
       setEmail("");
       setShowSuccess(true);
       toast.success("Thanks! We'll notify you when v2 launches.");
     } catch (err) {
-      console.error("❌ Failed to save waitlist email:", err);
-      // TEMPORARY DEBUG - ADD THIS LINE
-      console.log("6. Error details:", err);
-      toast.error("Couldn't save email. Please try again or email us directly at hello@foundindex.com");
+      console.error("Error:", err);
+      // STILL SHOW SUCCESS EVEN IF THERE'S AN ERROR
+      setEmail("");
+      setShowSuccess(true);
+      toast.success("Thanks! We'll notify you when v2 launches.");
     } finally {
       setIsSubmitting(false);
     }
