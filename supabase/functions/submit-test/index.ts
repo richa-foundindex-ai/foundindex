@@ -34,13 +34,27 @@ const validateEmail = (email: string | undefined): string => {
 
 const normalizeUrl = (url: string): string => {
   const trimmed = url.trim();
-  
+
   // If the URL doesn't start with http:// or https://, add https://
-  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+  if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
     return `https://${trimmed}`;
   }
-  
+
   return trimmed;
+};
+
+const normalizeUrl = (url: string): string => {
+  let normalized = url.trim().toLowerCase();
+
+  // Remove any trailing slashes
+  normalized = normalized.replace(/\/+$/, "");
+
+  // If it doesn't start with http, add https://
+  if (!normalized.startsWith("http://") && !normalized.startsWith("https://")) {
+    normalized = "https://" + normalized;
+  }
+
+  return normalized;
 };
 
 const validateWebsite = (website: string): string => {
