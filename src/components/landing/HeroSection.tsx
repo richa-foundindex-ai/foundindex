@@ -28,36 +28,27 @@ const HeroSection = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRateLimitModal, setShowRateLimitModal] = useState(false);
-  const [rateLimitInfo, setRateLimitInfo] = useState<{ url: string; score: number; remainingTests: number } | null>(null);
+  const [rateLimitInfo, setRateLimitInfo] = useState<{ url: string; score: number; remainingTests: number } | null>(
+    null,
+  );
 
+  const normalizeUrl = (url) => {
+    let normalized = url.trim().toLowerCase();
 
-  const normalizeUrl = (url: string): string => {
-    // Trim whitespace
-    let normalized = url.trim();
-    
-    // Remove trailing slash if present (we'll add it back later)
-    normalized = normalized.replace(/\/+$/, '');
-    
-    // If no dots and no slashes, assume it's just a domain name - add .com
-    if (!normalized.includes('.') && !normalized.includes('/')) {
-      normalized = `${normalized}.com`;
+    // Remove any trailing slashes
+    normalized = normalized.replace(/\/+$/, "");
+
+    // If it doesn't start with http, add https://
+    if (!normalized.startsWith("http://") && !normalized.startsWith("https://")) {
+      normalized = "https://" + normalized;
     }
-    
-    // Add https:// if no protocol
-    if (!/^https?:\/\//i.test(normalized)) {
-      normalized = `https://${normalized}`;
-    }
-    
-    // Ensure trailing slash
-    normalized = `${normalized}/`;
-    
+
     return normalized;
   };
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.website) {
       toast({
         title: "Missing information",
@@ -71,14 +62,14 @@ const HeroSection = () => {
 
     // Check rate limit before submitting
     const rateLimit = checkRateLimit(websiteUrl);
-    
+
     if (!rateLimit.allowed) {
       if (rateLimit.previousScore !== undefined) {
         // Show modal for previously tested URL
         setRateLimitInfo({
           url: websiteUrl,
           score: rateLimit.previousScore,
-          remainingTests: rateLimit.remainingTests
+          remainingTests: rateLimit.remainingTests,
         });
         setShowRateLimitModal(true);
         return;
@@ -104,11 +95,10 @@ const HeroSection = () => {
       if (submitError) throw new Error(submitError.message);
       if (submitData?.error) throw new Error(submitData.error);
 
-
       if (submitData?.testId) {
         // Record the test in cookie
         recordTest(websiteUrl, submitData.score || 0);
-        
+
         toast({
           title: "Test started!",
           description: "Analyzing your website...",
@@ -127,11 +117,10 @@ const HeroSection = () => {
     }
   };
 
-
   return (
     <>
       {isSubmitting && <CoffeeBrewingLoader website={formData.website} />}
-      
+
       {/* Rate Limit Modal */}
       <AlertDialog open={showRateLimitModal} onOpenChange={setShowRateLimitModal}>
         <AlertDialogContent>
@@ -149,7 +138,7 @@ const HeroSection = () => {
               onClick={() => {
                 setShowRateLimitModal(false);
                 // Navigate to results page or show unlock modal
-                const unlockModal = document.querySelector('[data-unlock-modal]');
+                const unlockModal = document.querySelector("[data-unlock-modal]");
                 if (unlockModal) {
                   (unlockModal as HTMLElement).click();
                 }
@@ -161,7 +150,7 @@ const HeroSection = () => {
               onClick={() => {
                 setShowRateLimitModal(false);
                 // Show feedback modal
-                const feedbackModal = document.querySelector('[data-feedback-modal]');
+                const feedbackModal = document.querySelector("[data-feedback-modal]");
                 if (feedbackModal) {
                   (feedbackModal as HTMLElement).click();
                 }
@@ -172,73 +161,62 @@ const HeroSection = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      
+
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-7xl">
-        <div className="text-center space-y-6">
-          <h1 className="text-[2.56rem] md:text-[3.33rem] font-bold text-foreground leading-tight">
-            Is your business visible to AI?
-          </h1>
+          <div className="text-center space-y-6">
+            <h1 className="text-[2.56rem] md:text-[3.33rem] font-bold text-foreground leading-tight">
+              Is your business visible to AI?
+            </h1>
 
-          <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
-            <div className="flex items-center gap-3 text-left">
-              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-              <span className="text-base text-muted-foreground">
-                See how AI systems understand your business
-              </span>
-            </div>
-            <div className="flex items-center gap-3 text-left">
-              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-              <span className="text-base text-muted-foreground">
-                Get specific, actionable recommendations
-              </span>
+            <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+              <div className="flex items-center gap-3 text-left">
+                <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                <span className="text-base text-muted-foreground">See how AI systems understand your business</span>
+              </div>
+              <div className="flex items-center gap-3 text-left">
+                <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
+                <span className="text-base text-muted-foreground">Get specific, actionable recommendations</span>
+              </div>
             </div>
           </div>
+
+          <Card className="max-w-xl mx-auto mt-12 p-8 shadow-lg">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="website" className="text-base font-medium">
+                  Website URL
+                </Label>
+                <Input
+                  id="website"
+                  type="url"
+                  placeholder="slack.com or https://yourwebsite.com"
+                  value={formData.website}
+                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  required
+                  className="h-12"
+                />
+              </div>
+
+              <div className="space-y-4">
+                <Button type="submit" size="lg" className="w-full h-14 text-lg" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    "Analyzing..."
+                  ) : (
+                    <>
+                      Analyze my website →
+                      <ArrowRight className="ml-2 h-5 w-5 hidden" />
+                    </>
+                  )}
+                </Button>
+                <p className="text-sm text-muted-foreground text-center">
+                  3 free tests per month • Takes 3 minutes • No credit card required
+                </p>
+              </div>
+            </form>
+          </Card>
         </div>
-
-        <Card className="max-w-xl mx-auto mt-12 p-8 shadow-lg">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="website" className="text-base font-medium">
-                Website URL
-              </Label>
-              <Input
-                id="website"
-                type="url"
-                placeholder="slack.com or https://yourwebsite.com"
-                value={formData.website}
-                onChange={(e) =>
-                  setFormData({ ...formData, website: e.target.value })
-                }
-                required
-                className="h-12"
-              />
-            </div>
-
-            <div className="space-y-4">
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full h-14 text-lg"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? (
-                  "Analyzing..."
-                ) : (
-                  <>
-                Analyze my website →
-                    <ArrowRight className="ml-2 h-5 w-5 hidden" />
-                  </>
-                )}
-              </Button>
-              <p className="text-sm text-muted-foreground text-center">
-                3 free tests per month • Takes 3 minutes • No credit card required
-              </p>
-            </div>
-          </form>
-        </Card>
-      </div>
-    </section>
+      </section>
     </>
   );
 };
