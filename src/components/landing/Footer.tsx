@@ -16,7 +16,16 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
             Contact:{" "}
             <a href="mailto:hello@foundindex.com" className="underline hover:text-foreground transition-colors">
               hello@foundindex.com
-            </a>
+            </a>{" "}
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText("hello@foundindex.com");
+                alert("📧 Email copied: hello@foundindex.com");
+              }}
+              className="text-xs text-primary hover:underline ml-1"
+            >
+              (copy)
+            </button>
           </p>
           <p className="text-sm text-muted-foreground">
             Privacy-first: We don't store your website content. Test results and URLs are stored to improve analysis.
