@@ -3,6 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 const Privacy = () => {
+  const handleEmailClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.location.href = "mailto:hello@foundindex.com";
+  };
+
   return (
     <div className="min-h-screen bg-background py-16 px-4">
       <Card className="max-w-3xl mx-auto p-8 space-y-8">
@@ -48,7 +53,11 @@ const Privacy = () => {
 
           <p className="pt-4 text-muted-foreground">
             Questions? Email:{" "}
-            <a href="mailto:hello@foundindex.com" className="text-primary hover:underline cursor-pointer">
+            <a
+              href="mailto:hello@foundindex.com"
+              onClick={handleEmailClick}
+              className="text-primary hover:underline cursor-pointer"
+            >
               hello@foundindex.com
             </a>
           </p>
