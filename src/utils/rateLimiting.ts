@@ -17,7 +17,6 @@ export const checkRateLimit = (url: string) => {
   const urlData = testedUrls[url];
 
   if (urlData && urlData.score !== undefined) {
-    // URL was tested before - show previous score
     return {
       allowed: false,
       remainingTests: testsRemaining,
@@ -36,7 +35,6 @@ export const recordTest = (url: string, score: number) => {
   const testsRemaining = parseInt(localStorage.getItem("testsRemaining") || "3");
   localStorage.setItem("testsRemaining", (testsRemaining - 1).toString());
 
-  // Store tested URL with score
   const testedUrls = JSON.parse(localStorage.getItem("testedUrls") || "{}");
   testedUrls[url] = { score, testedAt: Date.now() };
   localStorage.setItem("testedUrls", JSON.stringify(testedUrls));
@@ -44,4 +42,10 @@ export const recordTest = (url: string, score: number) => {
 
 export const getRemainingTests = () => {
   return parseInt(localStorage.getItem("testsRemaining") || "3");
+};
+
+// Deprecated - kept for backward compatibility
+export const unlockTests = () => {
+  // No longer needed - tests reset weekly automatically
+  console.log("unlockTests is deprecated");
 };
