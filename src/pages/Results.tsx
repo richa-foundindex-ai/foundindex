@@ -21,8 +21,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { LinkedInCopySuccessDialog } from "@/components/results/LinkedInCopySuccessDialog";
-import { LinkedInShareDialog } from "@/components/results/LinkedInShareDialog";
+import { FeedbackModal } from "@/components/results/FeedbackModal";
 import { getRemainingTests } from "@/utils/rateLimiting";
 import Footer from "@/components/landing/Footer";
 
@@ -75,10 +74,9 @@ const Results = () => {
   const [showProModal, setShowProModal] = useState(false);
   const [proEmail, setProEmail] = useState("");
   const [isSubmittingProInterest, setIsSubmittingProInterest] = useState(false);
-  const [showLinkedInSuccess, setShowLinkedInSuccess] = useState(false);
-  const [showLinkedInDialog, setShowLinkedInDialog] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [testsUsed, setTestsUsed] = useState(0);
-  const [testsRemaining, setTestsRemaining] = useState(999);
+  const [testsRemaining, setTestsRemaining] = useState(3);
 
   useEffect(() => {
     // Update test counter
@@ -145,26 +143,6 @@ const Results = () => {
     return "AI understands your business well. Minor optimizations recommended.";
   };
 
-  const handleLinkedInShare = () => {
-    if (!result) return;
-    const score = result.foundIndexScore ?? 0;
-    const topRec = result.recommendations?.[0] || "AI readability improvements needed";
-
-    const text = `Always trying to stay ahead of how AI affects our brand visibility, so I ran my site through FoundIndex.
-
-My AI Visibility Score: ${score}/100
-Key insight: ${topRec}
-
-With AI-led search replacing traditional SEO, this was genuinely eye-opening. If you care about staying ahead of AI-driven discovery, this 3-minute test is worth it.
-
-Try it: foundindex.com (created by linkedin.com/in/richa-deo)
-
-#FoundIndex #AIVisibility #SEO #FutureOfSearch`;
-
-    navigator.clipboard.writeText(text);
-    setShowLinkedInDialog(true);
-    setTimeout(() => setShowLinkedInDialog(false), 10000);
-  };
 
   const handleProInterestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -264,6 +242,9 @@ Try it: foundindex.com (created by linkedin.com/in/richa-deo)
 
         <section className="space-y-8">
           <div className="text-center space-y-4">
+            <div className="text-sm text-muted-foreground mb-2">
+              {testsRemaining} tests remaining this week
+            </div>
             <h1 className="text-editorial-xl">Your AI visibility score</h1>
             <p className="text-editorial-sm text-muted-foreground">
               Based on analysis of your website's content and structure
@@ -294,7 +275,6 @@ Try it: foundindex.com (created by linkedin.com/in/richa-deo)
 
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             {result.website && <Badge variant="outline">{result.website}</Badge>}
-            {result.industry && <Badge variant="secondary">Industry: {result.industry}</Badge>}
           </div>
         </section>
 
@@ -421,7 +401,7 @@ Try it: foundindex.com (created by linkedin.com/in/richa-deo)
           </div>
         </Card>
 
-        <section className="grid gap-6 md:grid-cols-[1.8fr_1.2fr]">
+        <section className="space-y-6">
           <Card className="p-6 space-y-4">
             <h2 className="text-sm font-semibold">What to fix first</h2>
             <div className="space-y-4">
@@ -450,47 +430,8 @@ Try it: foundindex.com (created by linkedin.com/in/richa-deo)
               )}
             </div>
           </Card>
-
-          <div className="space-y-4">
-            <Card className="p-5 space-y-3 bg-muted/40">
-              <div className="flex items-center gap-2">
-                <Share2 className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-semibold">Share your score</h2>
-              </div>
-              <div className="rounded-md bg-background border px-3 py-2 text-xs">
-                <p className="font-medium">Always trying to stay ahead of how AI affects our brand visibility...</p>
-                <p className="mt-1 text-xs text-primary">My AI Visibility Score: {score}/100</p>
-              </div>
-              <Button size="sm" className="w-full" variant="outline" onClick={handleLinkedInShare}>
-                Copy LinkedIn post
-              </Button>
-            </Card>
-
-            <Card className="p-5 space-y-3 border-dashed">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-semibold">Monthly tracking</h2>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Turn this snapshot into a live KPI with monthly runs and trend reports.
-              </p>
-              <Button size="sm" className="w-full" onClick={() => setShowProModal(true)}>
-                Get monthly tracking
-              </Button>
-            </Card>
-          </div>
         </section>
 
-        <section className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Globe2 className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-semibold">Engine breakdown</h2>
-          </div>
-          <Card className="p-4 space-y-1">
-            <p className="text-xs text-muted-foreground">ChatGPT</p>
-            <p className="text-2xl font-semibold">{result.chatgptScore ?? "–"} / 100</p>
-          </Card>
-        </section>
 
         <section className="text-center pt-8 border-t">
           <Button
@@ -568,36 +509,27 @@ Try it: foundindex.com (created by linkedin.com/in/richa-deo)
         </DialogContent>
       </Dialog>
 
-      <LinkedInCopySuccessDialog open={showLinkedInSuccess} onOpenChange={setShowLinkedInSuccess} />
-
-      <LinkedInShareDialog open={showLinkedInDialog} onOpenChange={setShowLinkedInDialog} />
+      <FeedbackModal
+        open={showFeedbackModal}
+        onOpenChange={setShowFeedbackModal}
+        testId={testId || ""}
+        score={score}
+        website={result.website || ""}
+      />
 
       <section className="py-16 px-4 bg-accent-gray-light border-t">
-        <div className="container mx-auto max-w-4xl">
-          <h2 className="text-2xl font-semibold text-center mb-8">What's next?</h2>
-          <div className="grid md:grid-cols-3 gap-4">
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full h-auto py-6 flex flex-col items-center gap-2"
-              onClick={handleLinkedInShare}
-            >
-              <span className="font-semibold">Share on LinkedIn</span>
-              <span className="text-xs text-muted-foreground">Unlock unlimited tests</span>
-            </Button>
-
-            <Button
-              size="lg"
-              className="w-full h-auto py-6 flex flex-col items-center gap-2"
-              onClick={() => {
-                navigate("/#waitlist");
-                window.scrollTo(0, document.body.scrollHeight);
-              }}
-            >
-              <span className="font-semibold">Get Detailed Report</span>
-              <span className="text-xs text-muted-foreground">Join v2 waitlist</span>
-            </Button>
-          </div>
+        <div className="container mx-auto max-w-4xl text-center space-y-6">
+          <h2 className="text-2xl font-semibold">What's next?</h2>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Get a detailed homepage evaluation with specific, actionable recommendations to improve your AI visibility score.
+          </p>
+          <Button
+            size="lg"
+            className="w-full max-w-md mx-auto h-auto py-6"
+            onClick={() => setShowFeedbackModal(true)}
+          >
+            <span className="font-semibold">Get Detailed Homepage Evaluation</span>
+          </Button>
         </div>
       </section>
 
