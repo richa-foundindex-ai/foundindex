@@ -162,17 +162,17 @@ const HeroSection = () => {
         <div className="container mx-auto max-w-7xl">
           <div className="text-center space-y-6">
             <h1 className="text-[2.56rem] md:text-[3.33rem] font-bold text-foreground leading-tight">
-              Is your business visible to AI?
+              How visible is your business to AI?
             </h1>
 
             <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
               <div className="flex items-center gap-3 text-left">
                 <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                <span className="text-base text-muted-foreground">See how AI systems understand your business</span>
+                <span className="text-base text-muted-foreground">Understand how AI interprets your business</span>
               </div>
               <div className="flex items-center gap-3 text-left">
                 <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                <span className="text-base text-muted-foreground">Get specific, actionable recommendations</span>
+                <span className="text-base text-muted-foreground">Get specific recommendations to improve clarity</span>
               </div>
             </div>
           </div>
