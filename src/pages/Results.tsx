@@ -21,10 +21,9 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UnlockTestsModal } from "@/components/results/UnlockTestsModal";
 import { LinkedInCopySuccessDialog } from "@/components/results/LinkedInCopySuccessDialog";
 import { LinkedInShareDialog } from "@/components/results/LinkedInShareDialog";
-import { getRemainingTests, unlockTests } from "@/utils/rateLimiting";
+import { getRemainingTests } from "@/utils/rateLimiting";
 import Footer from "@/components/landing/Footer";
 
 interface QueryResult {
@@ -76,8 +75,6 @@ const Results = () => {
   const [showProModal, setShowProModal] = useState(false);
   const [proEmail, setProEmail] = useState("");
   const [isSubmittingProInterest, setIsSubmittingProInterest] = useState(false);
-  const [showUnlockModal, setShowUnlockModal] = useState(false);
-  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [showLinkedInSuccess, setShowLinkedInSuccess] = useState(false);
   const [showLinkedInDialog, setShowLinkedInDialog] = useState(false);
   const [testsUsed, setTestsUsed] = useState(0);
@@ -118,10 +115,6 @@ const Results = () => {
         console.log("═══════════════════════════════════════");
 
         setResult(data as TestResult);
-
-        setTimeout(() => {
-          setShowUnlockModal(true);
-        }, 2000);
       } catch (err) {
         console.error("[Results] Failed to fetch results", err);
         setError(err instanceof Error ? err.message : "Failed to fetch results");
@@ -266,9 +259,6 @@ Try it: foundindex.com (created by linkedin.com/in/richa-deo)
             {testsRemaining < 999 && (
               <span className="text-sm text-muted-foreground">Tests remaining: {testsRemaining}/3</span>
             )}
-            <Button variant="outline" onClick={() => setShowFeedbackModal(true)}>
-              Give feedback
-            </Button>
           </div>
         </div>
 
@@ -578,22 +568,6 @@ Try it: foundindex.com (created by linkedin.com/in/richa-deo)
         </DialogContent>
       </Dialog>
 
-      <UnlockTestsModal
-        open={showUnlockModal}
-        onOpenChange={setShowUnlockModal}
-        scenario="after-test"
-        score={score}
-        topRecommendation={result.recommendations?.[0]}
-      />
-
-      <UnlockTestsModal
-        open={showFeedbackModal}
-        onOpenChange={setShowFeedbackModal}
-        scenario="after-feedback"
-        score={score}
-        topRecommendation={result.recommendations?.[0]}
-      />
-
       <LinkedInCopySuccessDialog open={showLinkedInSuccess} onOpenChange={setShowLinkedInSuccess} />
 
       <LinkedInShareDialog open={showLinkedInDialog} onOpenChange={setShowLinkedInDialog} />
@@ -606,23 +580,10 @@ Try it: foundindex.com (created by linkedin.com/in/richa-deo)
               size="lg"
               variant="outline"
               className="w-full h-auto py-6 flex flex-col items-center gap-2"
-              onClick={() => {
-                handleLinkedInShare();
-                unlockTests();
-              }}
+              onClick={handleLinkedInShare}
             >
               <span className="font-semibold">Share on LinkedIn</span>
               <span className="text-xs text-muted-foreground">Unlock unlimited tests</span>
-            </Button>
-
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full h-auto py-6 flex flex-col items-center gap-2"
-              onClick={() => setShowFeedbackModal(true)}
-            >
-              <span className="font-semibold">Give Feedback</span>
-              <span className="text-xs text-muted-foreground">Help us improve</span>
             </Button>
 
             <Button
