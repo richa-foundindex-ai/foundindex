@@ -333,6 +333,16 @@ const Results = () => {
           </Card>
         </section>
 
+        <div className="flex justify-center">
+          <Button
+            size="lg"
+            className="w-full max-w-md h-auto py-6"
+            onClick={() => setShowFeedbackModal(true)}
+          >
+            <span className="font-semibold">Get Detailed Homepage Evaluation</span>
+          </Button>
+        </div>
+
         <Card className="p-6 space-y-4 bg-muted/30 border-dashed">
           <div className="flex items-start gap-3">
             <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
