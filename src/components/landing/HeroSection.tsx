@@ -75,6 +75,16 @@ const HeroSection = () => {
     // Check rate limiting
     const rateLimit = checkRateLimit(websiteUrl);
     if (!rateLimit.allowed) {
+      // Check if it's a lock error (another test in progress)
+      if ('message' in rateLimit && rateLimit.message) {
+        toast({
+          title: "Test in progress",
+          description: rateLimit.message,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       if (rateLimit.previousScore !== undefined) {
         setRateLimitInfo({
           url: websiteUrl,
@@ -85,9 +95,10 @@ const HeroSection = () => {
         setShowRateLimitModal(true);
         return;
       } else {
+        const daysText = rateLimit.daysUntilReset === 1 ? "1 day" : `${rateLimit.daysUntilReset} days`;
         toast({
-          title: "Weekly limit reached",
-          description: "You've used all 3 tests for this week. Come back in 7 days!",
+          title: "Monthly limit reached",
+          description: `You've used all 10 tests for this month. Your tests reset in ${daysText}.`,
           variant: "destructive",
         });
         return;
@@ -208,7 +219,7 @@ const HeroSection = () => {
                   )}
                 </Button>
                 <p className="text-sm text-muted-foreground text-center">
-                  <strong>3 free tests per week per device</strong> • Takes 3 minutes • No credit card required
+                  <strong>10 free tests per month per device</strong> • Takes 3 minutes • No credit card required
                 </p>
               </div>
             </form>

@@ -21,26 +21,29 @@ const preventionOptions = [
   "Something else"
 ];
 
-const formSchema = z.object({
-  surprisingResult: z.string().min(1, "Please share what surprised you"),
-  describeToColleague: z.string().min(1, "Please describe how you'd explain this"),
-  preventingImprovements: z.array(z.string()).min(1, "Please select at least one option"),
-  userType: z.string().min(1, "Please select your role"),
+const createFormSchema = (isOptional: boolean) => z.object({
+  surprisingResult: isOptional ? z.string().optional() : z.string().min(1, "Please share what surprised you"),
+  describeToColleague: isOptional ? z.string().optional() : z.string().min(1, "Please describe how you'd explain this"),
+  preventingImprovements: isOptional ? z.array(z.string()).optional() : z.array(z.string()).min(1, "Please select at least one option"),
+  userType: isOptional ? z.string().optional() : z.string().min(1, "Please select your role"),
   email: z.string().email("Please enter a valid email address"),
 });
 
 interface FeedbackModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  testId: string;
-  score: number;
-  website: string;
+  testId?: string;
+  score?: number;
+  website?: string;
+  isGeneralFeedback?: boolean;
 }
 
-export const FeedbackModal = ({ open, onOpenChange, testId, score, website }: FeedbackModalProps) => {
+export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGeneralFeedback = false }: FeedbackModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
+
+  const formSchema = createFormSchema(isGeneralFeedback);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -58,14 +61,15 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website }: Fe
     try {
       const { error } = await supabase.functions.invoke("submit-feedback", {
         body: {
-          testId,
-          score,
-          website,
-          surprisingResult: values.surprisingResult,
-          describeToColleague: values.describeToColleague,
-          preventingImprovements: values.preventingImprovements.join(", "),
-          userType: values.userType,
+          testId: testId || "general-feedback",
+          score: score || 0,
+          website: website || "N/A",
+          surprisingResult: values.surprisingResult || "",
+          describeToColleague: values.describeToColleague || "",
+          preventingImprovements: values.preventingImprovements?.join(", ") || "",
+          userType: values.userType || "",
           email: values.email,
+          isGeneralFeedback,
         },
       });
 
@@ -114,7 +118,10 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website }: Fe
           <>
             <DialogHeader>
               <DialogTitle className="text-xl font-bold">
-                Help us understand your experience and receive a detailed homepage evaluation
+                {isGeneralFeedback 
+                  ? "Share your feedback"
+                  : "Help us understand your experience and receive a detailed homepage evaluation"
+                }
               </DialogTitle>
             </DialogHeader>
 
