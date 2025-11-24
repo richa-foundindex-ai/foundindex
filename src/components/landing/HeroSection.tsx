@@ -168,11 +168,11 @@ const HeroSection = () => {
             <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
               <div className="flex items-center gap-3 text-left">
                 <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                <span className="text-base text-muted-foreground">Understand how AI interprets your business</span>
+                <span className="text-base text-muted-foreground">See how AI understands your business</span>
               </div>
               <div className="flex items-center gap-3 text-left">
                 <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                <span className="text-base text-muted-foreground">Get specific recommendations to improve clarity</span>
+                <span className="text-base text-muted-foreground">Get actionable recommendations to improve</span>
               </div>
             </div>
           </div>
@@ -186,7 +186,7 @@ const HeroSection = () => {
                 <Input
                   id="website"
                   type="text"
-                  placeholder="slack.com or https://yourwebsite.com"
+                  placeholder="yourwebsite.com or https://yourwebsite.com"
                   value={formData.website}
                   onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                   required
@@ -195,6 +195,9 @@ const HeroSection = () => {
               </div>
 
               <div className="space-y-4">
+                <p className="text-xs text-muted-foreground text-center">
+                  Note: Results are only available during this session. Enter your email on the results page to save them.
+                </p>
                 <Button type="submit" size="lg" className="w-full h-14 text-lg" disabled={isSubmitting}>
                   {isSubmitting ? (
                     "Analyzing..."
