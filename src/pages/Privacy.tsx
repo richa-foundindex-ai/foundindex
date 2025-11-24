@@ -47,19 +47,10 @@ const Privacy = () => {
           </div>
 
           <p className="pt-4 text-muted-foreground">
-            Questions? Email:{" "}
-            <a href="mailto:hello@foundindex.com" className="text-primary hover:underline">
-              hello@foundindex.com
-            </a>{" "}
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText("hello@foundindex.com");
-                alert("📧 Email copied: hello@foundindex.com");
-              }}
-              className="text-xs text-primary hover:underline ml-1"
-            >
-              (copy)
-            </button>
+            Questions?{" "}
+            <Link to="/contact" className="text-primary hover:underline">
+              Contact us
+            </Link>
           </p>
 
           <p className="text-muted-foreground">Full privacy policy coming with v2 launch.</p>
