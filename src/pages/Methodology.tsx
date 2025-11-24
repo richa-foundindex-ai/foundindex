@@ -5,11 +5,6 @@ import { Link } from "react-router-dom";
 import { MessageSquare, FileText, Shield, Search, Scale, AlertTriangle, Lightbulb, Mail } from "lucide-react";
 
 const Methodology = () => {
-  const handleEmailClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.location.href = "mailto:hello@foundindex.com";
-  };
-
   const factors = [
     {
       icon: MessageSquare,
@@ -215,11 +210,7 @@ const Methodology = () => {
           <Card className="p-8 border-dashed">
             <Mail className="h-6 w-6 text-primary mx-auto mb-4" />
             <p className="text-muted-foreground mb-4">Questions about our methodology?</p>
-            <a
-              href="mailto:hello@foundindex.com"
-              onClick={handleEmailClick}
-              className="text-primary hover:underline font-medium cursor-pointer"
-            >
+            <a href="mailto:hello@foundindex.com" className="text-primary hover:underline font-medium">
               hello@foundindex.com
             </a>
           </Card>
