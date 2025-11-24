@@ -113,8 +113,8 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website }: Fe
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Share Your Feedback</DialogTitle>
-              <DialogDescription>
+              <DialogTitle>Get Your Detailed Homepage Evaluation</DialogTitle>
+              <DialogDescription className="text-lg font-semibold">
                 Help us understand your experience and receive a detailed homepage evaluation.
               </DialogDescription>
             </DialogHeader>
