@@ -21,6 +21,7 @@ export const checkRateLimit = (url: string) => {
       allowed: false,
       remainingTests: testsRemaining,
       previousScore: urlData.score,
+      testId: urlData.testId,
     };
   }
 
@@ -31,12 +32,12 @@ export const checkRateLimit = (url: string) => {
   return { allowed: true, remainingTests: testsRemaining };
 };
 
-export const recordTest = (url: string, score: number) => {
+export const recordTest = (url: string, score: number, testId: string) => {
   const testsRemaining = parseInt(localStorage.getItem("testsRemaining") || "3");
   localStorage.setItem("testsRemaining", (testsRemaining - 1).toString());
 
   const testedUrls = JSON.parse(localStorage.getItem("testedUrls") || "{}");
-  testedUrls[url] = { score, testedAt: Date.now() };
+  testedUrls[url] = { score, testedAt: Date.now(), testId };
   localStorage.setItem("testedUrls", JSON.stringify(testedUrls));
 };
 

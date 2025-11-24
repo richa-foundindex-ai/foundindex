@@ -28,7 +28,7 @@ const HeroSection = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRateLimitModal, setShowRateLimitModal] = useState(false);
-  const [rateLimitInfo, setRateLimitInfo] = useState<{ url: string; score: number; remainingTests: number } | null>(
+  const [rateLimitInfo, setRateLimitInfo] = useState<{ url: string; score: number; remainingTests: number; testId?: string } | null>(
     null,
   );
 
@@ -80,13 +80,14 @@ const HeroSection = () => {
           url: websiteUrl,
           score: rateLimit.previousScore,
           remainingTests: rateLimit.remainingTests,
+          testId: rateLimit.testId,
         });
         setShowRateLimitModal(true);
         return;
       } else {
         toast({
-          title: "Monthly limit reached",
-          description: "Share on LinkedIn or give feedback to unlock more tests!",
+          title: "Weekly limit reached",
+          description: "You've used all 3 tests for this week. Come back in 7 days!",
           variant: "destructive",
         });
         return;
@@ -107,7 +108,7 @@ const HeroSection = () => {
 
       if (submitData?.testId) {
         // Record the test in cookie
-        recordTest(websiteUrl, submitData.score || 0);
+        recordTest(websiteUrl, submitData.score || 0, submitData.testId);
 
         toast({
           title: "Test started!",
@@ -139,7 +140,6 @@ const HeroSection = () => {
             <AlertDialogDescription className="space-y-4">
               <p className="text-lg font-semibold">Score: {rateLimitInfo?.score}/100</p>
               <p>Your score won't change unless you update your homepage content.</p>
-              <p className="font-medium">Want to test more sites?</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
@@ -147,26 +147,12 @@ const HeroSection = () => {
             <AlertDialogAction
               onClick={() => {
                 setShowRateLimitModal(false);
-                // Navigate to results page or show unlock modal
-                const unlockModal = document.querySelector("[data-unlock-modal]");
-                if (unlockModal) {
-                  (unlockModal as HTMLElement).click();
+                if (rateLimitInfo?.testId) {
+                  navigate(`/results?testId=${rateLimitInfo.testId}`);
                 }
               }}
             >
-              Share on LinkedIn
-            </AlertDialogAction>
-            <AlertDialogAction
-              onClick={() => {
-                setShowRateLimitModal(false);
-                // Show feedback modal
-                const feedbackModal = document.querySelector("[data-feedback-modal]");
-                if (feedbackModal) {
-                  (feedbackModal as HTMLElement).click();
-                }
-              }}
-            >
-              Give feedback
+              View Results
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
