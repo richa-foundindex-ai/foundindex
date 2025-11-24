@@ -77,6 +77,9 @@ const Results = () => {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [testsUsed, setTestsUsed] = useState(0);
   const [testsRemaining, setTestsRemaining] = useState(3);
+  const [emailForResults, setEmailForResults] = useState("");
+  const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     // Update test counter
@@ -143,6 +146,45 @@ const Results = () => {
     return "AI understands your business well. Minor optimizations recommended.";
   };
 
+
+  const handleEmailSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!emailForResults || !emailForResults.trim()) {
+      toast.error("Please enter your email");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(emailForResults.trim())) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsSubmittingEmail(true);
+
+    try {
+      const { error } = await supabase.functions.invoke("send-email", {
+        body: {
+          to: emailForResults.trim(),
+          testId: testId,
+          score: score,
+          website: result.website || "",
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success("✓ Results sent to your email!");
+      setEmailSent(true);
+      setEmailForResults("");
+    } catch (err) {
+      console.error("Failed to send email:", err);
+      toast.error("Couldn't send email. Please try again.");
+    } finally {
+      setIsSubmittingEmail(false);
+    }
+  };
 
   const handleProInterestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,6 +374,42 @@ const Results = () => {
             ))}
           </Card>
         </section>
+
+        {!emailSent && (
+          <Card className="p-6 bg-muted/30">
+            <form onSubmit={handleEmailSubmit} className="space-y-4">
+              <div className="flex items-start gap-3">
+                <Globe2 className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Want these results emailed? Enter your email to save this analysis.
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      type="email"
+                      placeholder="your@email.com"
+                      value={emailForResults}
+                      onChange={(e) => setEmailForResults(e.target.value)}
+                      disabled={isSubmittingEmail}
+                      className="flex-1"
+                      required
+                    />
+                    <Button type="submit" disabled={isSubmittingEmail}>
+                      {isSubmittingEmail ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        "Send Results"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </Card>
+        )}
 
         <div className="flex justify-center">
           <Button

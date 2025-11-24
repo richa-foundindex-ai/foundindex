@@ -19,7 +19,7 @@ const WhyItMatters = () => {
               AI only recommends businesses it understands clearly. If your website isn't structured for AI comprehension, you're missing from these recommendations.
             </p>
             <p className="font-medium text-foreground">
-              FoundIndex shows you exactly how AI 'sees' your business—and what to fix.
+              FoundIndex reveals exactly how AI interprets your business—and what to fix.
             </p>
           </div>
           
