@@ -113,10 +113,9 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website }: Fe
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Get Your Detailed Homepage Evaluation</DialogTitle>
-              <DialogDescription className="text-lg font-semibold">
-                Help us understand your experience and receive a detailed homepage evaluation.
-              </DialogDescription>
+              <DialogTitle className="text-xl font-bold">
+                Help us understand your experience and receive a detailed homepage evaluation
+              </DialogTitle>
             </DialogHeader>
 
             <Form {...form}>
@@ -238,7 +237,7 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website }: Fe
                 />
 
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? "Submitting..." : "Submit Feedback"}
+                  {isSubmitting ? "Submitting..." : "Submit feedback"}
                 </Button>
               </form>
             </Form>
