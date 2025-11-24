@@ -179,17 +179,19 @@ const HeroSection = () => {
         <div className="container mx-auto max-w-7xl">
           <div className="text-center space-y-6">
             <h1 className="text-[2.56rem] md:text-[3.33rem] font-bold text-foreground leading-tight">
-              How visible is your business to AI?
+              AI recommends businesses in millions of searches daily.
+              <br />
+              Is yours one of them?
             </h1>
 
             <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
               <div className="flex items-center gap-3 text-left">
                 <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                <span className="text-base text-muted-foreground">See how AI understands your business</span>
+                <span className="text-base text-muted-foreground">Discover your AI visibility score in 3 minutes</span>
               </div>
               <div className="flex items-center gap-3 text-left">
                 <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                <span className="text-base text-muted-foreground">Get actionable recommendations to improve</span>
+                <span className="text-base text-muted-foreground">Get targeted fixes that increase AI recommendations</span>
               </div>
             </div>
           </div>
@@ -217,13 +219,13 @@ const HeroSection = () => {
                     "Analyzing..."
                   ) : (
                     <>
-                      Analyze my website →
+                      Test your AI visibility →
                       <ArrowRight className="ml-2 h-5 w-5 hidden" />
                     </>
                   )}
                 </Button>
                 <p className="text-sm text-muted-foreground text-center">
-                  <strong>10 free tests per month per device</strong> • Takes 3 minutes • No credit card required
+                  <strong>3 free diagnostic tests per week</strong> • 3-minute analysis • Zero cost
                 </p>
               </div>
             </form>

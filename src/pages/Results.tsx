@@ -137,9 +137,11 @@ const Results = () => {
   };
 
   const getPercentile = (score: number) => {
-    if (score <= 39) return "AI struggles to understand your business. Here's what to focus on first.";
-    if (score <= 69) return "AI partially understands your business. Key improvements needed.";
-    return "AI understands your business well. Minor optimizations recommended.";
+    if (score <= 39) return "Minimal AI visibility. AI cannot comprehend your business offering. Immediate content restructure needed.";
+    if (score <= 54) return "Poor AI visibility. AI systems decline to recommend or provide vague responses. Critical fixes required.";
+    if (score <= 69) return "Moderate AI visibility. Key gaps block AI recommendations. Priority fixes identified below.";
+    if (score <= 84) return "Strong AI visibility. Targeted improvements will increase recommendation frequency.";
+    return "Excellent AI visibility. AI systems recommend your business confidently.";
   };
 
 
@@ -242,11 +244,11 @@ const Results = () => {
         <section className="space-y-8">
           <div className="text-center space-y-4">
             <div className="text-sm text-muted-foreground mb-2">
-              {testsRemaining} tests remaining this week
+              Tests remaining: {testsRemaining}/3
             </div>
             <h1 className="text-editorial-xl">Your AI visibility score</h1>
             <p className="text-editorial-sm text-muted-foreground">
-              Based on analysis of your website's content and structure
+              Measured across 5 AI-critical factors
             </p>
           </div>
 
@@ -295,19 +297,24 @@ const Results = () => {
           </Card>
 
           <Card className="p-6 space-y-3">
-            <h2 className="text-sm font-semibold">What we evaluated</h2>
+            <h2 className="text-sm font-semibold">Diagnostic breakdown</h2>
             {[
-              { label: "Content clarity", score: result.contentClarityScore, max: 25 },
-              { label: "Structured data", score: result.structuredDataScore, max: 20 },
-              { label: "Authority signals", score: result.authorityScore, max: 20 },
-              { label: "Discoverability", score: result.discoverabilityScore, max: 20 },
-              { label: "Comparison content", score: result.comparisonScore, max: 15 },
+              { label: "Content clarity", sublabel: "Value proposition explicitness", score: result.contentClarityScore, max: 30 },
+              { label: "Information discoverability", sublabel: "Key detail accessibility", score: result.discoverabilityScore, max: 25 },
+              { label: "Authority signals", sublabel: "Credibility verification markers", score: result.authorityScore, max: 15 },
+              { label: "Technical structure", sublabel: "Machine-readable optimization", score: result.structuredDataScore, max: 15 },
+              { label: "Competitive positioning", sublabel: "Differentiation clarity", score: result.comparisonScore, max: 15 },
             ].map((item, i) => (
               <div key={i} className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">
-                    {item.label} ({item.score ?? 0}/{item.max})
-                  </span>
+                  <div>
+                    <span className="text-sm font-medium">
+                      {item.label}
+                    </span>
+                    <span className="text-xs text-muted-foreground block">
+                      {item.sublabel}
+                    </span>
+                  </div>
                   <span className="text-xs text-muted-foreground">
                     {item.score ?? 0}/{item.max}
                   </span>
@@ -320,13 +327,6 @@ const Results = () => {
                     <XCircle className="h-4 w-4 text-destructive" />
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {item.label === "Content clarity" && "How clearly you explain what you do"}
-                  {item.label === "Structured data" && "How organized your information is"}
-                  {item.label === "Authority signals" && "Evidence of credibility and trust"}
-                  {item.label === "Discoverability" && "How easy key information is to find"}
-                  {item.label === "Comparison content" && "Context for how you're different"}
-                </p>
               </div>
             ))}
           </Card>
@@ -347,7 +347,7 @@ const Results = () => {
             className="w-full max-w-md h-auto py-6"
             onClick={() => setShowFeedbackModal(true)}
           >
-            <span className="font-semibold">Get detailed homepage evaluation</span>
+            <span className="font-semibold">Get detailed homepage evaluation (48-hour delivery)</span>
           </Button>
         </div>
 
@@ -355,11 +355,15 @@ const Results = () => {
           <div className="flex items-start gap-3">
             <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <div className="space-y-2">
-              <h2 className="text-lg font-semibold">About this analysis</h2>
+              <h2 className="text-lg font-semibold">Analysis methodology</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                FoundIndex is a v1 diagnostic tool. We analyze your homepage only (multi-page coming in v2). Scores may
-                vary ±2 points between tests—this is normal with AI-powered analysis. We're building in public and
-                learning from your feedback.
+                FoundIndex v1 analyzes homepage content (multi-page diagnostic launches v2).
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                ±2 point score variance reflects AI analysis patterns—standard for machine learning systems.
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                Research-backed methodology. Validated against real websites. Updated based on proven outcomes.
               </p>
             </div>
           </div>
@@ -368,60 +372,39 @@ const Results = () => {
         <Card className="p-6 space-y-4 bg-muted/30">
           <div className="flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold">Understanding your score</h2>
+            <h2 className="text-lg font-semibold">Measurement scope</h2>
           </div>
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Your AI visibility score is based on content analysis. Slight variations (±1-2 points) can occur
-              naturally, even without changes. This is normal—AI-powered analysis isn't perfectly deterministic. AI
-              assistants are already making recommendations to millions of users daily. If ChatGPT can't clearly explain
-              what you do, you're invisible to this growing discovery channel.
+              FoundIndex measures AI comprehension factors, not:
             </p>
-            <div className="space-y-3">
-              <p className="text-sm font-medium">Real improvements require 5+ point changes. These come from:</p>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>
-                    Adding customer testimonials <span className="text-emerald-600 font-medium">(+3-8 points)</span>
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>
-                    Creating comparison pages <span className="text-emerald-600 font-medium">(+5-8 points)</span>
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>
-                    Improving your FAQ <span className="text-emerald-600 font-medium">(+2-4 points)</span>
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>
-                    Adding structured data <span className="text-emerald-600 font-medium">(+4-6 points)</span>
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-primary mt-0.5">•</span>
-                  <span>
-                    Publishing case studies <span className="text-emerald-600 font-medium">(+5-8 points)</span>
-                  </span>
-                </li>
-              </ul>
-            </div>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <span>Real-time recommendation frequency (ChatGPT conversations are private)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <span>Marketing ROI or conversion rates</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <span>Google search rankings</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">•</span>
+                <span>Off-site brand recognition</span>
+              </li>
+            </ul>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              These changes take days or weeks to show up because Google needs to recrawl your site. This is why monthly
-              tracking helps—you'll see meaningful progress over time, not day-to-day fluctuations.
+              This diagnostic quantifies technical factors that determine AI recommendation likelihood.
             </p>
           </div>
         </Card>
 
         <section className="space-y-6">
           <Card className="p-6 space-y-4">
-            <h2 className="text-sm font-semibold">What to fix first</h2>
+            <h2 className="text-sm font-semibold">Priority fixes</h2>
             <div className="space-y-4">
               {(result.recommendations ?? []).length > 0 ? (
                 (result.recommendations ?? []).slice(0, 3).map((rec, i) => (
@@ -537,16 +520,31 @@ const Results = () => {
 
       <section className="py-16 px-4 bg-accent-gray-light border-t">
         <div className="container mx-auto max-w-4xl text-center space-y-6">
-          <h2 className="text-2xl font-semibold">What's next?</h2>
+          <h2 className="text-2xl font-semibold">Increase your AI visibility</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Get a detailed homepage evaluation with specific, actionable recommendations to improve your AI visibility score.
+            Get detailed homepage evaluation with specific, actionable recommendations to improve your AI visibility score.
           </p>
+          <div className="space-y-3 max-w-xl mx-auto text-left">
+            <p className="text-sm text-muted-foreground">
+              Submit feedback (60 seconds) to receive:
+            </p>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">✓</span>
+                <span>Personalized rewrite strategy (48-hour delivery)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-primary mt-0.5">✓</span>
+                <span>Bonus: Blog post diagnostic (exchange: LinkedIn review)</span>
+              </li>
+            </ul>
+          </div>
           <Button
             size="lg"
             className="w-full max-w-md mx-auto h-auto py-6"
             onClick={() => setShowFeedbackModal(true)}
           >
-            <span className="font-semibold">Get detailed homepage evaluation</span>
+            <span className="font-semibold">Get Detailed Homepage Evaluation</span>
           </Button>
         </div>
       </section>

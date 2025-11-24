@@ -11,9 +11,9 @@ const ComingInV2 = () => {
   const [showSuccess, setShowSuccess] = useState(false);
 
   const features = [
-    "Multi-page analysis (homepage + 5 key pages)",
-    "Monthly automated retesting",
-    "Competitor comparison",
+    "Multi-page diagnostics (6 pages analyzed)",
+    "Competitor benchmarking (direct comparison scores)",
+    "Automated monthly retesting (track improvements)",
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -80,11 +80,11 @@ Free v1 homepage test: foundindex.com
   return (
     <section className="py-20 px-4 bg-background" data-waitlist-section>
       <div className="container mx-auto max-w-4xl">
-        <h2 className="text-editorial-lg text-center mb-8">What's coming next</h2>
+        <h2 className="text-editorial-lg text-center mb-8">V2 delivers deeper analysis</h2>
 
         <Card className="p-8 bg-accent-gray-light border-none">
           <div className="space-y-6">
-            <p className="text-lg text-muted-foreground leading-relaxed">We're building v2 based on your feedback:</p>
+            <p className="text-lg text-muted-foreground leading-relaxed">Launching Q1 2026:</p>
 
             <ul className="space-y-3">
               {features.map((feature, index) => (
@@ -96,7 +96,7 @@ Free v1 homepage test: foundindex.com
             </ul>
 
             <div className="pt-6">
-              <p className="text-lg font-medium text-foreground mb-4">Join the v2 waitlist:</p>
+              <p className="text-lg font-medium text-foreground mb-4">Reserve early access:</p>
               {!showSuccess ? (
                 <form onSubmit={handleSubmit} className="flex gap-2">
                   <Input
@@ -108,7 +108,7 @@ Free v1 homepage test: foundindex.com
                     className="flex-1"
                   />
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Saving..." : "Notify me"}
+                    {isSubmitting ? "Saving..." : "Get notified"}
                   </Button>
                 </form>
               ) : (
