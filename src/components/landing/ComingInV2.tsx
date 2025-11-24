@@ -112,12 +112,7 @@ Free v1 homepage test: foundindex.com
                   </Button>
                 </form>
               ) : (
-                <div className="space-y-4">
-                  <p className="text-lg text-foreground">Thanks! We'll notify you when v2 launches.</p>
-                  <Button onClick={handleLinkedInShare} className="w-full">
-                    Share on LinkedIn
-                  </Button>
-                </div>
+                <p className="text-lg text-foreground">Thanks! We'll notify you when v2 launches.</p>
               )}
             </div>
           </div>
