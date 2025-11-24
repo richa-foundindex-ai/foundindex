@@ -40,10 +40,12 @@ const HeroSection = () => {
       url = "https://" + url;
     }
 
-    // Validate URL format
+    // Validate URL format and extract root domain
     try {
-      new URL(url);
-      return url;
+      const urlObj = new URL(url);
+      // Return only the root domain (protocol + hostname + /)
+      // This ensures all subpages are normalized to the homepage
+      return `${urlObj.protocol}//${urlObj.hostname}/`;
     } catch (e) {
       return null;
     }
