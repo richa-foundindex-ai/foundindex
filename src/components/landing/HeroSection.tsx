@@ -220,7 +220,7 @@ const HeroSection = () => {
                   )}
                 </Button>
                 <p className="text-sm text-muted-foreground text-center">
-                  3 free tests per month • Takes 3 minutes • No credit card required
+                  <strong>3 free tests per week per device</strong> • Takes 3 minutes • No credit card required
                 </p>
               </div>
             </form>
