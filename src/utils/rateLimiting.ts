@@ -12,6 +12,19 @@ export const checkRateLimit = (url: string) => {
     return { allowed: true, remainingTests: 3 };
   }
 
+  // Check if this URL was tested recently
+  const testedUrls = JSON.parse(localStorage.getItem("testedUrls") || "{}");
+  const urlData = testedUrls[url];
+
+  if (urlData && urlData.score !== undefined) {
+    // URL was tested before - show previous score
+    return {
+      allowed: false,
+      remainingTests: testsRemaining,
+      previousScore: urlData.score,
+    };
+  }
+
   if (testsRemaining <= 0) {
     return { allowed: false, remainingTests: 0 };
   }
@@ -22,6 +35,11 @@ export const checkRateLimit = (url: string) => {
 export const recordTest = (url: string, score: number) => {
   const testsRemaining = parseInt(localStorage.getItem("testsRemaining") || "3");
   localStorage.setItem("testsRemaining", (testsRemaining - 1).toString());
+
+  // Store tested URL with score
+  const testedUrls = JSON.parse(localStorage.getItem("testedUrls") || "{}");
+  testedUrls[url] = { score, testedAt: Date.now() };
+  localStorage.setItem("testedUrls", JSON.stringify(testedUrls));
 };
 
 export const getRemainingTests = () => {
