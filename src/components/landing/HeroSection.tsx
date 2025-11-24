@@ -28,7 +28,7 @@ const HeroSection = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showRateLimitModal, setShowRateLimitModal] = useState(false);
-  const [rateLimitInfo, setRateLimitInfo] = useState<{ url: string; score: number; remainingTests: number; testId?: string } | null>(
+  const [rateLimitInfo, setRateLimitInfo] = useState<{ url: string; score: number; remainingTests: number; testId?: string; daysUntilReset?: number } | null>(
     null,
   );
 
@@ -91,6 +91,7 @@ const HeroSection = () => {
           score: rateLimit.previousScore,
           remainingTests: rateLimit.remainingTests,
           testId: rateLimit.testId,
+          daysUntilReset: rateLimit.daysUntilReset,
         });
         setShowRateLimitModal(true);
         return;
@@ -152,7 +153,9 @@ const HeroSection = () => {
             <AlertDialogTitle>You tested this URL recently</AlertDialogTitle>
             <AlertDialogDescription className="space-y-4">
               <p className="text-lg font-semibold">Score: {rateLimitInfo?.score}/100</p>
-              <p>Your score won't change unless you update your homepage content.</p>
+              <p>
+                You can test this URL again in {rateLimitInfo?.daysUntilReset === 1 ? "1 day" : `${rateLimitInfo?.daysUntilReset} days`}. Your score won't change significantly unless you update your homepage content.
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
