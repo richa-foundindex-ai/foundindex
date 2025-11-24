@@ -14,7 +14,10 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
           </p>
           <p className="text-sm text-muted-foreground">
             Contact:{" "}
-            <a href="mailto:hello@foundindex.com" className="underline hover:text-foreground transition-colors">
+            <a
+              href="mailto:hello@foundindex.com"
+              className="underline hover:text-foreground transition-colors cursor-pointer"
+            >
               hello@foundindex.com
             </a>
           </p>
@@ -23,10 +26,10 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
           </p>
           <p className="text-sm text-muted-foreground">Uses OpenAI models • Efficient by design</p>
           <div className="flex justify-center gap-4 pt-2">
-            <a href="/privacy" className="hover:text-foreground transition-colors">
+            <a href="/privacy" className="hover:text-foreground transition-colors cursor-pointer">
               Privacy
             </a>
-            <a href="/privacy" className="hover:text-foreground transition-colors">
+            <a href="/privacy" className="hover:text-foreground transition-colors cursor-pointer">
               Terms
             </a>
           </div>
