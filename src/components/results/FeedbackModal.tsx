@@ -194,25 +194,25 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website }: Fe
                         <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-3 mt-3">
                           <FormItem className="flex items-center space-x-3 space-y-0">
                             <FormControl>
-                              <RadioGroupItem value="founder" />
+                              <RadioGroupItem value="Founder/Business Owner" />
                             </FormControl>
                             <FormLabel className="font-normal cursor-pointer">Founder/Business Owner</FormLabel>
                           </FormItem>
                           <FormItem className="flex items-center space-x-3 space-y-0">
                             <FormControl>
-                              <RadioGroupItem value="marketer" />
+                              <RadioGroupItem value="Marketing Professional" />
                             </FormControl>
                             <FormLabel className="font-normal cursor-pointer">Marketing Professional</FormLabel>
                           </FormItem>
                           <FormItem className="flex items-center space-x-3 space-y-0">
                             <FormControl>
-                              <RadioGroupItem value="agency" />
+                              <RadioGroupItem value="Agency/Consultant" />
                             </FormControl>
                             <FormLabel className="font-normal cursor-pointer">Agency/Consultant</FormLabel>
                           </FormItem>
                           <FormItem className="flex items-center space-x-3 space-y-0">
                             <FormControl>
-                              <RadioGroupItem value="other" />
+                              <RadioGroupItem value="Other" />
                             </FormControl>
                             <FormLabel className="font-normal cursor-pointer">Other</FormLabel>
                           </FormItem>
