@@ -1,5 +1,7 @@
 export const checkRateLimit = (url: string) => {
-  const testsRemaining = parseInt(localStorage.getItem("testsRemaining") || "3");
+  // TODO: Change back to 3 before publishing
+  const WEEKLY_LIMIT = 999;
+  const testsRemaining = parseInt(localStorage.getItem("testsRemaining") || String(WEEKLY_LIMIT));
   const lastResetDate = localStorage.getItem("lastResetDate");
 
   // Reset counter every week
@@ -7,9 +9,9 @@ export const checkRateLimit = (url: string) => {
   const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   if (!lastResetDate || new Date(lastResetDate) < weekAgo) {
-    localStorage.setItem("testsRemaining", "3");
+    localStorage.setItem("testsRemaining", String(WEEKLY_LIMIT));
     localStorage.setItem("lastResetDate", now.toISOString());
-    return { allowed: true, remainingTests: 3 };
+    return { allowed: true, remainingTests: WEEKLY_LIMIT };
   }
 
   // Check if this URL was tested recently
@@ -33,7 +35,9 @@ export const checkRateLimit = (url: string) => {
 };
 
 export const recordTest = (url: string, score: number, testId: string) => {
-  const testsRemaining = parseInt(localStorage.getItem("testsRemaining") || "3");
+  // TODO: Change back to 3 before publishing
+  const WEEKLY_LIMIT = 999;
+  const testsRemaining = parseInt(localStorage.getItem("testsRemaining") || String(WEEKLY_LIMIT));
   localStorage.setItem("testsRemaining", (testsRemaining - 1).toString());
 
   const testedUrls = JSON.parse(localStorage.getItem("testedUrls") || "{}");
@@ -42,7 +46,9 @@ export const recordTest = (url: string, score: number, testId: string) => {
 };
 
 export const getRemainingTests = () => {
-  return parseInt(localStorage.getItem("testsRemaining") || "3");
+  // TODO: Change back to 3 before publishing
+  const WEEKLY_LIMIT = 999;
+  return parseInt(localStorage.getItem("testsRemaining") || String(WEEKLY_LIMIT));
 };
 
 // Deprecated - kept for backward compatibility
