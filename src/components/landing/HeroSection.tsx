@@ -151,8 +151,7 @@ const HeroSection = () => {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>You tested this URL recently</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-4">
-              <p className="text-lg font-semibold">Score: {rateLimitInfo?.score}/100</p>
+            <AlertDialogDescription>
               <p>
                 You can test this URL again in {rateLimitInfo?.daysUntilReset === 1 ? "1 day" : `${rateLimitInfo?.daysUntilReset} days`}. Your score won't change significantly unless you update your homepage content.
               </p>
