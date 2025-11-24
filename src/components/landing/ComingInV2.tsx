@@ -12,10 +12,8 @@ const ComingInV2 = () => {
 
   const features = [
     "Multi-page analysis (homepage + 5 key pages)",
+    "Monthly automated retesting",
     "Competitor comparison",
-    "Citation tracking",
-    "Industry benchmarks",
-    "Monthly monitoring",
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
