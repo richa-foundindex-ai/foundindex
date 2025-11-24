@@ -152,29 +152,25 @@ const Results = () => {
     return "AI understands your business well. Minor optimizations recommended.";
   };
 
-  const handleShare = () => {
+  const handleLinkedInShare = () => {
     if (!result) return;
     const score = result.foundIndexScore ?? 0;
-    const topRecommendation = result.recommendations?.[0] || "AI readability improvements needed";
+    const topRec = result.recommendations?.[0] || "AI readability improvements needed";
     
-    const linkedInText = `Always trying to stay ahead of how AI affects our brand visibility, so I ran my site through FoundIndex.
+    const text = `Always trying to stay ahead of how AI affects our brand visibility, so I ran my site through FoundIndex.
 
-My AI Visibility Score: ${score}/100  
-Key insight: ${topRecommendation}
+My AI Visibility Score: ${score}/100
+Key insight: ${topRec}
 
 With AI-led search replacing traditional SEO, this was genuinely eye-opening. If you care about staying ahead of AI-driven discovery, this 3-minute test is worth it.
 
-Try it: foundindex.com
+Try it: foundindex.com (created by linkedin.com/in/richa-deo)
 
-#AIVisibility #SEO #FutureOfSearch`;
+#FoundIndex #AIVisibility #SEO #FutureOfSearch`;
     
-    navigator.clipboard.writeText(linkedInText);
+    navigator.clipboard.writeText(text);
     setShowLinkedInDialog(true);
-    
-    // Close after 10 seconds
-    setTimeout(() => {
-      setShowLinkedInDialog(false);
-    }, 10000);
+    setTimeout(() => setShowLinkedInDialog(false), 10000);
   };
 
   const handleProInterestSubmit = async (e: React.FormEvent) => {
@@ -387,7 +383,7 @@ Try it: foundindex.com
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground leading-relaxed">
               Your AI visibility score is based on content analysis. Slight variations (±1-2 points) can occur
-              naturally, even without changes. This is normal—AI-powered analysis isn't perfectly deterministic.
+              naturally, even without changes. This is normal—AI-powered analysis isn't perfectly deterministic. AI assistants are already making recommendations to millions of users daily. If ChatGPT can't clearly explain what you do, you're invisible to this growing discovery channel.
             </p>
             <div className="space-y-3">
               <p className="text-sm font-medium">Real improvements require 5+ point changes. These come from:</p>
@@ -471,7 +467,7 @@ Try it: foundindex.com
                 <p className="font-medium">Always trying to stay ahead of how AI affects our brand visibility...</p>
                 <p className="mt-1 text-xs text-primary">My AI Visibility Score: {score}/100</p>
               </div>
-              <Button size="sm" className="w-full" variant="outline" onClick={handleShare}>
+              <Button size="sm" className="w-full" variant="outline" onClick={handleLinkedInShare}>
                 Copy LinkedIn post
               </Button>
             </Card>
@@ -612,7 +608,7 @@ Try it: foundindex.com
               variant="outline"
               className="w-full h-auto py-6 flex flex-col items-center gap-2"
               onClick={() => { 
-                handleShare(); 
+                handleLinkedInShare(); 
                 unlockTests(); 
               }}
             >
