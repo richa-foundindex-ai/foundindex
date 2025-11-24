@@ -5,6 +5,11 @@ import { Link } from "react-router-dom";
 import { MessageSquare, FileText, Shield, Search, Scale, AlertTriangle, Lightbulb, Mail } from "lucide-react";
 
 const Methodology = () => {
+  const handleEmailClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.location.href = "mailto:hello@foundindex.com";
+  };
+
   const factors = [
     {
       icon: MessageSquare,
@@ -69,7 +74,6 @@ const Methodology = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Sticky Header */}
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto max-w-5xl flex h-16 items-center justify-between px-4">
           <Link
@@ -100,7 +104,6 @@ const Methodology = () => {
       </header>
 
       <main className="container mx-auto px-4 py-16 max-w-5xl">
-        {/* Header */}
         <div className="text-center mb-16">
           <Badge variant="outline" className="mb-4">
             Methodology
@@ -116,10 +119,8 @@ const Methodology = () => {
           </div>
         </div>
 
-        {/* Example Box */}
         <Card className="mb-16 p-8 bg-accent-gray-light border-border">
           <h3 className="text-xl font-bold mb-6">What does "AI-readable" mean?</h3>
-
           <div className="space-y-6">
             <div>
               <p className="text-sm font-semibold text-destructive mb-2">Example 1 - Not AI-readable:</p>
@@ -127,7 +128,6 @@ const Methodology = () => {
                 "Best travel tips top destinations affordable luxury adventure explore discover amazing"
               </p>
             </div>
-
             <div>
               <p className="text-sm font-semibold text-success mb-2">Example 2 - AI-readable:</p>
               <p className="text-foreground">
@@ -135,7 +135,6 @@ const Methodology = () => {
                 travelers, budget recommendations, and hidden destinations."
               </p>
             </div>
-
             <p className="text-sm text-muted-foreground pt-4 border-t border-border">
               When someone asks ChatGPT "What are good travel blogs for Asia?", the second example is easy for AI to
               understand and recommend.
@@ -143,7 +142,6 @@ const Methodology = () => {
           </div>
         </Card>
 
-        {/* The 5 Factors */}
         <section className="mb-16">
           <h2 className="text-editorial-lg mb-12 text-center">The 5 factors we evaluate</h2>
           <div className="space-y-8">
@@ -173,7 +171,6 @@ const Methodology = () => {
           </div>
         </section>
 
-        {/* Limitations */}
         <section className="mb-16">
           <Card className="p-8 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900">
             <div className="flex gap-4">
@@ -196,7 +193,6 @@ const Methodology = () => {
           </Card>
         </section>
 
-        {/* Vision */}
         <section className="mb-16">
           <Card className="p-8 bg-primary/5 border-primary/20">
             <div className="flex gap-4">
@@ -215,18 +211,20 @@ const Methodology = () => {
           </Card>
         </section>
 
-        {/* Contact */}
         <section className="text-center">
           <Card className="p-8 border-dashed">
             <Mail className="h-6 w-6 text-primary mx-auto mb-4" />
             <p className="text-muted-foreground mb-4">Questions about our methodology?</p>
-            <a href="mailto:hello@foundindex.com" className="text-primary hover:underline font-medium cursor-pointer">
+            <a
+              href="mailto:hello@foundindex.com"
+              onClick={handleEmailClick}
+              className="text-primary hover:underline font-medium cursor-pointer"
+            >
               hello@foundindex.com
             </a>
           </Card>
         </section>
 
-        {/* Back to Home */}
         <div className="text-center mt-12">
           <Link to="/" className="text-primary hover:underline font-medium">
             ← Back to home

@@ -19,7 +19,7 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
           </p>
           <p className="text-sm text-muted-foreground">
             Contact:{" "}
-            
+            <a
               href="mailto:hello@foundindex.com"
               onClick={handleEmailClick}
               className="underline hover:text-foreground transition-colors cursor-pointer"
