@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 interface FooterProps {
   onOpenFeedback?: () => void;
@@ -13,31 +14,21 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
             Built by Richa Deo — UX researcher focused on how AI interprets information
           </p>
           <p className="text-sm text-muted-foreground">
-            Contact:{" "}
-            <a href="mailto:hello@foundindex.com" className="underline hover:text-foreground transition-colors">
-              hello@foundindex.com
-            </a>{" "}
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText("hello@foundindex.com");
-                alert("📧 Email copied: hello@foundindex.com");
-              }}
-              className="text-xs text-primary hover:underline ml-1"
-            >
-              (copy)
-            </button>
+            <Link to="/contact" className="underline hover:text-foreground transition-colors">
+              Contact us
+            </Link>
           </p>
           <p className="text-sm text-muted-foreground">
             Privacy-first: We don't store your website content. Test results and URLs are stored to improve analysis.
           </p>
           <p className="text-sm text-muted-foreground">Uses OpenAI models • Efficient by design</p>
           <div className="flex justify-center gap-4 pt-2">
-            <a href="/privacy" className="hover:text-foreground transition-colors">
+            <Link to="/privacy" className="hover:text-foreground transition-colors">
               Privacy
-            </a>
-            <a href="/privacy" className="hover:text-foreground transition-colors">
+            </Link>
+            <Link to="/privacy" className="hover:text-foreground transition-colors">
               Terms
-            </a>
+            </Link>
           </div>
           {onOpenFeedback && (
             <div className="pt-4">
