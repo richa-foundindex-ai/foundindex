@@ -1,6 +1,7 @@
 import { useState } from "react";
 import HeroSection from "@/components/landing/HeroSection";
 import WhyItMatters from "@/components/landing/WhyItMatters";
+import ResearchFoundation from "@/components/landing/ResearchFoundation";
 import FAQ from "@/components/landing/FAQ";
 import ComingInV2 from "@/components/landing/ComingInV2";
 import Footer from "@/components/landing/Footer";
@@ -19,6 +20,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <HeroSection />
       <WhyItMatters />
+      <ResearchFoundation />
       <FAQ />
       <ComingInV2 />
       <Footer onOpenFeedback={() => setShowFeedbackModal(true)} />

@@ -8,9 +8,9 @@ import {
 const FAQ = () => {
   const faqs = [
     {
-      question: "What does FoundIndex analyze?",
+      question: "What does FoundIndex measure?",
       answer:
-        "We analyze how clearly AI systems can understand your business—the structure, clarity, and authority signals that affect AI visibility. Think of it as showing you how AI 'reads' your homepage.",
+        "FoundIndex measures 5 AI-critical factors: Content clarity (value proposition explicitness), Information discoverability (key detail accessibility), Authority signals (credibility verification markers), Technical structure (machine-readable optimization), and Competitive positioning (differentiation clarity). Combined score (0-100) determines AI recommendation probability.",
     },
     {
       question: "Why just the homepage?",

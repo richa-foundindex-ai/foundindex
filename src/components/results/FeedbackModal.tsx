@@ -12,13 +12,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const preventionOptions = [
-  "I don't know which pages to fix first",
-  "I don't know how to rewrite my content",
-  "I can't tell if my changes actually helped",
-  "I need to compare my site to competitors",
-  "I don't have time to do this myself",
-  "I need expert help",
-  "Something else"
+  "Time constraints",
+  "Budget limitations",
+  "Technical expertise",
+  "Unclear priorities",
+  "Other"
 ];
 
 const createFormSchema = (isOptional: boolean) => z.object({
@@ -99,18 +97,18 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
         {showSuccess ? (
           <div className="space-y-6 py-8">
             <DialogHeader>
-              <DialogTitle className="text-2xl">Thank you for your feedback!</DialogTitle>
+              <DialogTitle className="text-2xl">Evaluation queued for delivery</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-muted-foreground">
-                You'll receive your detailed homepage evaluation within 48 hours at{" "}
-                <span className="font-semibold text-foreground">{submittedEmail}</span>.
+                Detailed homepage analysis ships within 48 hours to:{" "}
+                <span className="font-semibold text-foreground">{submittedEmail}</span>
               </p>
               <p className="text-muted-foreground">
-                We'll also send details about getting a free blog post evaluation in exchange for a LinkedIn review.
+                Blog post diagnostic offer (LinkedIn review exchange) arrives separately.
               </p>
               <Button onClick={handleClose} className="w-full">
-                Close
+                View results
               </Button>
             </div>
           </div>
@@ -118,11 +116,23 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
           <>
             <DialogHeader>
               <DialogTitle className="text-xl font-bold">
-                {isGeneralFeedback 
-                  ? "Share your feedback"
-                  : "Help us understand your experience and receive a detailed homepage evaluation"
-                }
+                Get detailed homepage evaluation
               </DialogTitle>
+              {!isGeneralFeedback && (
+                <DialogDescription className="text-sm pt-2">
+                  Submit feedback (60 seconds) to receive:
+                  <ul className="space-y-1 mt-2">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">✓</span>
+                      <span>Personalized rewrite strategy (48-hour delivery)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">✓</span>
+                      <span>Bonus: Blog post diagnostic (exchange: LinkedIn review)</span>
+                    </li>
+                  </ul>
+                </DialogDescription>
+              )}
             </DialogHeader>
 
             <Form {...form}>
@@ -206,15 +216,21 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
                           </FormItem>
                           <FormItem className="flex items-center space-x-3 space-y-0">
                             <FormControl>
-                              <RadioGroupItem value="Marketing Professional" />
+                              <RadioGroupItem value="SEO/Marketing Professional" />
                             </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">Marketing Professional</FormLabel>
+                            <FormLabel className="font-normal cursor-pointer">SEO/Marketing Professional</FormLabel>
                           </FormItem>
                           <FormItem className="flex items-center space-x-3 space-y-0">
                             <FormControl>
-                              <RadioGroupItem value="Agency/Consultant" />
+                              <RadioGroupItem value="UX Researcher/Designer" />
                             </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">Agency/Consultant</FormLabel>
+                            <FormLabel className="font-normal cursor-pointer">UX Researcher/Designer</FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="Developer" />
+                            </FormControl>
+                            <FormLabel className="font-normal cursor-pointer">Developer</FormLabel>
                           </FormItem>
                           <FormItem className="flex items-center space-x-3 space-y-0">
                             <FormControl>
@@ -244,7 +260,7 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
                 />
 
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? "Submitting..." : "Submit feedback"}
+                  {isSubmitting ? "Submitting..." : "Submit Feedback"}
                 </Button>
               </form>
             </Form>

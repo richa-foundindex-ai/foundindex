@@ -7,29 +7,20 @@ const WhyItMatters = () => {
     <section className="py-20 px-4 bg-background">
       <div className="container mx-auto max-w-4xl">
         <h2 className="text-editorial-lg text-center mb-8">
-          Why AI visibility matters
+          Why AI visibility determines your growth
         </h2>
 
         <Card className="p-8 bg-accent-gray-light border-none">
           <div className="space-y-6 text-lg text-muted-foreground leading-relaxed">
             <p>
-              Search behavior is changing. People increasingly ask ChatGPT and Claude for recommendations instead of searching Google.
+              Search shifted. ChatGPT answers 1B+ queries monthly. Claude powers enterprise decisions. Perplexity replaced Google for millions.
             </p>
             <p>
-              AI only recommends businesses it understands clearly. If your website isn't structured for AI comprehension, you're missing from these recommendations.
+              AI systems recommend businesses they comprehend clearly. Vague websites get excluded. Structured sites get recommended.
             </p>
             <p className="font-medium text-foreground">
-              FoundIndex reveals exactly how AI interprets your business—and what to fix.
+              FoundIndex measures the 5 factors that determine AI recommendations.
             </p>
-          </div>
-          
-          <div className="mt-8">
-            <Link 
-              to="/methodology"
-              className="text-primary hover:underline font-medium"
-            >
-              See our methodology →
-            </Link>
           </div>
         </Card>
       </div>

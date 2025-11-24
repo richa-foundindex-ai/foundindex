@@ -83,9 +83,9 @@ export const ContactForm = () => {
       <div className="space-y-6">
         <div className="text-center space-y-2">
           <Mail className="h-12 w-12 mx-auto text-primary" />
-          <h1 className="text-3xl font-bold">Contact Us</h1>
+          <h1 className="text-3xl font-bold">Contact</h1>
           <p className="text-muted-foreground">
-            Have questions or feedback? We'd love to hear from you.
+            Questions about FoundIndex? Direct line open.
           </p>
         </div>
 
@@ -130,12 +130,12 @@ export const ContactForm = () => {
           </div>
 
           <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Sending..." : "Send Message"}
+            {isSubmitting ? "Sending..." : "Submit"}
           </Button>
         </form>
 
         <div className="pt-4 border-t text-center">
-          <p className="text-sm text-muted-foreground mb-2">Or email us directly:</p>
+          <p className="text-sm text-muted-foreground mb-2">Direct email:</p>
           <Button
             variant="outline"
             size="sm"

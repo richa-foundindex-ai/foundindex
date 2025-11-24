@@ -8,26 +8,26 @@ const Methodology = () => {
   const factors = [
     {
       icon: MessageSquare,
-      title: "Content clarity (0-25 points)",
-      description: "We check if your site clearly explains:",
+      title: "Content Clarity (0-30 points)",
+      description: "Value proposition explicitness. We check if your site clearly explains:",
       items: ["What you do or sell", "Who it's for", "What problems you solve"],
       note: "We look for natural, helpful language over keyword stuffing.",
     },
     {
-      icon: FileText,
-      title: "Structured data (0-20 points)",
-      description: "Organization signals that help AI parse information:",
+      icon: Search,
+      title: "Information Discoverability (0-25 points)",
+      description: "Key detail accessibility. Findability factors for AI queries:",
       items: [
-        "Schema.org markup",
-        "Clear heading hierarchy (H1, H2, H3)",
-        "Logical navigation",
-        "Machine-readable business information",
+        "FAQ sections answering direct questions",
+        "Problem-solution framing",
+        "Educational content",
+        "Clear calls-to-action",
       ],
     },
     {
       icon: Shield,
-      title: "Authority signals (0-20 points)",
-      description: "Trust indicators AI may use to establish credibility:",
+      title: "Authority Signals (0-15 points)",
+      description: "Credibility verification markers. Trust indicators AI may use to establish credibility:",
       items: [
         "Customer reviews and testimonials",
         "Case studies with results",
@@ -37,20 +37,20 @@ const Methodology = () => {
       ],
     },
     {
-      icon: Search,
-      title: "Discoverability (0-20 points)",
-      description: "Findability factors for AI queries:",
+      icon: FileText,
+      title: "Technical Structure (0-15 points)",
+      description: "Machine-readable optimization. Organization signals that help AI parse information:",
       items: [
-        "FAQ sections answering direct questions",
-        "Problem-solution framing",
-        "Educational content",
-        "Clear calls-to-action",
+        "Schema.org markup",
+        "Clear heading hierarchy (H1, H2, H3)",
+        "Logical navigation",
+        "Machine-readable business information",
       ],
     },
     {
       icon: Scale,
-      title: "Comparison content (0-15 points)",
-      description: "Context markers that help AI position you:",
+      title: "Competitive Positioning (0-15 points)",
+      description: "Differentiation clarity. Context markers that help AI position you:",
       items: [
         "Mentions of alternatives",
         "Feature comparisons",
@@ -105,14 +105,120 @@ const Methodology = () => {
           </Badge>
           <h1 className="text-display font-bold mb-6">How FoundIndex works</h1>
           <div className="max-w-3xl mx-auto space-y-4 text-lg text-muted-foreground">
-            <p>FoundIndex analyzes how "AI-readable" your website is. Here's exactly what we check and why.</p>
+            <p>FoundIndex measures AI comprehension across 5 critical factors. Research-backed methodology. Validated on real websites.</p>
             <p className="font-medium text-foreground">
-              Our approach: We're not predicting whether ChatGPT will recommend you. Instead, we evaluate factors that
-              make content easier for AI to understand and reference.
+              This diagnostic evaluates structural elements that determine AI recommendation probability.
             </p>
-            <p className="italic">Think of it like SEO, but for AI assistants.</p>
+            <p className="italic">AI visibility = SEO for conversational search engines.</p>
           </div>
         </div>
+
+        <Card className="mb-16 p-8 bg-primary/5 border-primary/20">
+          <h2 className="text-2xl font-bold mb-6">Research Foundation</h2>
+          <p className="text-muted-foreground mb-6">
+            FoundIndex methodology developed through structured research conducted November 2025.
+          </p>
+          
+          <div className="space-y-8">
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Research Process</h3>
+              <div className="space-y-6">
+                <div>
+                  <h4 className="font-medium text-foreground mb-2">Interviewed 5 major AI systems</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Analyzed how Claude, ChatGPT, Perplexity, Gemini, and Deepseek interpret website content. Asked identical questions across all systems to identify consensus patterns.
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-foreground mb-2">Identified 5 critical factors</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+                    All AI systems agreed on factors that determine comprehension:
+                  </p>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <span>Content clarity (explicit vs. implied information)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <span>Information discoverability (placement and accessibility)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <span>Authority signals (credibility markers)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <span>Technical structure (machine-readable optimization)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      <span>Competitive positioning (differentiation clarity)</span>
+                    </li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-foreground mb-2">Validated with real websites</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Scored diverse websites using our rubrics. Tested each with standardized questions. Confirmed correlation: High scores = accurate AI responses. Low scores = declined recommendations.
+                  </p>
+                </div>
+                
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg p-4">
+                  <h4 className="font-medium text-foreground mb-2">Example validation</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed mb-2">
+                    Website scoring 43/100 (Poor AI Visibility) tested with ChatGPT:
+                  </p>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">→</span>
+                      <span>Result: AI unable to answer 9/10 basic questions</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary mt-0.5">→</span>
+                      <span>Conclusion: "Would not recommend based on available information"</span>
+                    </li>
+                  </ul>
+                  <p className="text-sm text-muted-foreground leading-relaxed mt-3 italic">
+                    Predicted outcome matched actual AI behavior.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Research Documentation</h3>
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5">•</span>
+                    <span>Full research summary (25+ pages)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5">•</span>
+                    <span>Detailed scoring rubrics (all 5 categories)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5">•</span>
+                    <span>Validation study results</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary mt-0.5">•</span>
+                    <span>Research citations (Schema.org, Google E-E-A-T guidelines, GEO research)</span>
+                  </li>
+                </ul>
+                <p className="pt-4">
+                  Available on request:{" "}
+                  <a href="mailto:hello@foundindex.com" className="text-primary hover:underline">
+                    hello@foundindex.com
+                  </a>
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
 
         <Card className="mb-16 p-8 bg-accent-gray-light border-border">
           <h3 className="text-xl font-bold mb-6">What does "AI-readable" mean?</h3>
@@ -138,7 +244,7 @@ const Methodology = () => {
         </Card>
 
         <section className="mb-16">
-          <h2 className="text-editorial-lg mb-12 text-center">The 5 factors we evaluate</h2>
+          <h2 className="text-editorial-lg mb-12 text-center">The 5 Factors We Measure</h2>
           <div className="space-y-8">
             {factors.map((factor, index) => {
               const Icon = factor.icon;
@@ -181,7 +287,7 @@ const Methodology = () => {
                   ))}
                 </ul>
                 <p className="mt-6 text-muted-foreground italic">
-                  This is a directional assessment based on factors we believe matter for AI comprehension.
+                  This is a directional assessment based on factors that determine AI recommendation likelihood.
                 </p>
               </div>
             </div>
@@ -193,13 +299,13 @@ const Methodology = () => {
             <div className="flex gap-4">
               <Lightbulb className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
               <div>
-                <h2 className="text-2xl font-bold mb-4">Our vision</h2>
+                <h2 className="text-2xl font-bold mb-4">The shift</h2>
                 <div className="space-y-4 text-muted-foreground">
                   <p>
-                    We believe discoverability is shifting from search engines to AI assistants. FoundIndex helps you
-                    prepare for that shift by making your content more "AI-readable."
+                    Discovery moved from search engines to AI assistants. ChatGPT answers queries. Claude powers decisions. Perplexity replaces research.
                   </p>
-                  <p>As AI search evolves, we'll update our methodology based on what we learn.</p>
+                  <p>FoundIndex quantifies AI visibility. Methodology updates track AI system evolution.</p>
+                  <p className="font-medium text-foreground">Methodology questions?</p>
                 </div>
               </div>
             </div>
