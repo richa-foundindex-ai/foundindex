@@ -17,6 +17,15 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
             <Link to="/contact" className="underline hover:text-foreground transition-colors">
               Contact us
             </Link>
+            {" • "}
+            {onOpenFeedback && (
+              <button 
+                onClick={onOpenFeedback} 
+                className="underline hover:text-foreground transition-colors"
+              >
+                Share feedback
+              </button>
+            )}
           </p>
           <p className="text-sm text-muted-foreground">
             Privacy-first: We don't store your website content. Test results and URLs are stored to improve analysis.
@@ -30,13 +39,6 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
               Terms
             </Link>
           </div>
-          {onOpenFeedback && (
-            <div className="pt-4">
-              <Button variant="outline" onClick={onOpenFeedback} className="text-sm">
-                Give Feedback
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     </footer>
