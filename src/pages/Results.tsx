@@ -546,7 +546,7 @@ const Results = () => {
             className="w-full max-w-md mx-auto h-auto py-6"
             onClick={() => setShowFeedbackModal(true)}
           >
-            <span className="font-semibold">Get Detailed Homepage Evaluation</span>
+            <span className="font-semibold">Get detailed homepage evaluation</span>
           </Button>
         </div>
       </section>
