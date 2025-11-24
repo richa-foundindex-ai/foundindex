@@ -116,12 +116,6 @@ export const CoffeeBrewingLoader = ({ onComplete, website }: CoffeeBrewingLoader
             </p>
           </div>
 
-          <div className="rounded-lg border bg-muted/50 p-3 flex gap-2">
-            <Info className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-muted-foreground">
-              We're testing how AI would respond if someone asked for a business like yours
-            </p>
-          </div>
         </div>
       </Card>
     </div>
