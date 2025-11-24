@@ -107,8 +107,10 @@ const HeroSection = () => {
       if (submitData?.error) throw new Error(submitData.error);
 
       if (submitData?.testId) {
-        // Record the test in cookie
+        // Record the test in cookie and localStorage
         recordTest(websiteUrl, submitData.score || 0, submitData.testId);
+        localStorage.setItem('lastTestId', submitData.testId);
+        localStorage.setItem('lastTestedUrl', websiteUrl);
 
         toast({
           title: "Test started!",
@@ -195,9 +197,6 @@ const HeroSection = () => {
               </div>
 
               <div className="space-y-4">
-                <p className="text-xs text-muted-foreground text-center">
-                  Note: Results are only available during this session. Enter your email on the results page to save them.
-                </p>
                 <Button type="submit" size="lg" className="w-full h-14 text-lg" disabled={isSubmitting}>
                   {isSubmitting ? (
                     "Analyzing..."
