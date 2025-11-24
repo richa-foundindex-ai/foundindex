@@ -212,7 +212,16 @@ const Methodology = () => {
             <p className="text-muted-foreground mb-4">Questions about our methodology?</p>
             <a href="mailto:hello@foundindex.com" className="text-primary hover:underline font-medium">
               hello@foundindex.com
-            </a>
+            </a>{" "}
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText("hello@foundindex.com");
+                alert("📧 Email copied: hello@foundindex.com");
+              }}
+              className="text-xs text-primary hover:underline ml-1"
+            >
+              (copy)
+            </button>
           </Card>
         </section>
 
