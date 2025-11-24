@@ -5,11 +5,6 @@ interface FooterProps {
 }
 
 const Footer = ({ onOpenFeedback }: FooterProps) => {
-  const handleEmailClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.location.href = "mailto:hello@foundindex.com";
-  };
-
   return (
     <footer className="py-16 px-4 bg-accent-gray-light border-t">
       <div className="container mx-auto max-w-4xl">
@@ -19,11 +14,7 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
           </p>
           <p className="text-sm text-muted-foreground">
             Contact:{" "}
-            <a
-              href="mailto:hello@foundindex.com"
-              onClick={handleEmailClick}
-              className="underline hover:text-foreground transition-colors cursor-pointer"
-            >
+            <a href="mailto:hello@foundindex.com" className="underline hover:text-foreground transition-colors">
               hello@foundindex.com
             </a>
           </p>
@@ -32,10 +23,10 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
           </p>
           <p className="text-sm text-muted-foreground">Uses OpenAI models • Efficient by design</p>
           <div className="flex justify-center gap-4 pt-2">
-            <a href="/privacy" className="hover:text-foreground transition-colors cursor-pointer">
+            <a href="/privacy" className="hover:text-foreground transition-colors">
               Privacy
             </a>
-            <a href="/privacy" className="hover:text-foreground transition-colors cursor-pointer">
+            <a href="/privacy" className="hover:text-foreground transition-colors">
               Terms
             </a>
           </div>
