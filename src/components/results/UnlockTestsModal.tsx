@@ -21,11 +21,18 @@ interface UnlockTestsModalProps {
   recommendations?: string[];
 }
 
-export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, recommendations }: UnlockTestsModalProps) => {
+export const UnlockTestsModal = ({
+  open,
+  onOpenChange,
+  testId,
+  score,
+  website,
+  recommendations,
+}: UnlockTestsModalProps) => {
   const [showFeedback, setShowFeedback] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Feedback form state - NEW QUESTIONS
   const [surprisingResult, setSurprisingResult] = useState("");
   const [describeToColleague, setDescribeToColleague] = useState("");
@@ -44,24 +51,29 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
   ];
 
   const handleShareLinkedIn = () => {
-    const keyInsight = recommendations?.[0] || "AI readability improvements needed";
-    
-    const shareText = `Just tested my website's AI visibility with FoundIndex. ${score}/100. Key insight: ${keyInsight}. Worth checking if AI systems understand your business. foundindex.com`;
-    
-    const linkedInUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent('https://foundindex.com')}`;
-    window.open(linkedInUrl, '_blank', 'width=600,height=600');
-    
-    // Copy text to clipboard
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(shareText).then(
-        () => toast.success("Share text copied! Paste it in your LinkedIn post"),
-        () => {}
-      );
-    }
-    
+    const topRec = recommendations?.[0] || "AI readability improvements needed";
+
+    const text = `I just ran my website through FoundIndex — a tool that scores how clearly AI systems understand your business.
+
+My AI Visibility Score: ${score}/100  
+Key insight: ${topRec}
+
+As more people ask ChatGPT and Claude for recommendations instead of Googling, this kind of visibility is becoming critical. The analysis took 3 minutes and revealed gaps I didn't know existed.
+
+If you want to see how AI interprets your site, try it:
+foundindex.com (created by Richa Deo)
+
+#FoundIndex #AIVisibility #FutureOfSearch`;
+
+    navigator.clipboard.writeText(text);
+
+    toast.success("✅ LinkedIn post copied to clipboard!", {
+      description: "Paste it on LinkedIn and share your score",
+      duration: 10000,
+    });
+
     // Unlock tests after sharing
     unlockTests();
-    toast.success("Thanks for sharing! Your benefits have been unlocked.");
   };
 
   const handleGiveFeedback = () => {
@@ -75,7 +87,7 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
 
   const handleSubmitFeedback = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!email.trim()) {
       toast.error("Please enter your email to receive the rewrite guide");
       return;
@@ -98,13 +110,13 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
     }
 
     // Check if this email has already submitted feedback in the last 30 days
-    const previousEmail = localStorage.getItem('feedbackSubmittedEmail');
-    const previousDate = localStorage.getItem('feedbackSubmittedDate');
-    
+    const previousEmail = localStorage.getItem("feedbackSubmittedEmail");
+    const previousDate = localStorage.getItem("feedbackSubmittedDate");
+
     if (previousEmail && previousDate) {
       const submittedTime = parseInt(previousDate);
-      const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
-      
+      const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+
       if (email.trim().toLowerCase() === previousEmail.toLowerCase() && submittedTime > thirtyDaysAgo) {
         toast.error("You've already submitted feedback this month. For more tests, email hello@foundindex.com");
         return;
@@ -121,7 +133,9 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
           website,
           surprisingResult: surprisingResult.trim(),
           describeToColleague: describeToColleague.trim(),
-          preventingImprovements: preventingImprovements.join(", ") + (preventingImprovements.includes("Something else") ? `: ${otherPrevention}` : ""),
+          preventingImprovements:
+            preventingImprovements.join(", ") +
+            (preventingImprovements.includes("Something else") ? `: ${otherPrevention}` : ""),
           userType,
           email: email.trim(),
         },
@@ -130,22 +144,22 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
       if (error) throw error;
 
       // Reset rate limit and store feedback submission
-      localStorage.setItem('testsRemaining', '3');
-      localStorage.setItem('feedbackSubmittedEmail', email.trim().toLowerCase());
-      localStorage.setItem('feedbackSubmittedDate', Date.now().toString());
+      localStorage.setItem("testsRemaining", "3");
+      localStorage.setItem("feedbackSubmittedEmail", email.trim().toLowerCase());
+      localStorage.setItem("feedbackSubmittedDate", Date.now().toString());
 
       // Unlock tests after feedback
       unlockTests();
       setShowFeedback(false);
       setShowConfirmation(true);
-      
+
       // Show prominent success message
       toast.success("Thanks for your feedback! You've unlocked 3 more tests. 🎉", {
         duration: 5000,
         style: {
-          fontSize: '16px',
-          padding: '20px',
-        }
+          fontSize: "16px",
+          padding: "20px",
+        },
       });
     } catch (err) {
       console.error("Failed to submit feedback:", err);
@@ -155,7 +169,7 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
           <a href="mailto:hello@foundindex.com" className="underline cursor-pointer">
             hello@foundindex.com
           </a>
-        </span>
+        </span>,
       );
     } finally {
       setIsSubmitting(false);
@@ -240,7 +254,8 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
 
             <div className="space-y-3">
               <Label className="text-base font-semibold">
-                What's preventing you from improving your AI visibility right now? <span className="text-muted-foreground">(select all that apply)</span>
+                What's preventing you from improving your AI visibility right now?{" "}
+                <span className="text-muted-foreground">(select all that apply)</span>
               </Label>
               <div className="space-y-3">
                 {preventionOptions.map((option) => (
@@ -252,7 +267,7 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
                         if (checked) {
                           setPreventingImprovements([...preventingImprovements, option]);
                         } else {
-                          setPreventingImprovements(preventingImprovements.filter(p => p !== option));
+                          setPreventingImprovements(preventingImprovements.filter((p) => p !== option));
                         }
                       }}
                     />
@@ -270,7 +285,7 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
                         if (checked) {
                           setPreventingImprovements([...preventingImprovements, "Something else"]);
                         } else {
-                          setPreventingImprovements(preventingImprovements.filter(p => p !== "Something else"));
+                          setPreventingImprovements(preventingImprovements.filter((p) => p !== "Something else"));
                           setOtherPrevention("");
                         }
                       }}
@@ -298,19 +313,27 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
               <RadioGroup value={userType} onValueChange={setUserType} required>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="agency" id="agency" />
-                  <Label htmlFor="agency" className="font-normal cursor-pointer">Agency/consultant working with multiple clients</Label>
+                  <Label htmlFor="agency" className="font-normal cursor-pointer">
+                    Agency/consultant working with multiple clients
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="inhouse" id="inhouse" />
-                  <Label htmlFor="inhouse" className="font-normal cursor-pointer">In-house marketer/founder managing our site</Label>
+                  <Label htmlFor="inhouse" className="font-normal cursor-pointer">
+                    In-house marketer/founder managing our site
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="seo" id="seo" />
-                  <Label htmlFor="seo" className="font-normal cursor-pointer">SEO professional adding this to my services</Label>
+                  <Label htmlFor="seo" className="font-normal cursor-pointer">
+                    SEO professional adding this to my services
+                  </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="exploring" id="exploring" />
-                  <Label htmlFor="exploring" className="font-normal cursor-pointer">Just exploring to learn more</Label>
+                  <Label htmlFor="exploring" className="font-normal cursor-pointer">
+                    Just exploring to learn more
+                  </Label>
                 </div>
               </RadioGroup>
             </div>
@@ -358,9 +381,7 @@ export const UnlockTestsModal = ({ open, onOpenChange, testId, score, website, r
 
         <DialogHeader>
           <DialogTitle className="text-2xl">Want to test more sites?</DialogTitle>
-          <DialogDescription>
-            Choose how to unlock additional tests and your detailed rewrite guide:
-          </DialogDescription>
+          <DialogDescription>Choose how to unlock additional tests and your detailed rewrite guide:</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 md:grid-cols-3 pt-4">
