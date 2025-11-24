@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { UnlockTestsModal } from "@/components/results/UnlockTestsModal";
+import UnlockTestsModal from "@/components/results/UnlockTestsModal";
 import { LinkedInCopySuccessDialog } from "@/components/results/LinkedInCopySuccessDialog";
 import { LinkedInShareDialog } from "@/components/results/LinkedInShareDialog";
 import { getRemainingTests, unlockTests } from "@/utils/rateLimiting";
@@ -577,19 +577,17 @@ Try it: foundindex.com (created by linkedin.com/in/richa-deo)
       <UnlockTestsModal
         open={showUnlockModal}
         onOpenChange={setShowUnlockModal}
-        testId={testId || ""}
+        scenario="after-test"
         score={score}
-        website={result.website || ""}
-        recommendations={result.recommendations}
+        topRecommendation={result.recommendations?.[0]}
       />
 
       <UnlockTestsModal
         open={showFeedbackModal}
         onOpenChange={setShowFeedbackModal}
-        testId={testId || ""}
+        scenario="after-feedback"
         score={score}
-        website={result.website || ""}
-        recommendations={result.recommendations}
+        topRecommendation={result.recommendations?.[0]}
       />
 
       <LinkedInCopySuccessDialog open={showLinkedInSuccess} onOpenChange={setShowLinkedInSuccess} />

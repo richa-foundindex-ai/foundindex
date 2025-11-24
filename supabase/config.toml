@@ -12,3 +12,9 @@ verify_jwt = false
 
 [functions.submit-waitlist]
 verify_jwt = false
+
+[functions.submit-contact]
+verify_jwt = false
+
+[functions.submit-feedback]
+verify_jwt = false

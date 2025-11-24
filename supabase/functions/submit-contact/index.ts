@@ -1,0 +1,86 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+interface ContactRequest {
+  name: string;
+  email: string;
+  message: string;
+}
+
+const handler = async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { name, email, message }: ContactRequest = await req.json();
+
+    console.log("📧 Submitting contact message to Airtable:", {
+      name,
+      email,
+    });
+
+    const AIRTABLE_API_KEY = Deno.env.get("AIRTABLE_API_KEY");
+    const AIRTABLE_BASE_ID = Deno.env.get("AIRTABLE_BASE_ID");
+
+    if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
+      throw new Error("Airtable credentials not configured");
+    }
+
+    // Submit to Airtable Contact_Messages table
+    const requestBody = {
+      fields: {
+        Name: name,
+        Email: email,
+        Message: message,
+        // Timestamp (message_id autonumber) is auto-populated by Airtable
+      },
+    };
+
+    console.log("🔍 Sending to Airtable Contact_Messages table");
+
+    const airtableResponse = await fetch(
+      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Contact_Messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
+    if (!airtableResponse.ok) {
+      const errorText = await airtableResponse.text();
+      console.error("❌ Airtable error:", errorText);
+      throw new Error(`Airtable submission failed: ${errorText}`);
+    }
+
+    const result = await airtableResponse.json();
+    console.log("✅ Contact message submitted successfully:", result.id);
+
+    return new Response(
+      JSON.stringify({ success: true, recordId: result.id }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  } catch (error: any) {
+    console.error("❌ Error in submit-contact function:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  }
+};
+
+serve(handler);
