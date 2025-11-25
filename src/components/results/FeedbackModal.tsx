@@ -16,16 +16,21 @@ const preventionOptions = [
   "Budget limitations",
   "Technical expertise",
   "Unclear priorities",
-  "Other"
+  "Other",
 ];
 
-const createFormSchema = (isOptional: boolean) => z.object({
-  surprisingResult: isOptional ? z.string().optional() : z.string().min(1, "Please share what surprised you"),
-  describeToColleague: isOptional ? z.string().optional() : z.string().min(1, "Please describe how you'd explain this"),
-  preventingImprovements: isOptional ? z.array(z.string()).optional() : z.array(z.string()).min(1, "Please select at least one option"),
-  userType: isOptional ? z.string().optional() : z.string().min(1, "Please select your role"),
-  email: z.string().email("Please enter a valid email address"),
-});
+const createFormSchema = (isOptional: boolean) =>
+  z.object({
+    surprisingResult: isOptional ? z.string().optional() : z.string().min(1, "Please share what surprised you"),
+    describeToColleague: isOptional
+      ? z.string().optional()
+      : z.string().min(1, "Please describe how you'd explain this"),
+    preventingImprovements: isOptional
+      ? z.array(z.string()).optional()
+      : z.array(z.string()).min(1, "Please select at least one option"),
+    userType: isOptional ? z.string().optional() : z.string().min(1, "Please select your role"),
+    email: z.string().email("Please enter a valid email address"),
+  });
 
 interface FeedbackModalProps {
   open: boolean;
@@ -36,7 +41,14 @@ interface FeedbackModalProps {
   isGeneralFeedback?: boolean;
 }
 
-export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGeneralFeedback = false }: FeedbackModalProps) => {
+export const FeedbackModal = ({
+  open,
+  onOpenChange,
+  testId,
+  score,
+  website,
+  isGeneralFeedback = false,
+}: FeedbackModalProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
@@ -104,11 +116,11 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
                 Your detailed homepage evaluation will arrive within 48 hours at:{" "}
                 <span className="font-semibold text-foreground">{submittedEmail}</span>
               </p>
-              <Button 
+              <Button
                 onClick={() => {
                   handleClose();
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }} 
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
                 className="w-full"
               >
                 {isGeneralFeedback ? "← Back" : "← Back to results"}
@@ -118,9 +130,7 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">
-                Get detailed homepage evaluation
-              </DialogTitle>
+              <DialogTitle className="text-xl font-bold">Get detailed homepage evaluation</DialogTitle>
               {!isGeneralFeedback && (
                 <DialogDescription className="text-sm pt-2">
                   Submit feedback (60 seconds) to receive:
@@ -131,7 +141,9 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">✓</span>
-                      <span>Bonus: <strong>One</strong> blog post diagnostic (in exchange for LinkedIn review)</span>
+                      <span>
+                        Bonus: <strong>One</strong> blog post diagnostic (in exchange for LinkedIn review)
+                      </span>
                     </li>
                   </ul>
                 </DialogDescription>
@@ -210,13 +222,13 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
                     <FormItem>
                       <FormLabel>What best describes you?</FormLabel>
                       <FormControl>
-                <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-3 mt-3">
+                        <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-3 mt-3">
                           {[
                             "Founder/Business Owner",
                             "SEO/Marketing Professional",
-                            "UX Researcher/Designer",
-                            "Developer",
-                            "Other"
+                            "Agency/Consultant",
+                            "Content Strategist",
+                            "Other",
                           ].map((option) => (
                             <FormItem key={option} className="flex items-center space-x-3 space-y-0">
                               <FormControl>
