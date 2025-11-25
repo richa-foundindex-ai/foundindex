@@ -100,8 +100,8 @@ const HeroSection = () => {
       } else {
         const daysText = rateLimit.daysUntilReset === 1 ? "1 day" : `${rateLimit.daysUntilReset} days`;
         toast({
-          title: "Monthly limit reached",
-          description: `You've used all 10 tests for this month. Your tests reset in ${daysText}.`,
+          title: "Weekly limit reached",
+          description: `You've used all 3 tests this week. Your tests reset in ${daysText}.`,
           variant: "destructive",
         });
         return;
@@ -179,16 +179,16 @@ const HeroSection = () => {
         <div className="container mx-auto max-w-7xl">
           <div className="text-center space-y-6">
             <h1 className="text-[2.56rem] md:text-[3.33rem] font-bold text-foreground leading-tight">
-              <span className="font-extrabold">Stop Being Invisible to AI.</span>
+              <span className="font-extrabold">Stop being invisible to AI.</span>
               <br />
-              Analyze Your Website's Visibility Score in 3 Minutes.
+              Analyze your website's visibility score in 3 minutes.
             </h1>
 
             <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-6">
               When people ask ChatGPT or Claude for recommendations, does your business show up? Most don't know. And that silence costs opportunities.
             </p>
 
-            <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
               <div className="flex items-start gap-3 text-left">
                 <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
                 <span className="text-base text-muted-foreground">See how AI systems understand your business</span>
@@ -196,10 +196,6 @@ const HeroSection = () => {
               <div className="flex items-start gap-3 text-left">
                 <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
                 <span className="text-base text-muted-foreground">Get specific, actionable recommendations</span>
-              </div>
-              <div className="flex items-start gap-3 text-left">
-                <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
-                <span className="text-base text-muted-foreground">Free 3-minute analysis, no credit card required</span>
               </div>
             </div>
           </div>

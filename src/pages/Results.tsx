@@ -242,9 +242,21 @@ const Results = () => {
             )}
             {testsRemaining === 0 && (
               <span className="text-sm text-muted-foreground">
-                You've used all 3 tests this week. Resets Monday. <Link to="/contact" className="underline">Contact us</Link> for more.
+                You've used all 3 tests this week. Resets in 7 days. <Link to="/contact" className="text-link hover:underline">Contact us</Link> for more.
               </span>
             )}
+          </div>
+        </div>
+
+        {/* Session Warning Alert */}
+        <div className="bg-yellow-50 dark:bg-yellow-950/20 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg">
+          <div className="flex">
+            <div className="flex-shrink-0">⚠️</div>
+            <div className="ml-3">
+              <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                Results expire when you close this page. <strong>Screenshot or email yourself to save.</strong>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -361,7 +373,7 @@ const Results = () => {
             <div className="space-y-2">
               <h2 className="text-lg font-semibold">About this analysis</h2>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                FoundIndex is a v1 diagnostic tool. We analyze your homepage only (multi-page analysis coming in v2). Scores may vary ±2 points between tests—this is normal with AI-powered analysis. We're building in public and learning from your feedback.
+                FoundIndex is a v1 diagnostic tool. We analyze your homepage only (multi-page analysis coming in v2). Scores may vary ±5-10 points between tests—this is normal with AI-powered analysis. We're building in public and learning from your feedback.
               </p>
             </div>
           </div>
@@ -526,11 +538,11 @@ const Results = () => {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
                 <span className="text-primary mt-0.5">✓</span>
-                <span>Personalized rewrite strategy (48-hour delivery)</span>
+                <span>Personalized homepage rewrite strategy (within 48 hours)</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="text-primary mt-0.5">✓</span>
-                <span>Bonus: Blog post diagnostic (exchange: LinkedIn review)</span>
+                <span>Bonus: <strong>One</strong> blog post diagnostic (in exchange for LinkedIn review)</span>
               </li>
             </ul>
           </div>

@@ -471,60 +471,165 @@ serve(async (req) => {
     console.log(`[${testId}] STEP 2: AI-Readiness Audit Analysis...`);
     console.log(`[${testId}] ===================`);
 
-    // AI-Readiness Audit
-    const auditPrompt = `Analyze this website for AI-readiness (how easy it is for AI like ChatGPT to recommend this business).
+    // AI-Readiness Audit with COMPLETE SCORING RUBRIC
+    const auditPrompt = `You are an AI visibility expert analyzing websites. Score this homepage using the FoundIndex rubric below.
 
-Website URL: ${validatedWebsite}
-HTML Content: ${websiteHtml.substring(0, 50000)}
+COMPLETE SCORING RUBRIC:
 
-Score these factors:
+1. CONTENT CLARITY (0-30 points total)
 
-1. CONTENT CLARITY (0-25): 
-   - Does the site clearly explain what they do/sell?
-   - Is it written in natural language (not just keywords)?
-   - Are there clear benefit statements?
+Value Proposition Clarity (0-10 points):
+- 10 pts: First paragraph explicitly states what they do + who it's for + outcome/benefit. No jargon.
+- 7-8 pts: Core offering clear within first 2-3 paragraphs. Target mentioned but broad.
+- 4-6 pts: Core offering identifiable but requires reading multiple sections. Some jargon.
+- 1-3 pts: Core offering buried or heavily obscured by marketing language.
+- 0 pts: No clear statement of what the business does.
 
-2. STRUCTURED DATA (0-20):
-   - Does it have Schema.org markup?
-   - Are there proper headings (H1, H2)?
-   - Is navigation clear?
+Target Audience Specification (0-8 points):
+- 8 pts: Explicit, narrow target with 3+ characteristics (industry + size + use case).
+- 5-7 pts: Target audience with 1-2 characteristics.
+- 3-4 pts: Broad definition ("growing businesses").
+- 1-2 pts: Implied audience only.
+- 0 pts: No indication of who they serve.
 
-3. AUTHORITY SIGNALS (0-20):
-   - Customer reviews/testimonials?
-   - Case studies or success stories?
-   - Trust badges, certifications?
-   - Media mentions?
+Service/Product Specificity (0-8 points):
+- 8 pts: Named offerings with clear descriptions and deliverables.
+- 5-7 pts: Services/products have names and basic descriptions.
+- 3-4 pts: Broad categories without detail.
+- 1-2 pts: Vague "solutions" mentioned.
+- 0 pts: No description of deliverables.
 
-4. DISCOVERABILITY (0-20):
-   - FAQ section present?
-   - Problem-solution framing?
-   - "How to" or educational content?
+Concrete Evidence (0-4 points):
+- 4 pts: Multiple specific metrics, numbers, or examples.
+- 2-3 pts: Some concrete details mixed with generic claims.
+- 1 pt: Only abstract benefit claims.
+- 0 pts: No concrete evidence.
 
-5. COMPARISON CONTENT (0-15):
-   - Compares to alternatives/competitors?
-   - "Why choose us" content?
-   - Feature comparison tables?
+2. DISCOVERABILITY (0-25 points total)
 
-Return ONLY valid JSON (no markdown):
+Information Placement (0-8 points):
+- 8 pts: All critical info in first 2 screen sections.
+- 5-7 pts: Critical info in first 3-4 sections.
+- 3-4 pts: Requires significant scrolling (5+ sections).
+- 1-2 pts: Critical info buried deep or scattered.
+- 0 pts: Essential info missing from homepage.
+
+Question-Answer Alignment (0-7 points):
+- 7 pts: Comprehensive FAQ (10+ questions) or content structured as Q&A.
+- 5-6 pts: FAQ with 5-9 questions or content answers common queries.
+- 3-4 pts: Limited FAQ (3-4 questions) or partial answers.
+- 1-2 pts: No FAQ, content requires inference.
+- 0 pts: Cannot answer common questions from homepage.
+
+Content Accessibility (0-6 points):
+- 6 pts: All key info in visible HTML text, no interaction required.
+- 4-5 pts: Primary info accessible, some in dropdowns/tabs.
+- 2-3 pts: Significant info hidden in accordions or behind interactions.
+- 0-1 pts: Critical info behind forms, login, or PDFs.
+
+Information Consistency (0-4 points):
+- 4 pts: Key details repeated 3+ times, identical terminology.
+- 2-3 pts: Some repetition, mostly consistent terminology.
+- 1 pt: Information mentioned once only, inconsistent terms.
+- 0 pts: Conflicting information.
+
+3. AUTHORITY SIGNALS (0-15 points total)
+
+Evidence-Based Claims (0-6 points):
+- 6 pts: 3+ detailed case studies with named clients, metrics, timeframes.
+- 4-5 pts: 1-2 case studies or multiple testimonials with attribution.
+- 2-3 pts: Client testimonials with names but limited detail.
+- 1 pt: Generic testimonials without attribution.
+- 0 pts: No case studies or testimonials.
+
+Relevant Credentials (0-4 points):
+- 4 pts: Specific, verifiable credentials directly relevant to services.
+- 2-3 pts: General industry credentials or memberships.
+- 1 pt: Self-reported expertise without validation.
+- 0 pts: No credentials mentioned.
+
+Third-Party Validation (0-3 points):
+- 3 pts: Coverage in credible publications, recognized awards, verified partnerships.
+- 2 pts: Press mentions from less prominent sources.
+- 1 pt: Social proof only (reviews, followers).
+- 0 pts: No external validation.
+
+Specificity & Verifiability (0-2 points):
+- 2 pts: Claims include specific numbers, dates, company names.
+- 1 pt: Some specific details, mostly general statements.
+- 0 pts: Pure marketing language, no verifiable claims.
+
+4. STRUCTURED DATA (0-15 points total)
+
+Schema.org Implementation (0-7 points):
+- 7 pts: Valid JSON-LD for Organization/Service + additional schemas (FAQPage, Product).
+- 5-6 pts: Organization Schema with core properties + one additional type.
+- 3-4 pts: Basic Organization Schema only with minimal properties.
+- 1-2 pts: Schema present but incomplete or with errors.
+- 0 pts: No Schema.org markup.
+
+HTML Semantic Structure (0-5 points):
+- 5 pts: Proper heading hierarchy, semantic HTML5 elements throughout.
+- 3-4 pts: Mostly semantic with some issues.
+- 1-2 pts: Minimal semantic structure, heavy div usage.
+- 0 pts: Pure div-based layout, no semantic HTML.
+
+Metadata Quality (0-3 points):
+- 3 pts: Descriptive title tag, meta description, Open Graph tags, Twitter Cards.
+- 2 pts: Basic title and meta description, some Open Graph.
+- 1 pt: Minimal metadata, generic descriptions.
+- 0 pts: No meta description or generic title only.
+
+5. COMPARISON CONTENT (0-15 points total)
+
+Specific Positioning (0-6 points):
+- 6 pts: Explicit target customer with 3+ characteristics and clear use cases.
+- 4-5 pts: Target market and specialization clearly stated.
+- 2-3 pts: Broad positioning without specificity.
+- 0-1 pts: No clear positioning or claims to be best for everyone.
+
+Concrete Differentiators (0-5 points):
+- 5 pts: 3+ specific, verifiable differences from alternatives.
+- 3-4 pts: 1-2 concrete differentiators plus generic claims.
+- 1-2 pts: Primarily generic differentiation claims.
+- 0 pts: No differentiation content.
+
+Trade-off Transparency (0-4 points):
+- 4 pts: Explicitly acknowledges limitations or who they're NOT for.
+- 2-3 pts: Implicit trade-offs through positioning.
+- 1 pt: Vague focus areas, no real limitations acknowledged.
+- 0 pts: Claims to be best for everyone.
+
+---
+
+WEBSITE URL: ${validatedWebsite}
+WEBSITE HTML CONTENT: ${websiteHtml.substring(0, 50000)}
+
+INSTRUCTIONS:
+1. Carefully analyze the homepage content against each rubric item above
+2. Assign scores based on the criteria (be specific and fair)
+3. Calculate total for each category
+4. Generate 3 actionable recommendations based on lowest-scoring categories
+5. Return ONLY valid JSON in this exact format (no markdown, no code blocks):
+
 {
-  "content_clarity_score": 18,
+  "content_clarity_score": 22,
   "structured_data_score": 12,
-  "authority_score": 15,
-  "discoverability_score": 14,
+  "authority_score": 10,
+  "discoverability_score": 18,
   "comparison_score": 8,
-  "total_score": 67,
+  "total_score": 70,
   "analysis_details": {
-    "content_clarity": "Clear product description on homepage...",
-    "structured_data": "Has proper H1/H2 tags but missing Schema.org...",
-    "authority": "3 customer testimonials found...",
-    "discoverability": "Has FAQ section with 8 questions...",
-    "comparison": "No competitor comparison found..."
+    "content_clarity": "Strong value proposition but target audience could be more specific...",
+    "structured_data": "Missing Schema markup...",
+    "authority": "Has testimonials but needs case studies with metrics...",
+    "discoverability": "Key information is frontloaded but lacks FAQ...",
+    "comparison": "Positioning is clear but needs differentiation from competitors..."
   },
   "recommendations": [
-    "Add Schema.org Product markup to improve AI understanding",
-    "Create comparison page: 'YourProduct vs Competitor'",
-    "Add more specific FAQ questions buyers ask",
-    "Include case study with measurable results"
+    "Add FAQ section with 10+ common client questions",
+    "Include specific case studies with client names and measurable outcomes",
+    "Add Schema.org Organization markup with JSON-LD"
   ]
 }`;
 
@@ -535,20 +640,21 @@ Return ONLY valid JSON (no markdown):
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4-turbo-preview",
         messages: [
           {
             role: "system",
             content:
-              "You are an expert at analyzing websites for AI-readiness. Return only valid JSON with no markdown.",
+              "You are an expert at analyzing websites for AI comprehension. You score accurately and consistently using provided rubrics. Return only valid JSON with no markdown.",
           },
           {
             role: "user",
             content: auditPrompt,
           },
         ],
-        max_tokens: 1500,
+        max_tokens: 2000,
         temperature: 0.3,
+        response_format: { type: "json_object" },
       }),
     });
 

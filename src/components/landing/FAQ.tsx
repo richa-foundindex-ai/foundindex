@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import {
   Accordion,
   AccordionContent,
@@ -5,8 +6,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+interface FAQ {
+  question: string;
+  answer: string;
+  hasLink?: boolean;
+}
+
 const FAQ = () => {
-  const faqs = [
+  const faqs: FAQ[] = [
     {
       question: "What does FoundIndex measure?",
       answer:
@@ -25,7 +32,7 @@ const FAQ = () => {
     {
       question: "How accurate is the score?",
       answer:
-        "Scores may vary ±2 points between tests—this is normal with AI-powered analysis. FoundIndex is a directional assessment based on factors we believe matter for AI comprehension.",
+        "Scores may vary ±5-10 points between tests—this is normal with AI-powered analysis. FoundIndex is a directional assessment based on factors we believe matter for AI comprehension.",
     },
     {
       question: "What do I get for free?",
@@ -40,12 +47,13 @@ const FAQ = () => {
     {
       question: "How many tests can I run?",
       answer:
-        "3 tests per week per device. The limit resets automatically every Monday. If you test the same URL twice, we'll show you the previous score.",
+        "3 tests per week per device. The limit resets automatically 7 days after your first test. If you test the same URL twice, we'll show you the previous score.",
     },
     {
       question: "Do you store my website content?",
       answer:
-        "No. We analyze your homepage and store only the URL, scores, and recommendations. We never store your HTML or website content. See our Privacy Policy for details.",
+        "No. We analyze your homepage and store only the URL, scores, and recommendations. We never store your HTML or website content.",
+      hasLink: true,
     },
   ];
 
@@ -68,6 +76,9 @@ const FAQ = () => {
               </AccordionTrigger>
               <AccordionContent className="text-muted-foreground text-base leading-relaxed pt-2">
                 {faq.answer}
+                {faq.hasLink && (
+                  <span> See our <Link to="/privacy" className="text-link hover:underline">Privacy Policy</Link> for details.</span>
+                )}
               </AccordionContent>
             </AccordionItem>
           ))}

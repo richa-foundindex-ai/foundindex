@@ -124,46 +124,34 @@ const Methodology = () => {
               <h3 className="text-xl font-semibold mb-4">Research Process</h3>
               <div className="space-y-6">
                 <div>
-                  <h4 className="font-medium text-foreground mb-2">Interviewed 5 major AI systems</h4>
+                  <h4 className="font-medium text-foreground mb-2">Systematic analysis across 5 AI systems</h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Analyzed how Claude, ChatGPT, Perplexity, Gemini, and Deepseek interpret website content. Asked identical questions across all systems to identify consensus patterns.
+                    We conducted structured evaluations using Claude, ChatGPT, Perplexity, Gemini, and DeepSeek. Each system received identical prompts to observe how they interpret website content, extract meaning, and identify offerings, audiences, and credibility.
                   </p>
                 </div>
                 
                 <div>
-                  <h4 className="font-medium text-foreground mb-2">Identified 5 critical factors</h4>
+                  <h4 className="font-medium text-foreground mb-2">Pattern identification</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    We documented consistent failures across all systems: unclear value propositions, missing service descriptions, no audience definition, weak authority proof, poor heading structure, and inconsistent terminology. These patterns emerged independently across all five systems.
+                  </p>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-foreground mb-2">Real-world validation</h4>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-                    All AI systems agreed on factors that determine comprehension:
+                    We scored diverse websites using our rubrics and tested each with standardized questions. Clear correlation emerged:
                   </p>
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-start gap-2">
                       <span className="text-primary mt-0.5">•</span>
-                      <span>Content clarity (explicit vs. implied information)</span>
+                      <span>Sites scoring 70+ produced accurate AI descriptions</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary mt-0.5">•</span>
-                      <span>Information discoverability (placement and accessibility)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <span>Authority signals (credibility markers)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <span>Technical structure (machine-readable optimization)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      <span>Competitive positioning (differentiation clarity)</span>
+                      <span>Sites scoring &lt;40 resulted in declined recommendations</span>
                     </li>
                   </ul>
-                </div>
-                
-                <div>
-                  <h4 className="font-medium text-foreground mb-2">Validated with real websites</h4>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Scored diverse websites using our rubrics. Tested each with standardized questions. Confirmed correlation: High scores = accurate AI responses. Low scores = declined recommendations.
-                  </p>
                 </div>
                 
                 <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-lg p-4">

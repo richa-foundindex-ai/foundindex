@@ -18,19 +18,19 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
           </p>
           <p className="text-sm text-muted-foreground">Powered by OpenAI</p>
           <div className="flex justify-center gap-4 pt-2 flex-wrap">
-            <Link to="/methodology" className="hover:text-foreground transition-colors text-sm">
+            <Link to="/methodology" className="text-link hover:underline text-sm">
               Methodology
             </Link>
-            <Link to="/privacy" className="hover:text-foreground transition-colors text-sm">
+            <Link to="/privacy" className="text-link hover:underline text-sm">
               Privacy
             </Link>
-            <Link to="/contact" className="hover:text-foreground transition-colors text-sm">
+            <Link to="/contact" className="text-link hover:underline text-sm">
               Contact
             </Link>
             {onOpenFeedback && (
               <button 
                 onClick={onOpenFeedback} 
-                className="hover:text-foreground transition-colors text-sm"
+                className="text-link hover:underline text-sm"
               >
                 Give Feedback
               </button>

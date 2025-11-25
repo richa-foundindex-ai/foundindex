@@ -54,6 +54,11 @@ All colors MUST be HSL.
     
     /* Light gray background for methodology */
     --accent-gray-light: 0 0% 98%;
+    
+    /* Link colors - Blue for text links */
+    --link: 217 91% 60%;
+    --link-hover: 217 91% 50%;
+    --link-visited: 217 91% 40%;
   }
 }
 
@@ -82,6 +87,21 @@ All colors MUST be HSL.
   
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold text-foreground;
+  }
+  
+  /* Text link styles - blue color, not buttons */
+  .text-link {
+    color: hsl(var(--link));
+    text-decoration: none;
+  }
+  
+  .text-link:hover {
+    text-decoration: underline;
+    color: hsl(var(--link-hover));
+  }
+  
+  .text-link:visited {
+    color: hsl(var(--link-visited));
   }
   
   /* Editorial typography scale */

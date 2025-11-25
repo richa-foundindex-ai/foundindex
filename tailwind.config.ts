@@ -58,6 +58,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        link: {
+          DEFAULT: "hsl(var(--link))",
+          hover: "hsl(var(--link-hover))",
+          visited: "hsl(var(--link-visited))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
