@@ -179,19 +179,27 @@ const HeroSection = () => {
         <div className="container mx-auto max-w-7xl">
           <div className="text-center space-y-6">
             <h1 className="text-[2.56rem] md:text-[3.33rem] font-bold text-foreground leading-tight">
-              AI recommends businesses in millions of searches daily.
+              <span className="font-extrabold">Stop Being Invisible to AI.</span>
               <br />
-              Is yours one of them?
+              Analyze Your Website's Visibility Score in 3 Minutes.
             </h1>
 
-            <div className="grid sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
-              <div className="flex items-center gap-3 text-left">
-                <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                <span className="text-base text-muted-foreground">Discover your AI visibility score in 3 minutes</span>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto mb-6">
+              When people ask ChatGPT or Claude for recommendations, does your business show up? Most don't know. And that silence costs opportunities.
+            </p>
+
+            <div className="grid sm:grid-cols-3 gap-4 max-w-3xl mx-auto">
+              <div className="flex items-start gap-3 text-left">
+                <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
+                <span className="text-base text-muted-foreground">See how AI systems understand your business</span>
               </div>
-              <div className="flex items-center gap-3 text-left">
-                <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-                <span className="text-base text-muted-foreground">Get targeted fixes that increase AI recommendations</span>
+              <div className="flex items-start gap-3 text-left">
+                <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
+                <span className="text-base text-muted-foreground">Get specific, actionable recommendations</span>
+              </div>
+              <div className="flex items-start gap-3 text-left">
+                <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-2" />
+                <span className="text-base text-muted-foreground">Free 3-minute analysis, no credit card required</span>
               </div>
             </div>
           </div>
@@ -205,7 +213,7 @@ const HeroSection = () => {
                 <Input
                   id="website"
                   type="text"
-                  placeholder="yourwebsite.com or https://yourwebsite.com"
+                  placeholder="slack.com or https://yourwebsite.com"
                   value={formData.website}
                   onChange={(e) => setFormData({ ...formData, website: e.target.value })}
                   required
@@ -219,13 +227,13 @@ const HeroSection = () => {
                     "Analyzing..."
                   ) : (
                     <>
-                      Test your AI visibility →
+                      Analyze my website →
                       <ArrowRight className="ml-2 h-5 w-5 hidden" />
                     </>
                   )}
                 </Button>
                 <p className="text-sm text-muted-foreground text-center">
-                  <strong>3 free diagnostic tests per week</strong> • 3-minute analysis • Zero cost
+                  <strong>3 free tests per week</strong> • Takes 3 minutes • No credit card required
                 </p>
               </div>
             </form>

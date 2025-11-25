@@ -1,6 +1,7 @@
 import { useState } from "react";
 import HeroSection from "@/components/landing/HeroSection";
 import WhyItMatters from "@/components/landing/WhyItMatters";
+import HowItWorks from "@/components/landing/HowItWorks";
 import ResearchFoundation from "@/components/landing/ResearchFoundation";
 import FAQ from "@/components/landing/FAQ";
 import ComingInV2 from "@/components/landing/ComingInV2";
@@ -20,6 +21,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <HeroSection />
       <WhyItMatters />
+      <HowItWorks />
       <ResearchFoundation />
       <FAQ />
       <ComingInV2 />

@@ -10,27 +10,42 @@ const FAQ = () => {
     {
       question: "What does FoundIndex measure?",
       answer:
-        "FoundIndex measures 5 AI-critical factors: Content clarity (value proposition explicitness), Information discoverability (key detail accessibility), Authority signals (credibility verification markers), Technical structure (machine-readable optimization), and Competitive positioning (differentiation clarity). Combined score (0-100) determines AI recommendation probability.",
+        "FoundIndex evaluates five AI-critical factors: content clarity, information discoverability, authority signals, technical structure, and differentiation clarity. These reflect how major AI systems interpret, extract, and reason about website content.",
     },
     {
-      question: "Why just the homepage?",
+      question: "Why do you only analyze the homepage?",
       answer:
-        "Your homepage is where AI forms its first understanding of your business. We focus there because it's the foundation—if AI misunderstands your homepage, it won't accurately represent your full offering. Multi-page analysis launches in v2.",
+        "AI models treat your homepage as the primary source of meaning. If clarity breaks here, AI rarely infers deeper pages. (Multi-page analysis coming in v2.)",
     },
     {
-      question: "How is this different from SEO?",
+      question: "Is this the same as SEO?",
       answer:
-        "SEO optimizes for search algorithms. AI visibility optimizes for comprehension. AI doesn't care about keyword density—it needs clear explanations, structured content, and credible signals.",
+        "No. SEO optimizes for ranking algorithms. AI visibility optimizes for meaning extraction, clarity, and comprehension. Think of it like SEO, but for AI assistants.",
+    },
+    {
+      question: "How accurate is the score?",
+      answer:
+        "Scores may vary ±2 points between tests—this is normal with AI-powered analysis. FoundIndex is a directional assessment based on factors we believe matter for AI comprehension.",
     },
     {
       question: "What do I get for free?",
       answer:
-        "Complete homepage analysis, AI visibility score (0-100), specific recommendations on what to fix first, and insights on how AI systems interpret your content.",
+        "AI Visibility Score, diagnostic breakdown across all 5 categories, and your top 3 improvement priorities.",
     },
     {
-      question: "Who built this and why?",
+      question: "Who built this?",
       answer:
-        "I'm Richa Deo, a UX researcher with 14+ years of experience studying how people, content, and AI systems understand information. I built FoundIndex because businesses deserve to know why AI recommends—or ignores—them.",
+        "FoundIndex was created by Richa Deo—a UX researcher with 14+ years of experience, focused on how AI interprets and classifies information.",
+    },
+    {
+      question: "How many tests can I run?",
+      answer:
+        "3 tests per week per device. The limit resets automatically every Monday. If you test the same URL twice, we'll show you the previous score.",
+    },
+    {
+      question: "Do you store my website content?",
+      answer:
+        "No. We analyze your homepage and store only the URL, scores, and recommendations. We never store your HTML or website content. See our Privacy Policy for details.",
     },
   ];
 
