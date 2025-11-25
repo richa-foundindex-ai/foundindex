@@ -101,11 +101,8 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-muted-foreground">
-                Detailed homepage analysis ships within 48 hours to:{" "}
+                Your detailed homepage evaluation will arrive within 48 hours at:{" "}
                 <span className="font-semibold text-foreground">{submittedEmail}</span>
-              </p>
-              <p className="text-muted-foreground">
-                Blog post diagnostic offer (LinkedIn review exchange) arrives separately.
               </p>
               <Button 
                 onClick={() => {
@@ -114,7 +111,7 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
                 }} 
                 className="w-full"
               >
-                ← Back to results
+                {isGeneralFeedback ? "← Back" : "← Back to results"}
               </Button>
             </div>
           </div>
@@ -213,37 +210,21 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
                     <FormItem>
                       <FormLabel>What best describes you?</FormLabel>
                       <FormControl>
-                        <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-3 mt-3">
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="Founder/Business Owner" />
-                            </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">Founder/Business Owner</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="SEO/Marketing Professional" />
-                            </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">SEO/Marketing Professional</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="UX Researcher/Designer" />
-                            </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">UX Researcher/Designer</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="Developer" />
-                            </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">Developer</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="Other" />
-                            </FormControl>
-                            <FormLabel className="font-normal cursor-pointer">Other</FormLabel>
-                          </FormItem>
+                <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-3 mt-3">
+                          {[
+                            "Founder/Business Owner",
+                            "SEO/Marketing Professional",
+                            "UX Researcher/Designer",
+                            "Developer",
+                            "Other"
+                          ].map((option) => (
+                            <FormItem key={option} className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value={option} />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer">{option}</FormLabel>
+                            </FormItem>
+                          ))}
                         </RadioGroup>
                       </FormControl>
                       <FormMessage />

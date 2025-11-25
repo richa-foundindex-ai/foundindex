@@ -52,7 +52,7 @@ const FAQ = () => {
     {
       question: "Do you store my website content?",
       answer:
-        "No. We analyze your homepage and store only the URL, scores, and recommendations. We never store your HTML or website content.",
+        "No. We analyze your homepage and store only the URL, scores, and recommendations. We never store your HTML or website content. See our",
       hasLink: true,
     },
   ];
@@ -77,7 +77,7 @@ const FAQ = () => {
               <AccordionContent className="text-muted-foreground text-base leading-relaxed pt-2">
                 {faq.answer}
                 {faq.hasLink && (
-                  <span> See our <Link to="/privacy" className="text-link hover:underline">Privacy Policy</Link> for details.</span>
+                  <span> <Link to="/privacy" className="text-link hover:underline">Privacy Policy</Link> for details.</span>
                 )}
               </AccordionContent>
             </AccordionItem>

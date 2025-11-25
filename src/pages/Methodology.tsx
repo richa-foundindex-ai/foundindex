@@ -1,10 +1,15 @@
+import { useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { MessageSquare, FileText, Shield, Search, Scale, AlertTriangle, Lightbulb, Mail } from "lucide-react";
+import { MessageSquare, FileText, Shield, Search, Scale, AlertTriangle, Mail } from "lucide-react";
 
 const Methodology = () => {
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
   const factors = [
     {
       icon: MessageSquare,
@@ -198,8 +203,8 @@ const Methodology = () => {
                   </li>
                 </ul>
                 <p className="pt-4">
-                  Available on request:{" "}
-                  <a href="mailto:hello@foundindex.com" className="text-primary hover:underline">
+                  <strong>Contact:</strong>{" "}
+                  <a href="mailto:hello@foundindex.com" className="text-link hover:underline">
                     hello@foundindex.com
                   </a>
                 </p>
@@ -282,28 +287,10 @@ const Methodology = () => {
           </Card>
         </section>
 
-        <section className="mb-16">
-          <Card className="p-8 bg-primary/5 border-primary/20">
-            <div className="flex gap-4">
-              <Lightbulb className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
-              <div>
-                <h2 className="text-2xl font-bold mb-4">The shift</h2>
-                <div className="space-y-4 text-muted-foreground">
-                  <p>
-                    Discovery moved from search engines to AI assistants. ChatGPT answers queries. Claude powers decisions. Perplexity replaces research.
-                  </p>
-                  <p>FoundIndex quantifies AI visibility. Methodology updates track AI system evolution.</p>
-                  <p className="font-medium text-foreground">Methodology questions?</p>
-                </div>
-              </div>
-            </div>
-          </Card>
-        </section>
-
         <section className="text-center">
           <Card className="p-8 border-dashed">
             <Mail className="h-6 w-6 text-primary mx-auto mb-4" />
-            <p className="text-muted-foreground mb-4">Questions about our methodology?</p>
+            <h2 className="text-2xl font-bold mb-4">Questions about our methodology?</h2>
             <Link to="/contact">
               <Button variant="default">Contact us</Button>
             </Link>

@@ -10,9 +10,10 @@ interface CoffeeBrewingLoaderProps {
 const STAGES = [
   { threshold: 0, label: "Scanning website structure", description: "Scanning website structure" },
   { threshold: 20, label: "Evaluating content clarity", description: "Evaluating content clarity" },
-  { threshold: 40, label: "Checking authority signals", description: "Checking authority signals" },
-  { threshold: 60, label: "Generating recommendations", description: "Generating recommendations" },
-  { threshold: 80, label: "Finalizing your score", description: "Finalizing your score" },
+  { threshold: 40, label: "Checking information discoverability", description: "Checking information discoverability" },
+  { threshold: 55, label: "Checking authority signals", description: "Checking authority signals" },
+  { threshold: 70, label: "Analyzing technical structure", description: "Analyzing technical structure" },
+  { threshold: 85, label: "Assessing competitive positioning", description: "Assessing competitive positioning" },
 ];
 
 export const CoffeeBrewingLoader = ({ onComplete, website }: CoffeeBrewingLoaderProps) => {
@@ -46,12 +47,18 @@ export const CoffeeBrewingLoader = ({ onComplete, website }: CoffeeBrewingLoader
         {website && (
           <div className="text-center space-y-3">
             <p className="text-sm text-muted-foreground">Analyzing:</p>
-            <p className="text-lg font-semibold text-foreground">{website}</p>
-            <p className="text-sm font-bold text-foreground">
-              We analyze your homepage only. If you entered a subpage, we'll redirect to your main domain.
-            </p>
+            <p className="text-lg font-semibold text-foreground break-all">{website}</p>
           </div>
         )}
+        
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground mb-3">Evaluating your homepage across 5 factors:</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {["Content clarity", "Information discoverability", "Authority signals", "Technical structure", "Competitive positioning"].map((factor, i) => (
+              <span key={i} className="text-xs bg-muted px-2 py-1 rounded">✓ {factor}</span>
+            ))}
+          </div>
+        </div>
         
         {/* Horizontal progress bar with glowing dot */}
         <div className="relative h-24 flex items-center px-4">
@@ -110,12 +117,14 @@ export const CoffeeBrewingLoader = ({ onComplete, website }: CoffeeBrewingLoader
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-lg border bg-muted/50 p-3 text-center">
+          <div className="rounded-lg border bg-muted/50 p-3 text-center space-y-2">
             <p className="text-sm text-muted-foreground">
               This analysis takes 2-3 minutes to ensure accuracy.
             </p>
+            <p className="text-xs text-muted-foreground">
+              Note: We analyze homepages only. Subpages redirect to main domain.
+            </p>
           </div>
-
         </div>
       </Card>
     </div>
