@@ -107,8 +107,14 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
               <p className="text-muted-foreground">
                 Blog post diagnostic offer (LinkedIn review exchange) arrives separately.
               </p>
-              <Button onClick={handleClose} className="w-full">
-                View results
+              <Button 
+                onClick={() => {
+                  handleClose();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }} 
+                className="w-full"
+              >
+                ← Back to results
               </Button>
             </div>
           </div>
@@ -124,11 +130,11 @@ export const FeedbackModal = ({ open, onOpenChange, testId, score, website, isGe
                   <ul className="space-y-1 mt-2">
                     <li className="flex items-start gap-2">
                       <span className="text-primary">✓</span>
-                      <span>Personalized rewrite strategy (48-hour delivery)</span>
+                      <span>Personalized homepage rewrite strategy (within 48 hours)</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">✓</span>
-                      <span>Bonus: Blog post diagnostic (exchange: LinkedIn review)</span>
+                      <span>Bonus: <strong>One</strong> blog post diagnostic (in exchange for LinkedIn review)</span>
                     </li>
                   </ul>
                 </DialogDescription>

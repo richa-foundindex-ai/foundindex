@@ -1,4 +1,5 @@
-const DEVICE_LIMIT = 10; // Total tests per device per month
+const TESTS_PER_PERIOD = 3; // 3 tests per period
+const RESET_PERIOD_DAYS = 7; // 7-day rolling window from first test
 const URL_COOLDOWN_DAYS = 30; // Days before same URL can be tested again
 const TEST_LOCK_KEY = 'test_lock';
 const TEST_LOCK_TIMEOUT = 30000; // 30 seconds lock timeout
@@ -12,7 +13,8 @@ interface TestRecord {
 
 interface DeviceTests {
   tests: TestRecord[];
-  resetDate: number;
+  count: number;
+  firstTestDate: string;
 }
 
 const normalizeUrl = (url: string): string => {
@@ -38,33 +40,35 @@ const getDeviceId = (): string => {
 };
 
 const getDeviceTests = (): DeviceTests => {
-  const deviceId = getDeviceId();
-  const stored = localStorage.getItem(`tests_${deviceId}`);
+  const stored = localStorage.getItem('foundindex_tests');
   
   if (!stored) {
-    const now = Date.now();
-    const resetDate = now + (30 * 24 * 60 * 60 * 1000); // 30 days from now
-    return { tests: [], resetDate };
+    return { tests: [], count: 0, firstTestDate: '' };
   }
   
   const data: DeviceTests = JSON.parse(stored);
-  const now = Date.now();
+  const now = new Date();
   
-  // Reset if past reset date
-  if (now > data.resetDate) {
-    const newResetDate = now + (30 * 24 * 60 * 60 * 1000);
-    return { tests: [], resetDate: newResetDate };
+  // Check if we need to reset based on 7-day rolling window
+  if (data.firstTestDate) {
+    const firstTestDate = new Date(data.firstTestDate);
+    const daysSinceFirst = (now.getTime() - firstTestDate.getTime()) / (1000 * 60 * 60 * 24);
+    
+    if (daysSinceFirst >= RESET_PERIOD_DAYS) {
+      // Reset the count and first test date
+      localStorage.removeItem('foundindex_tests');
+      return { tests: [], count: 0, firstTestDate: '' };
+    }
   }
   
   return data;
 };
 
 const saveDeviceTests = (data: DeviceTests) => {
-  const deviceId = getDeviceId();
-  localStorage.setItem(`tests_${deviceId}`, JSON.stringify(data));
+  localStorage.setItem('foundindex_tests', JSON.stringify(data));
   // Trigger storage event for other tabs
   window.dispatchEvent(new StorageEvent('storage', {
-    key: `tests_${deviceId}`,
+    key: 'foundindex_tests',
     newValue: JSON.stringify(data),
     storageArea: localStorage
   }));
@@ -124,7 +128,7 @@ export const checkRateLimit = (url: string) => {
         releaseTestLock();
         return {
           allowed: false,
-          remainingTests: DEVICE_LIMIT - deviceTests.tests.length,
+          remainingTests: TESTS_PER_PERIOD - deviceTests.count,
           previousScore: urlTest.score,
           testId: urlTest.testId,
           daysUntilReset: daysRemaining
@@ -132,23 +136,30 @@ export const checkRateLimit = (url: string) => {
       }
     }
     
-    // Check device limit
-    if (deviceTests.tests.length >= DEVICE_LIMIT) {
-      const daysUntilReset = Math.ceil((deviceTests.resetDate - now) / (24 * 60 * 60 * 1000));
+    // Check device limit (3 tests per 7-day period)
+    if (deviceTests.count >= TESTS_PER_PERIOD) {
+      // Calculate days until reset based on first test date
+      let daysUntilReset = 0;
+      if (deviceTests.firstTestDate) {
+        const firstTestDate = new Date(deviceTests.firstTestDate);
+        const resetDate = new Date(firstTestDate.getTime() + (RESET_PERIOD_DAYS * 24 * 60 * 60 * 1000));
+        daysUntilReset = Math.ceil((resetDate.getTime() - now) / (24 * 60 * 60 * 1000));
+      }
+      
       releaseTestLock();
       return {
         allowed: false,
         remainingTests: 0,
         previousScore: undefined,
         testId: undefined,
-        daysUntilReset
+        daysUntilReset: Math.max(0, daysUntilReset)
       };
     }
     
     // Don't release lock yet - keep it until test is recorded
     return {
       allowed: true,
-      remainingTests: DEVICE_LIMIT - deviceTests.tests.length - 1,
+      remainingTests: TESTS_PER_PERIOD - deviceTests.count - 1,
       previousScore: undefined,
       testId: undefined
     };
@@ -162,6 +173,7 @@ export const recordTest = (url: string, score: number, testId: string) => {
   try {
     const normalizedUrl = normalizeUrl(url);
     const deviceTests = getDeviceTests();
+    const now = new Date().toISOString();
     
     // Remove old test for this URL if exists
     deviceTests.tests = deviceTests.tests.filter(t => normalizeUrl(t.url) !== normalizedUrl);
@@ -174,6 +186,14 @@ export const recordTest = (url: string, score: number, testId: string) => {
       timestamp: Date.now()
     });
     
+    // Update count
+    deviceTests.count = (deviceTests.count || 0) + 1;
+    
+    // Set first test date if not already set
+    if (!deviceTests.firstTestDate) {
+      deviceTests.firstTestDate = now;
+    }
+    
     saveDeviceTests(deviceTests);
   } finally {
     // Always release the lock after recording
@@ -183,11 +203,11 @@ export const recordTest = (url: string, score: number, testId: string) => {
 
 export const getRemainingTests = () => {
   const deviceTests = getDeviceTests();
-  return DEVICE_LIMIT - deviceTests.tests.length;
+  return Math.max(0, TESTS_PER_PERIOD - deviceTests.count);
 };
 
 // Deprecated - kept for backward compatibility
 export const unlockTests = () => {
-  // No longer needed - tests reset weekly automatically
+  // No longer needed - tests reset automatically after 7 days
   console.log("unlockTests is deprecated");
 };
