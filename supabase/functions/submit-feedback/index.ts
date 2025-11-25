@@ -48,16 +48,17 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Submit to Airtable Feedback table
+    // Field names MUST match Airtable EXACTLY (check screenshot for exact capitalization)
     const requestBody = {
       fields: {
-        "Test ID": testId,
-        Score: score,
-        Website: website,
-        "Surprising Result": surprisingResult,
-        "Describe to Colleague": describeToColleague,
-        "Preventing Improvements": preventingImprovements,
-        "User Type": userType,
-        Email: email,
+        Email: email, // Capital E
+        Website: website, // Capital W
+        Score: score, // Capital S
+        "Surprising Result": surprisingResult, // Both words capitalized
+        "Describe to Colleague": describeToColleague, // Both words capitalized
+        "Preventing Improvements": preventingImprovements, // Both words capitalized
+        "User Type": userType, // Both words capitalized
+        "Test ID": testId, // Both words capitalized
         // Timestamp is auto-populated by Airtable (Created time field)
       },
     };
@@ -66,17 +67,14 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(JSON.stringify(requestBody, null, 2));
     console.log("🔍 Field names:", Object.keys(requestBody.fields));
 
-    const airtableResponse = await fetch(
-      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Feedback`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${AIRTABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(requestBody),
-      }
-    );
+    const airtableResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Feedback`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${AIRTABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestBody),
+    });
 
     if (!airtableResponse.ok) {
       const errorText = await airtableResponse.text();
@@ -87,22 +85,16 @@ const handler = async (req: Request): Promise<Response> => {
     const result = await airtableResponse.json();
     console.log("✅ Feedback submitted successfully:", result.id);
 
-    return new Response(
-      JSON.stringify({ success: true, recordId: result.id }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return new Response(JSON.stringify({ success: true, recordId: result.id }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   } catch (error: any) {
     console.error("❌ Error in submit-feedback function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 
