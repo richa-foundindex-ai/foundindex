@@ -33,7 +33,7 @@ const ResearchFoundation = () => {
           <div className="mt-8">
             <Link 
               to="/methodology"
-              className="text-primary hover:underline font-medium"
+              className="text-link hover:underline font-medium"
             >
               Read full methodology →
             </Link>

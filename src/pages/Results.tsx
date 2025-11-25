@@ -254,7 +254,7 @@ const Results = () => {
             <div className="flex-shrink-0">⚠️</div>
             <div className="ml-3">
               <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                Results expire when you close this page. <strong>Screenshot or email yourself to save.</strong>
+                Results expire when you close this page. <strong>Take a screenshot to save.</strong>
               </p>
             </div>
           </div>
@@ -348,14 +348,6 @@ const Results = () => {
           </Card>
         </section>
 
-        <Card className="p-6 bg-muted/30">
-          <div className="flex items-start gap-3">
-            <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground">
-              Results are only available during this session. Take a screenshot to save them.
-            </p>
-          </div>
-        </Card>
 
         <div className="flex justify-center">
           <Button
