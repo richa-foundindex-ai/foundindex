@@ -19,16 +19,15 @@ const preventionOptions = [
   "Other",
 ];
 
-const createFormSchema = (isOptional: boolean) =>
+const createFormSchema = (hasWebsite: boolean) =>
   z.object({
-    surprisingResult: isOptional ? z.string().optional() : z.string().min(1, "Please share what surprised you"),
-    describeToColleague: isOptional
+    website: hasWebsite
       ? z.string().optional()
-      : z.string().min(1, "Please describe how you'd explain this"),
-    preventingImprovements: isOptional
-      ? z.array(z.string()).optional()
-      : z.array(z.string()).min(1, "Please select at least one option"),
-    userType: isOptional ? z.string().optional() : z.string().min(1, "Please select your role"),
+      : z.string().url("Please enter a valid website URL").min(1, "Please enter your website URL"),
+    surprisingResult: z.string().min(1, "Please share what surprised you"),
+    describeToColleague: z.string().min(1, "Please describe how you'd explain this"),
+    preventingImprovements: z.array(z.string()).min(1, "Please select at least one option"),
+    userType: z.string().min(1, "Please select your role"),
     email: z.string().email("Please enter a valid email address"),
   });
 
@@ -53,11 +52,12 @@ export const FeedbackModal = ({
   const [showSuccess, setShowSuccess] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
 
-  const formSchema = createFormSchema(isGeneralFeedback);
+  const formSchema = createFormSchema(!!website);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      website: website || "",
       surprisingResult: "",
       describeToColleague: "",
       preventingImprovements: [],
@@ -73,7 +73,7 @@ export const FeedbackModal = ({
         body: {
           testId: testId || "general-feedback",
           score: score || 0,
-          website: website || "N/A",
+          website: values.website || website || "",
           surprisingResult: values.surprisingResult || "",
           describeToColleague: values.describeToColleague || "",
           preventingImprovements: values.preventingImprovements?.join(", ") || "",
@@ -131,27 +131,41 @@ export const FeedbackModal = ({
           <>
             <DialogHeader>
               <DialogTitle className="text-xl font-bold">Get detailed homepage evaluation</DialogTitle>
-              {!isGeneralFeedback && (
-                <DialogDescription className="text-sm pt-2">
-                  Submit feedback (60 seconds) to receive:
-                  <ul className="space-y-1 mt-2">
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary">✓</span>
-                      <span>Personalized homepage rewrite strategy (within 48 hours)</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-primary">✓</span>
-                      <span>
-                        Bonus: <strong>One</strong> blog post diagnostic (in exchange for LinkedIn review)
-                      </span>
-                    </li>
-                  </ul>
-                </DialogDescription>
-              )}
+              <DialogDescription className="text-sm pt-2">
+                Submit feedback (60 seconds) to receive:
+                <ul className="space-y-1 mt-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">✓</span>
+                    <span>Personalized homepage rewrite strategy (within 48 hours)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-primary">✓</span>
+                    <span>
+                      Bonus: <strong>One</strong> blog post diagnostic (in exchange for LinkedIn review)
+                    </span>
+                  </li>
+                </ul>
+              </DialogDescription>
             </DialogHeader>
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {!website && (
+                  <FormField
+                    control={form.control}
+                    name="website"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Your website homepage URL</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://yourwebsite.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 <FormField
                   control={form.control}
                   name="surprisingResult"
