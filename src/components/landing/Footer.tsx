@@ -30,7 +30,8 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
             {onOpenFeedback && (
               <button 
                 onClick={onOpenFeedback} 
-                className="text-link hover:underline text-sm"
+                className="text-sm bg-transparent border-0 p-0 cursor-pointer"
+                style={{ color: 'hsl(217 91% 60%)' }}
               >
                 Give Feedback
               </button>

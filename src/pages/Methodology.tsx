@@ -202,12 +202,6 @@ const Methodology = () => {
                     <span>Research citations (Schema.org, Google E-E-A-T guidelines, GEO research)</span>
                   </li>
                 </ul>
-                <p className="pt-4">
-                  <strong>Contact:</strong>{" "}
-                  <a href="mailto:hello@foundindex.com" className="text-link hover:underline">
-                    hello@foundindex.com
-                  </a>
-                </p>
               </div>
             </div>
           </div>
@@ -291,9 +285,9 @@ const Methodology = () => {
           <Card className="p-8 border-dashed">
             <Mail className="h-6 w-6 text-primary mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-4">Questions about our methodology?</h2>
-            <Link to="/contact">
-              <Button variant="default">Contact us</Button>
-            </Link>
+            <Button variant="default" asChild>
+              <Link to="/contact">Contact us</Link>
+            </Button>
           </Card>
         </section>
 
