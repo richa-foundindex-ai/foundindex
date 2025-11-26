@@ -154,7 +154,23 @@ const HeroSection = () => {
       });
 
       if (submitError) throw new Error(submitError.message);
-      if (submitData?.error) throw new Error(submitData.error);
+      
+      // Handle success: false responses (e.g., JS-rendered sites)
+      if (submitData?.success === false) {
+        const errorDetails = submitData.details || submitData.error || "Unable to analyze this website";
+        toast({
+          title: submitData.error || "Analysis issue",
+          description: errorDetails,
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Handle legacy error format
+      if (submitData?.error && !submitData?.testId) {
+        throw new Error(submitData.details || submitData.error);
+      }
 
       if (submitData?.testId) {
         // Record the test in cookie and localStorage
