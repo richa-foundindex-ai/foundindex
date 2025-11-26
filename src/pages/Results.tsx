@@ -305,11 +305,18 @@ const Results = () => {
 
           {/* Category Breakdown with Expandable Sub-scores */}
           <Card className="p-6">
+            {/* Prominent instruction text */}
+            <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg text-center">
+              <p className="text-base font-semibold text-primary">
+                Your score is based on 13+ detailed factors across 5 categories.
+              </p>
+              <p className="text-sm text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                👇 Click any category below to see the breakdown
+              </p>
+            </div>
+            
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Category Breakdown</h2>
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                💡 Click any category to see details
-              </span>
             </div>
             <div className="space-y-4">
               {categoryConfigs.map((config, i) => (
