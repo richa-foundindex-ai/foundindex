@@ -478,20 +478,31 @@ serve(async (req) => {
       console.error(`[${testId}] Failed to fetch website: ${fetchErrorReason}`);
     }
 
-    // If website fetch completely failed, return an error instead of proceeding
+    // If website fetch completely failed, return success with error details
     if (!fetchSuccess || websiteHtml.length < 100) {
       console.error(`[${testId}] CRITICAL: Cannot analyze website - fetch failed or returned no content`);
       return new Response(
         JSON.stringify({
+          success: false,
           error: "Unable to access website",
+          errorType: "fetch_failed",
           details: fetchErrorReason || "The website could not be reached or returned no content. Please check the URL and try again.",
           testId,
         }),
         {
-          status: 400,
+          status: 200, // Return 200 with error details in body
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
       );
+    }
+    
+    // Check if this is likely a JavaScript-rendered SPA (minimal HTML content)
+    const isLikelyJSRendered = websiteHtml.length < 3000 && 
+      (websiteHtml.includes('id="root"') || websiteHtml.includes('id="app"') || 
+       websiteHtml.includes('__NEXT_DATA__') || websiteHtml.includes('window.__NUXT__'));
+    
+    if (isLikelyJSRendered) {
+      console.warn(`[${testId}] Website appears to be JavaScript-rendered (${websiteHtml.length} chars)`);
     }
 
     console.log(`[${testId}] ===================`);
@@ -892,17 +903,29 @@ INSTRUCTIONS:
     const allScoresZero = totalScore === 0 && contentClarityScore === 0 && structuredDataScore === 0 && 
                           authorityScore === 0 && discoverabilityScore === 0 && comparisonScore === 0;
     
+    // Handle all-zero scores - return success with explanatory message
     if (allScoresZero) {
-      console.error(`[${testId}] CRITICAL ERROR: All scores are 0 - OpenAI analysis likely failed`);
+      console.error(`[${testId}] CRITICAL ERROR: All scores are 0 - likely JS-rendered site or content issue`);
       console.error(`[${testId}] Raw auditResults:`, JSON.stringify(auditResults, null, 2));
+      
+      // Determine the likely cause
+      const isJSRendered = websiteHtml.length < 3000;
+      const errorMessage = isJSRendered 
+        ? "This website uses JavaScript rendering, which means content loads after the initial page. Our analysis currently works best with server-rendered pages."
+        : "Unable to analyze the website content. The page may have limited visible content or use non-standard structure.";
+      
       return new Response(
         JSON.stringify({
-          error: "Analysis failed",
-          details: "Unable to score the website. This may be due to the website structure or content. Please try again or contact support.",
+          success: false,
+          error: "Analysis incomplete",
+          errorType: "js_rendered_site",
+          details: errorMessage,
           testId,
+          websiteHtmlLength: websiteHtml.length,
+          recommendation: "Try analyzing a different page or ensure your homepage has visible HTML content.",
         }),
         {
-          status: 500,
+          status: 200, // Return 200 with error details in body
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
       );
