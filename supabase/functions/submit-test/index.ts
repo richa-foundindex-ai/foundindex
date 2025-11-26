@@ -502,18 +502,18 @@ serve(async (req) => {
     const hasSPAMarker = spaMarkers.some(marker => websiteHtml.includes(marker));
     
     // Extract text content to see if there's meaningful content despite SPA structure
-    const textContent = websiteHtml
+    let textContent = websiteHtml
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
     
-    const meaningfulTextLength = textContent.length;
-    const isLikelyJSRendered = hasSPAMarker && meaningfulTextLength < 500;
+    let meaningfulTextLength = textContent.length;
+    let isLikelyJSRendered = hasSPAMarker && meaningfulTextLength < 500;
     
     console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] === CONTENT ANALYSIS ===`);
+    console.log(`[${testId}] === INITIAL CONTENT ANALYSIS ===`);
     console.log(`[${testId}] HTML length: ${websiteHtml.length} chars`);
     console.log(`[${testId}] Text content length (after stripping tags): ${meaningfulTextLength} chars`);
     console.log(`[${testId}] Has SPA markers: ${hasSPAMarker}`);
@@ -521,15 +521,61 @@ serve(async (req) => {
     console.log(`[${testId}] Text preview: ${textContent.substring(0, 300)}...`);
     console.log(`[${testId}] ═══════════════════════════════════════`);
     
-    // Only fail for truly empty SPAs
+    // If JS-rendered with minimal content, try using a headless browser API
+    if (isLikelyJSRendered && meaningfulTextLength < 500) {
+      console.log(`[${testId}] 🔄 JS-rendered site detected - attempting headless browser fetch via r.jina.ai...`);
+      
+      try {
+        // Use r.jina.ai to render the page (free tier available)
+        const jinaUrl = `https://r.jina.ai/${validatedWebsite}`;
+        const jinaResponse = await fetch(jinaUrl, {
+          headers: {
+            "Accept": "text/html",
+            "User-Agent": "Mozilla/5.0 (compatible; FoundIndex-Bot/1.0; +https://foundindex.com)",
+          },
+          signal: AbortSignal.timeout(30000), // 30 second timeout for rendering
+        });
+        
+        if (jinaResponse.ok) {
+          const renderedContent = await jinaResponse.text();
+          console.log(`[${testId}] ✅ Jina.ai returned ${renderedContent.length} chars of rendered content`);
+          
+          // Jina returns markdown-like content, use it as text content
+          if (renderedContent.length > meaningfulTextLength) {
+            textContent = renderedContent;
+            meaningfulTextLength = textContent.length;
+            isLikelyJSRendered = false; // We now have rendered content
+            console.log(`[${testId}] ✅ Successfully got rendered content (${meaningfulTextLength} chars)`);
+            console.log(`[${testId}] Rendered content preview: ${textContent.substring(0, 500)}...`);
+            
+            // Also update websiteHtml with the rendered content for analysis
+            // Wrap in basic HTML structure for the AI to analyze
+            websiteHtml = `<!DOCTYPE html><html><head><title>${validatedWebsite}</title></head><body>${renderedContent}</body></html>`;
+          }
+        } else {
+          console.warn(`[${testId}] ⚠️ Jina.ai request failed: ${jinaResponse.status}`);
+        }
+      } catch (jinaError) {
+        console.warn(`[${testId}] ⚠️ Jina.ai fetch failed: ${jinaError instanceof Error ? jinaError.message : 'Unknown error'}`);
+      }
+    }
+    
+    // Re-check after potential headless fetch
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === FINAL CONTENT ANALYSIS ===`);
+    console.log(`[${testId}] Final text content length: ${meaningfulTextLength} chars`);
+    console.log(`[${testId}] Still JS-rendered (after headless attempt): ${isLikelyJSRendered}`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    
+    // Only fail for truly empty SPAs after all attempts
     if (isLikelyJSRendered && meaningfulTextLength < 200) {
-      console.warn(`[${testId}] CRITICAL: JS-rendered site with minimal content (${meaningfulTextLength} chars text)`);
+      console.warn(`[${testId}] CRITICAL: JS-rendered site with minimal content (${meaningfulTextLength} chars text) - all fetch attempts failed`);
       return new Response(
         JSON.stringify({
           success: false,
-          error: "JavaScript-rendered website detected",
+          error: "Unable to analyze JavaScript-rendered website",
           errorType: "js_rendered_site",
-          details: "This website uses JavaScript to render content, which means the page loads dynamically. Our analysis works best with server-rendered pages that have visible HTML content. Try submitting a different page URL or ensuring your homepage has server-rendered content.",
+          details: "This website uses JavaScript to render content dynamically. We attempted to render the page but couldn't extract meaningful content. Please try: 1) A different page URL, 2) Ensuring your site has server-side rendering (SSR), or 3) Contact support if this persists.",
           testId,
           websiteHtmlLength: websiteHtml.length,
           textContentLength: meaningfulTextLength,
@@ -619,42 +665,74 @@ Information Consistency (0-4 points):
 
 3. AUTHORITY SIGNALS (0-15 points total)
 
-**CRITICAL: Be FLEXIBLE with terminology. Look for EVIDENCE, not exact keywords.**
+**CRITICAL INSTRUCTION FOR AUTHORITY SIGNALS:**
 
-Credibility Markers (0-8 points):
-Detect ANY of these patterns (use flexible matching):
-- Case studies / Portfolio: "case study", "client work", "project", "projects", "success story", "portfolio", "work samples", "our work", "examples", "showcase", "featured work", "selected works"
-- Client results: ANY metrics, percentages, "increased by X%", "improved", "achieved", "grew by", "reduced", "saved", specific numbers like "$1M revenue"
-- Certifications: "certified", "accredited", "licensed", "qualified", "registered", professional letters (MBA, CPA, PMP)
-- Awards: "award", "winner", "featured in", "recognized", "honored", "nominated", "best of"
-- Press: "press", "media", "published in", "as seen in", "mentioned in", logos of publications
-- Experience: "X years", "since 20XX", "established", "founded in", "serving since"
+Portfolio and case study content appears in MANY forms. You MUST award high scores when you detect ANY of these patterns:
+
+PORTFOLIO INDICATORS (award 6-8 points for credibility):
+✓ Sections titled: "portfolio", "work", "projects", "selected works", "featured works", "case studies", "our work", "my work", "client work", "success stories"
+✓ Project cards or grids showing multiple projects (3+ projects)
+✓ Each project includes: title, description, client name/logo
+✓ Project descriptions mention outcomes, methodologies, or tools used
+✓ ANY section that displays past work with details = portfolio (even without "portfolio" in the title)
+
+EXPLICIT SCORING EXAMPLES:
+- "Selected Works" with project cards = 7-8 points for credibility
+- "Projects" section with 5+ detailed items = 7-8 points for credibility
+- "Case Studies" with client outcomes = 8 points for credibility
+- "Our Work" showcase with client logos = 6-7 points for credibility
+- "What We Do" with past project examples = 5-6 points for credibility
+
+DO NOT REQUIRE:
+- Formal "case study" keyword
+- Traditional case study format  
+- Specific section titles
+- Long-form write-ups
+
+DO LOOK FOR:
+- Visual evidence (project cards, grids, galleries)
+- Client names or logos ANYWHERE on page
+- Descriptions of past work
+- Examples with any level of detail
+- Process/methodology descriptions
+- Before/after descriptions
+
+**Credibility Markers (0-8 points):**
+Detect ANY of these patterns (use FLEXIBLE matching):
+- Case studies / Portfolio: "case study", "client work", "project", "projects", "success story", "portfolio", "work samples", "our work", "examples", "showcase", "featured work", "selected works", "what we've built", "work we're proud of"
+- Client results: ANY metrics, percentages, "increased by X%", "improved", "achieved", "grew by", "reduced", "saved", specific numbers like "$1M revenue", "2x growth", "50% improvement"
+- Certifications: "certified", "accredited", "licensed", "qualified", "registered", professional letters (MBA, CPA, PMP, PhD)
+- Awards: "award", "winner", "featured in", "recognized", "honored", "nominated", "best of", "top rated"
+- Press: "press", "media", "published in", "as seen in", "mentioned in", logos of publications (Forbes, TechCrunch, etc.)
+- Experience: "X years", "since 20XX", "established", "founded in", "serving since", "over X years"
 
 **IMPORTANT FLEXIBILITY RULES:**
-- A "Projects" or "Our Work" section with detailed descriptions = case studies (award 5-7 points)
+- A "Projects" or "Our Work" or "Selected Works" section with detailed descriptions = case studies (award 5-7 points)
 - Portfolio pieces showing client names + process + outcomes = case studies
-- If you see specific client outcomes (e.g., "helped BT Group improve user engagement") = count as credibility
-- Professional methodology descriptions = credibility evidence
+- If you see specific client outcomes (e.g., "helped BT Group improve user engagement") = count as HIGH credibility (6-8 pts)
+- Professional methodology descriptions (e.g., "UX Research, Usability Testing, User Interviews") = credibility evidence (4-6 pts)
+- Industry experience mentioned with specific clients = credibility (4-6 pts)
 
 Scoring:
-- 7-8 pts: 3+ detailed projects/case studies with client names, outcomes, AND metrics
-- 5-6 pts: 2-3 projects with moderate detail OR multiple credentials/awards  
-- 3-4 pts: 1-2 projects with basic descriptions OR clear credentials
+- 7-8 pts: 3+ detailed projects/case studies with client names, outcomes, AND/OR methodology detail
+- 5-6 pts: 2-3 projects with moderate detail OR multiple credentials/awards OR clear client work
+- 3-4 pts: 1-2 projects with basic descriptions OR clear credentials mentioned
 - 1-2 pts: Mentions experience but no specific examples
-- 0 pts: No credibility evidence
+- 0 pts: No credibility evidence whatsoever
 
-Social Proof (0-7 points):
-- Client logos: image grids, "clients", "partners", "trusted by", "working with"
-- Testimonials: "testimonial", "review", "what clients say", quotes with attribution, star ratings
-- User metrics: "X+ users", "X companies", "X customers", "served X"
+**Social Proof (0-7 points):**
+- Client logos: image grids, "clients", "partners", "trusted by", "working with", "companies we've helped"
+- Testimonials: "testimonial", "review", "what clients say", "what people say", quotes with attribution, star ratings, "feedback"
+- User metrics: "X+ users", "X companies", "X customers", "served X", "helped X businesses"
 - Video testimonials: embedded client story videos
+- Trust badges: security badges, payment logos, certification marks, "featured in" logos
 
 Scoring:
-- 6-7 pts: Named testimonials + client logos + user metrics
-- 4-5 pts: Testimonials with names/companies + logos
-- 2-3 pts: Generic testimonials OR logos only
-- 1 pt: Vague trust indicators
-- 0 pts: No social proof
+- 6-7 pts: Named testimonials with attribution + client logos + user metrics
+- 4-5 pts: Testimonials with names/companies + logos OR detailed reviews
+- 2-3 pts: Generic testimonials OR logos only OR client list without quotes
+- 1 pt: Vague trust indicators ("trusted by thousands")
+- 0 pts: No social proof found
 
 4. STRUCTURED DATA (0-15 points total)
 
@@ -706,35 +784,68 @@ WEBSITE HTML CONTENT: ${websiteHtml.substring(0, 50000)}
 
 CONTEXT-AWARE RECOMMENDATION RULES:
 
-Before generating recommendations, you MUST first detect what exists:
-- has_portfolio: Does the site have projects, portfolio, case studies, or work examples?
-- has_testimonials: Does the site have client quotes, reviews, or testimonials?
-- has_client_logos: Does the site show client/partner logos?
-- has_metrics: Does the site show specific numbers, percentages, or results?
-- has_credentials: Does the site mention certifications, awards, or years of experience?
+**STEP 1: Detect what EXISTS on the page:**
+- has_portfolio: Does the site have projects, portfolio, case studies, work examples, "selected works", "our work", "featured projects"?
+- has_testimonials: Does the site have client quotes, reviews, testimonials, "what clients say", star ratings?
+- has_client_logos: Does the site show client/partner logos, "trusted by", "working with"?
+- has_metrics: Does the site show specific numbers, percentages, results, "X% improvement", "$X saved"?
+- has_credentials: Does the site mention certifications, awards, years of experience, "since 20XX"?
 
-Then generate recommendations that ONLY suggest what's MISSING:
+**COMMON PATTERNS TO DETECT:**
+
+Agency/Consultancy Patterns:
+- "Clients" or "Clients we've worked with" + logos = Social Proof (5-7 pts)
+- "Success Stories" = Case Studies (6-8 pts)
+- "Results" or "Impact" section with metrics = Credibility (6-8 pts)
+- "Featured Projects" = Portfolio (6-8 pts)
+- "Partnerships" with company logos = Social Proof (4-6 pts)
+
+Freelancer/Individual Patterns:
+- "Selected Works" = Portfolio (6-8 pts) - VERY COMMON, award high score!
+- "What I Do" with examples = Portfolio (5-6 pts)
+- "Experience" section listing clients = Credibility (4-5 pts)
+- Professional methodology descriptions = Credibility (4-6 pts)
+
+E-commerce/SaaS Patterns:
+- "Customer Stories" = Case Studies (6-8 pts)
+- "Trusted by X customers" with count = Social Proof (5-6 pts)
+- Brand/company logos grid = Social Proof (5-7 pts)
+- "Reviews" or star ratings = Social Proof (6-7 pts)
+
+B2B Service Patterns:
+- "Industry Experience" with company names = Credibility (4-5 pts)
+- "Featured in" with media logos = Authority (5-6 pts)
+- "Certifications" or "Accreditations" = Credibility (3-4 pts)
+- "Awards" or "Recognition" = Credibility (4-5 pts)
+
+**STEP 2: Generate CONTEXT-AWARE recommendations:**
 
 IF has_portfolio AND has_testimonials:
-→ Recommend: "Add industry awards or certifications", "Include press mentions or media features", "Add video testimonials for deeper trust"
+→ "Strong authority foundation. Consider adding: industry awards or certifications, press mentions or media features, video testimonials for deeper trust"
 
 IF has_portfolio AND NOT has_testimonials:
-→ Recommend: "Add 2-3 client testimonials with full names and companies", "Include star ratings or satisfaction metrics"
+→ "Detected portfolio/project work. Strengthen authority by: adding 2-3 client testimonials with full names and companies, including star ratings or satisfaction metrics"
 
 IF has_testimonials AND NOT has_portfolio:
-→ Recommend: "Add 2-3 case studies showing your process and outcomes", "Include specific project examples with before/after metrics"
+→ "Client testimonials present but missing project detail. Add: 2-3 case studies showing your process and outcomes, specific project examples with before/after metrics"
 
 IF NOT has_portfolio AND NOT has_testimonials:
-→ Recommend: "Add 3-5 case studies or project examples with client outcomes", "Include client testimonials with full attribution"
+→ "Build authority foundation by: adding 3-5 case studies or project examples with client outcomes, including client testimonials with full attribution, adding relevant certifications or years of experience"
 
-**NEVER recommend something that already exists on the page.**
+IF has_client_logos BUT NOT has_metrics:
+→ "Client logos visible. Strengthen by: adding specific results achieved for these clients, including project outcomes with numbers/percentages"
+
+**STEP 3: NEVER recommend what already exists!**
+- Before suggesting "add case studies", verify portfolio section doesn't exist
+- Before suggesting "add testimonials", verify social proof doesn't exist  
+- Be SPECIFIC about what's MISSING, not generic improvement advice
 
 ---
 
 INSTRUCTIONS:
 1. Carefully analyze the homepage content against each rubric item
-2. Be GENEROUS with authority scoring if you find portfolio/project content - don't require exact keywords
-3. Return SPECIFIC evidence of what you found (not vague descriptions)
+2. Be GENEROUS with authority scoring if you find portfolio/project content - "Selected Works", "Projects", "Our Work" ALL count as portfolio!
+3. Return SPECIFIC, DETAILED evidence of what you found (include section names, client names, project titles)
 4. Generate context-aware recommendations based on what's MISSING (not what exists)
 5. Return ONLY valid JSON in this exact format:
 
