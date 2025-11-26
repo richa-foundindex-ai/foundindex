@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface ExistingTestInfo {
+  testId: string;
+  score: number;
+  website: string;
+  testDate: string;
+}
+
 const HeroSection = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -27,7 +34,10 @@ const HeroSection = () => {
     website: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingExisting, setIsCheckingExisting] = useState(false);
   const [showRateLimitModal, setShowRateLimitModal] = useState(false);
+  const [showExistingTestModal, setShowExistingTestModal] = useState(false);
+  const [existingTestInfo, setExistingTestInfo] = useState<ExistingTestInfo | null>(null);
   const [rateLimitInfo, setRateLimitInfo] = useState<{ url: string; score: number; remainingTests: number; testId?: string; daysUntilReset?: number } | null>(
     null,
   );
@@ -74,7 +84,7 @@ const HeroSection = () => {
       return;
     }
 
-    // Check rate limiting
+    // Check rate limiting first (local check)
     const rateLimit = checkRateLimit(websiteUrl);
     if (!rateLimit.allowed) {
       // Check if it's a lock error (another test in progress)
@@ -108,6 +118,32 @@ const HeroSection = () => {
       }
     }
 
+    // Check Airtable for existing test (server-side check)
+    setIsCheckingExisting(true);
+    try {
+      const { data: existingData, error: existingError } = await supabase.functions.invoke("check-existing-test", {
+        body: { website: websiteUrl },
+      });
+
+      if (!existingError && existingData?.exists) {
+        console.log("[HeroSection] Found existing test:", existingData);
+        setExistingTestInfo({
+          testId: existingData.testId,
+          score: existingData.score,
+          website: existingData.website,
+          testDate: existingData.testDate,
+        });
+        setShowExistingTestModal(true);
+        setIsCheckingExisting(false);
+        return;
+      }
+    } catch (error) {
+      console.error("[HeroSection] Error checking existing test:", error);
+      // Continue with new test if check fails
+    }
+    setIsCheckingExisting(false);
+
+    // Proceed with new test
     setIsSubmitting(true);
 
     try {
@@ -175,6 +211,43 @@ const HeroSection = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Existing Test Modal */}
+      <AlertDialog open={showExistingTestModal} onOpenChange={setShowExistingTestModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>This website was recently analyzed</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  Here's your previous score: <span className="text-2xl font-bold text-primary">{existingTestInfo?.score}</span>
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Tested on {existingTestInfo?.testDate ? new Date(existingTestInfo.testDate).toLocaleDateString() : 'recently'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-4">
+                  <Link to="/contact" className="text-link hover:underline">
+                    Need to re-test? Contact us
+                  </Link>
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowExistingTestModal(false);
+                if (existingTestInfo?.testId) {
+                  navigate(`/results?testId=${existingTestInfo.testId}`);
+                }
+              }}
+            >
+              View full results
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <section className="py-20 px-4">
         <div className="container mx-auto max-w-7xl">
           <div className="text-center space-y-6">
@@ -218,8 +291,10 @@ const HeroSection = () => {
               </div>
 
               <div className="space-y-4">
-                <Button type="submit" size="lg" className="w-full h-14 text-lg" disabled={isSubmitting}>
-                  {isSubmitting ? (
+                <Button type="submit" size="lg" className="w-full h-14 text-lg" disabled={isSubmitting || isCheckingExisting}>
+                  {isCheckingExisting ? (
+                    "Checking..."
+                  ) : isSubmitting ? (
                     "Analyzing..."
                   ) : (
                     <>
