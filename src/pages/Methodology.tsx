@@ -4,12 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { MessageSquare, FileText, Shield, Search, Scale, AlertTriangle, Mail } from "lucide-react";
+import Header from "@/components/layout/Header";
 
 const Methodology = () => {
-  // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
+
   const factors = [
     {
       icon: MessageSquare,
@@ -74,34 +75,7 @@ const Methodology = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto max-w-5xl flex h-16 items-center justify-between px-4">
-          <Link
-            to="/"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="text-lg font-semibold hover:text-primary transition-colors"
-          >
-            FoundIndex
-          </Link>
-          <Link to="/">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.href = "/";
-                setTimeout(() => {
-                  const heroInput = document.querySelector('input[type="text"]');
-                  heroInput?.scrollIntoView({ behavior: "smooth", block: "center" });
-                  (heroInput as HTMLInputElement)?.focus();
-                }, 100);
-              }}
-            >
-              Analyze your website
-            </Button>
-          </Link>
-        </div>
-      </header>
+      <Header />
 
       <main className="container mx-auto px-4 py-16 max-w-5xl">
         <div className="text-center mb-16">
@@ -292,7 +266,7 @@ const Methodology = () => {
         </section>
 
         <div className="text-center mt-12">
-          <Link to="/" className="text-primary hover:underline font-medium">
+          <Link to="/" className="text-link hover:underline font-medium">
             ← Back to home
           </Link>
         </div>

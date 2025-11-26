@@ -109,11 +109,11 @@ export const FeedbackModal = ({
         {showSuccess ? (
           <div className="space-y-6 py-8">
             <DialogHeader>
-              <DialogTitle className="text-2xl">Evaluation queued for delivery</DialogTitle>
+              <DialogTitle className="text-2xl">Strategy request received ✓</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-muted-foreground">
-                Your detailed homepage evaluation will arrive within 48 hours at:{" "}
+                Your personalized homepage rewrite strategy will arrive within 48 hours at:{" "}
                 <span className="font-semibold text-foreground">{submittedEmail}</span>
               </p>
               <Button
@@ -130,10 +130,10 @@ export const FeedbackModal = ({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle className="text-xl font-bold">Get detailed homepage evaluation</DialogTitle>
+              <DialogTitle className="text-xl font-bold">Request personalized strategy</DialogTitle>
               <DialogDescription className="text-sm pt-2">
-                Submit feedback (60 seconds) to receive:
-                <ul className="space-y-1 mt-2">
+                Share 60-second feedback to receive detailed rewrite recommendations via email
+                <ul className="space-y-1 mt-3">
                   <li className="flex items-start gap-2">
                     <span className="text-primary">✓</span>
                     <span>Personalized homepage rewrite strategy (within 48 hours)</span>
@@ -273,7 +273,7 @@ export const FeedbackModal = ({
                 />
 
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? "Submitting..." : "Submit Feedback"}
+                  {isSubmitting ? "Submitting..." : "Submit & request strategy"}
                 </Button>
               </form>
             </Form>
