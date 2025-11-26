@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link, useNavigate } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -20,10 +19,22 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FeedbackModal } from "@/components/results/FeedbackModal";
-import { CategoryTooltip } from "@/components/results/CategoryTooltip";
+import ScoreGauge from "@/components/results/ScoreGauge";
+import CategoryBreakdown from "@/components/results/CategoryBreakdown";
 import { getRemainingTests } from "@/utils/rateLimiting";
 import Footer from "@/components/landing/Footer";
 import Header from "@/components/layout/Header";
+
+// Generate proportional sub-scores from main category score
+const generateSubScores = (categoryScore: number, maxScore: number, breakdown: { label: string; max: number }[]) => {
+  const ratio = (categoryScore ?? 0) / maxScore;
+  
+  return breakdown.map((item) => ({
+    label: item.label,
+    score: Math.round(item.max * ratio),
+    max: item.max,
+  }));
+};
 
 interface QueryResult {
   queryNumber: number;
@@ -65,7 +76,6 @@ interface TestResult {
 }
 
 const Results = () => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const testId = searchParams.get("testId");
   const [loading, setLoading] = useState(true);
@@ -110,33 +120,6 @@ const Results = () => {
     fetchResults();
   }, [testId]);
 
-  const getScoreColor = (score: number) => {
-    if (score < 40) return "text-red-600";
-    if (score < 60) return "text-orange-500";
-    if (score < 80) return "text-blue-600";
-    return "text-emerald-600";
-  };
-
-  const getScoreBgClass = (score: number) => {
-    if (score < 40) return "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900";
-    if (score < 60) return "bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-900";
-    if (score < 80) return "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-900";
-    return "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900";
-  };
-
-  const getScoreLabel = (score: number) => {
-    if (score < 40) return "Needs improvement";
-    if (score < 60) return "Fair visibility";
-    if (score < 80) return "Good visibility";
-    return "Excellent visibility";
-  };
-
-  const getScoreDescription = (score: number) => {
-    if (score < 40) return "AI systems struggle to understand your offering. Urgent fixes needed.";
-    if (score < 60) return "Some gaps block AI comprehension. Priority improvements recommended.";
-    if (score < 80) return "Strong foundation. Targeted improvements will increase AI recommendations.";
-    return "AI understands your business well. Minor optimizations available.";
-  };
 
   const handleProInterestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,12 +195,66 @@ const Results = () => {
 
   const score = result.foundIndexScore ?? 0;
 
-  const categories = [
-    { label: "Content Clarity", score: result.contentClarityScore, max: 30 },
-    { label: "Discoverability", score: result.discoverabilityScore, max: 25 },
-    { label: "Authority Signals", score: result.authorityScore, max: 15 },
-    { label: "Structured Data", score: result.structuredDataScore, max: 15 },
-    { label: "Comparison Content", score: result.comparisonScore, max: 15 },
+  // Category configurations with sub-score breakdowns
+  const categoryConfigs = [
+    {
+      label: "Content Clarity",
+      score: result.contentClarityScore ?? 0,
+      max: 30,
+      tooltip: "How clearly your homepage explains what you do, for whom, and why it matters",
+      subBreakdown: [
+        { label: "Value proposition clarity", max: 10 },
+        { label: "Target audience specification", max: 8 },
+        { label: "Service/product specificity", max: 8 },
+        { label: "Concrete evidence & examples", max: 4 },
+      ],
+    },
+    {
+      label: "Discoverability",
+      score: result.discoverabilityScore ?? 0,
+      max: 25,
+      tooltip: "How easily AI systems can extract and understand key information from your page structure",
+      subBreakdown: [
+        { label: "Information placement", max: 8 },
+        { label: "Question-answer alignment", max: 7 },
+        { label: "Content accessibility", max: 6 },
+        { label: "Information consistency", max: 4 },
+      ],
+    },
+    {
+      label: "Authority Signals",
+      score: result.authorityScore ?? 0,
+      max: 15,
+      tooltip: "Credibility markers like case studies, testimonials, client logos, and expert credentials",
+      subBreakdown: [
+        { label: "Evidence-based claims", max: 6 },
+        { label: "Relevant credentials", max: 4 },
+        { label: "Third-party validation", max: 3 },
+        { label: "Specificity & verifiability", max: 2 },
+      ],
+    },
+    {
+      label: "Technical Structure",
+      score: result.structuredDataScore ?? 0,
+      max: 15,
+      tooltip: "Meta descriptions, headers, and navigation that help AI understand your content",
+      subBreakdown: [
+        { label: "Schema.org implementation", max: 7 },
+        { label: "HTML semantic structure", max: 5 },
+        { label: "Metadata quality", max: 3 },
+      ],
+    },
+    {
+      label: "Competitive Positioning",
+      score: result.comparisonScore ?? 0,
+      max: 15,
+      tooltip: "How clearly you differentiate yourself and provide comparison context",
+      subBreakdown: [
+        { label: "Specific positioning", max: 6 },
+        { label: "Concrete differentiators", max: 5 },
+        { label: "Trade-off transparency", max: 4 },
+      ],
+    },
   ];
 
   const recommendationIcons = [Lightbulb, FileText, Target];
@@ -249,55 +286,25 @@ const Results = () => {
 
         {/* BENTO BOX LAYOUT */}
         <div className="grid gap-6 lg:grid-cols-2">
-          {/* Score Card - Large */}
-          <Card className={`p-8 ${getScoreBgClass(score)} border-2 relative overflow-hidden`}>
-            <div className="relative z-10">
-              <p className="text-sm font-medium text-muted-foreground mb-2">AI Visibility Score</p>
-              <div className="flex items-baseline gap-2 mb-3">
-                <span className={`text-7xl font-bold ${getScoreColor(score)}`}>{score}</span>
-                <span className="text-2xl text-muted-foreground">/100</span>
-              </div>
-              <p className={`text-lg font-semibold ${getScoreColor(score)} mb-2`}>
-                {getScoreLabel(score)}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {getScoreDescription(score)}
-              </p>
-              <Progress value={score} className="h-3 mt-4" />
-            </div>
-            {/* Background decoration */}
-            <div className="absolute -right-8 -bottom-8 w-32 h-32 rounded-full bg-current opacity-5" />
+          {/* Score Card with Speedometer */}
+          <Card className="p-6 flex items-center justify-center">
+            <ScoreGauge score={score} size={300} />
           </Card>
 
-          {/* Category Breakdown */}
+          {/* Category Breakdown with Expandable Sub-scores */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Category Breakdown</h2>
             <div className="space-y-4">
-              {categories.map((item, i) => {
-                const percentage = ((item.score ?? 0) / item.max) * 100;
-                const isGood = percentage > 70;
-                return (
-                  <div key={i} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <span className="text-sm font-medium">{item.label}</span>
-                        <CategoryTooltip category={item.label} />
-                      </div>
-                      <span className={`text-sm font-semibold ${isGood ? 'text-emerald-600' : 'text-muted-foreground'}`}>
-                        {item.score ?? 0}/{item.max}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Progress value={percentage} className="h-2 flex-1" />
-                      {isGood ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
-                      ) : (
-                        <XCircle className="h-4 w-4 text-orange-500 flex-shrink-0" />
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+              {categoryConfigs.map((config, i) => (
+                <CategoryBreakdown
+                  key={i}
+                  label={config.label}
+                  score={config.score}
+                  max={config.max}
+                  tooltip={config.tooltip}
+                  subScores={generateSubScores(config.score, config.max, config.subBreakdown)}
+                />
+              ))}
             </div>
           </Card>
         </div>
