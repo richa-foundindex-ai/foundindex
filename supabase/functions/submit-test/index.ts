@@ -496,13 +496,49 @@ serve(async (req) => {
       );
     }
     
-    // Check if this is likely a JavaScript-rendered SPA (minimal HTML content)
-    const isLikelyJSRendered = websiteHtml.length < 3000 && 
-      (websiteHtml.includes('id="root"') || websiteHtml.includes('id="app"') || 
-       websiteHtml.includes('__NEXT_DATA__') || websiteHtml.includes('window.__NUXT__'));
+    // Check if this is likely a JavaScript-rendered SPA
+    // Be more nuanced - check for actual content, not just markers
+    const spaMarkers = ['id="root"', 'id="app"', '__NEXT_DATA__', 'window.__NUXT__', 'data-reactroot'];
+    const hasSPAMarker = spaMarkers.some(marker => websiteHtml.includes(marker));
     
-    if (isLikelyJSRendered) {
-      console.warn(`[${testId}] Website appears to be JavaScript-rendered (${websiteHtml.length} chars)`);
+    // Extract text content to see if there's meaningful content despite SPA structure
+    const textContent = websiteHtml
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    const meaningfulTextLength = textContent.length;
+    const isLikelyJSRendered = hasSPAMarker && meaningfulTextLength < 500;
+    
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === CONTENT ANALYSIS ===`);
+    console.log(`[${testId}] HTML length: ${websiteHtml.length} chars`);
+    console.log(`[${testId}] Text content length (after stripping tags): ${meaningfulTextLength} chars`);
+    console.log(`[${testId}] Has SPA markers: ${hasSPAMarker}`);
+    console.log(`[${testId}] Is likely JS-rendered (SPA marker + <500 text): ${isLikelyJSRendered}`);
+    console.log(`[${testId}] Text preview: ${textContent.substring(0, 300)}...`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    
+    // Only fail for truly empty SPAs
+    if (isLikelyJSRendered && meaningfulTextLength < 200) {
+      console.warn(`[${testId}] CRITICAL: JS-rendered site with minimal content (${meaningfulTextLength} chars text)`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "JavaScript-rendered website detected",
+          errorType: "js_rendered_site",
+          details: "This website uses JavaScript to render content, which means the page loads dynamically. Our analysis works best with server-rendered pages that have visible HTML content. Try submitting a different page URL or ensuring your homepage has server-rendered content.",
+          testId,
+          websiteHtmlLength: websiteHtml.length,
+          textContentLength: meaningfulTextLength,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     console.log(`[${testId}] ===================`);
@@ -905,24 +941,42 @@ INSTRUCTIONS:
     
     // Handle all-zero scores - return success with explanatory message
     if (allScoresZero) {
-      console.error(`[${testId}] CRITICAL ERROR: All scores are 0 - likely JS-rendered site or content issue`);
+      console.error(`[${testId}] CRITICAL ERROR: All scores are 0 - OpenAI returned empty analysis`);
       console.error(`[${testId}] Raw auditResults:`, JSON.stringify(auditResults, null, 2));
+      console.error(`[${testId}] Website HTML length: ${websiteHtml.length}`);
       
       // Determine the likely cause
-      const isJSRendered = websiteHtml.length < 3000;
-      const errorMessage = isJSRendered 
-        ? "This website uses JavaScript rendering, which means content loads after the initial page. Our analysis currently works best with server-rendered pages."
-        : "Unable to analyze the website content. The page may have limited visible content or use non-standard structure.";
+      const textContent = websiteHtml
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      let errorMessage: string;
+      let errorType: string;
+      
+      if (textContent.length < 300) {
+        errorType = "js_rendered_site";
+        errorMessage = "This website appears to use JavaScript rendering. The visible HTML content is minimal, which prevents accurate analysis. Try a different page or ensure server-side rendering.";
+      } else if (websiteHtml.length < 1000) {
+        errorType = "minimal_content";
+        errorMessage = "The website returned very little content. This could be due to blocking, JavaScript rendering, or a maintenance page.";
+      } else {
+        errorType = "analysis_failed";
+        errorMessage = "Our AI was unable to analyze the content structure. The page may use unusual formatting or have content that's difficult to parse.";
+      }
       
       return new Response(
         JSON.stringify({
           success: false,
           error: "Analysis incomplete",
-          errorType: "js_rendered_site",
+          errorType,
           details: errorMessage,
           testId,
           websiteHtmlLength: websiteHtml.length,
-          recommendation: "Try analyzing a different page or ensure your homepage has visible HTML content.",
+          textContentLength: textContent.length,
+          recommendation: "Try analyzing a different page with more visible HTML content.",
         }),
         {
           status: 200, // Return 200 with error details in body
