@@ -541,11 +541,21 @@ serve(async (req) => {
       );
     }
 
+    // Check if analyzing self (foundindex.com)
+    const isAnalyzingSelf = validatedWebsite.toLowerCase().includes('foundindex');
+    if (isAnalyzingSelf) {
+      console.log(`[${testId}] ⚠️ SELF-ANALYSIS DETECTED: Analyzing foundindex.com`);
+      console.log(`[${testId}] Will apply standard analysis without special handling`);
+    }
+
     console.log(`[${testId}] ===================`);
     console.log(`[${testId}] STEP 2: AI-Readiness Audit Analysis...`);
     console.log(`[${testId}] ===================`);
+    console.log(`[${testId}] Website URL: ${validatedWebsite}`);
+    console.log(`[${testId}] HTML content length being sent to OpenAI: ${Math.min(websiteHtml.length, 50000)} chars`);
+    console.log(`[${testId}] Text content preview (first 500 chars): ${textContent.substring(0, 500)}`);
 
-    // AI-Readiness Audit with COMPLETE SCORING RUBRIC
+    // AI-Readiness Audit with COMPLETE SCORING RUBRIC and CONTEXT-AWARE RECOMMENDATIONS
     const auditPrompt = `You are an AI visibility expert analyzing websites. Score this homepage using the FoundIndex rubric below.
 
 COMPLETE SCORING RUBRIC:
@@ -609,47 +619,42 @@ Information Consistency (0-4 points):
 
 3. AUTHORITY SIGNALS (0-15 points total)
 
-IMPORTANT: Look for authority signals using FLEXIBLE pattern recognition. Don't just match exact keywords.
+**CRITICAL: Be FLEXIBLE with terminology. Look for EVIDENCE, not exact keywords.**
 
 Credibility Markers (0-8 points):
-Look for ANY of these (be flexible with terminology):
-- Case studies: "case study", "client work", "project", "success story", "portfolio", "work samples", "examples", "showcase"
-- Client results: metrics, percentages, "increased by", "improved", "achieved", "grew", "reduced", specific numbers
-- Certifications/credentials: "certified", "accredited", "licensed", "qualified", professional designations
-- Awards/recognition: "award", "winner", "featured in", "recognized", "nominated"
-- Press mentions: "featured", "press", "media", "published", "as seen in"
-- Experience: "X years", "since 20XX", "established", "founded in"
-- Portfolio pieces with detailed outcomes COUNT as case studies
+Detect ANY of these patterns (use flexible matching):
+- Case studies / Portfolio: "case study", "client work", "project", "projects", "success story", "portfolio", "work samples", "our work", "examples", "showcase", "featured work", "selected works"
+- Client results: ANY metrics, percentages, "increased by X%", "improved", "achieved", "grew by", "reduced", "saved", specific numbers like "$1M revenue"
+- Certifications: "certified", "accredited", "licensed", "qualified", "registered", professional letters (MBA, CPA, PMP)
+- Awards: "award", "winner", "featured in", "recognized", "honored", "nominated", "best of"
+- Press: "press", "media", "published in", "as seen in", "mentioned in", logos of publications
+- Experience: "X years", "since 20XX", "established", "founded in", "serving since"
 
-Scoring for Credibility Markers:
-- 8 pts: 3+ case studies/portfolio pieces with detailed outcomes AND metrics/numbers AND credentials
-- 6-7 pts: 2+ case studies with outcomes OR multiple strong credentials/awards
-- 4-5 pts: 1-2 case studies OR testimonials with specific results OR clear credentials
-- 2-3 pts: Some evidence of results or experience mentioned
-- 0-1 pts: No credibility evidence found
+**IMPORTANT FLEXIBILITY RULES:**
+- A "Projects" or "Our Work" section with detailed descriptions = case studies (award 5-7 points)
+- Portfolio pieces showing client names + process + outcomes = case studies
+- If you see specific client outcomes (e.g., "helped BT Group improve user engagement") = count as credibility
+- Professional methodology descriptions = credibility evidence
+
+Scoring:
+- 7-8 pts: 3+ detailed projects/case studies with client names, outcomes, AND metrics
+- 5-6 pts: 2-3 projects with moderate detail OR multiple credentials/awards  
+- 3-4 pts: 1-2 projects with basic descriptions OR clear credentials
+- 1-2 pts: Mentions experience but no specific examples
+- 0 pts: No credibility evidence
 
 Social Proof (0-7 points):
-Look for ANY of these:
-- Client logos: image grids, "clients", "partners", "trusted by", "used by"
-- Testimonials: "testimonial", "review", "what clients say", quotes with attribution, named quotes
-- User metrics: "X+ users", "X companies", "X customers", "serving X"
-- Star ratings/reviews: rating displays, review counts
-- Video testimonials: embedded videos with client stories
+- Client logos: image grids, "clients", "partners", "trusted by", "working with"
+- Testimonials: "testimonial", "review", "what clients say", quotes with attribution, star ratings
+- User metrics: "X+ users", "X companies", "X customers", "served X"
+- Video testimonials: embedded client story videos
 
-Scoring for Social Proof:
-- 7 pts: Client logos + named testimonials with specific outcomes + user metrics
-- 5-6 pts: Testimonials with names/companies + either logos or metrics
-- 3-4 pts: Generic testimonials OR client logos without testimonials
-- 1-2 pts: Only implied social proof (vague references to clients)
-- 0 pts: No social proof elements found
-
-AUTHORITY SIGNAL INSTRUCTIONS:
-- Be FLEXIBLE with terminology - a "Projects" section = case studies
-- Look for EVIDENCE not just keywords
-- If you see numbered results (e.g., "50% increase"), count as credibility
-- Portfolio pieces with detailed outcomes = case studies
-- Search the ENTIRE page content, not just headers
-- Award badges, certification logos, and "as seen in" sections count
+Scoring:
+- 6-7 pts: Named testimonials + client logos + user metrics
+- 4-5 pts: Testimonials with names/companies + logos
+- 2-3 pts: Generic testimonials OR logos only
+- 1 pt: Vague trust indicators
+- 0 pts: No social proof
 
 4. STRUCTURED DATA (0-15 points total)
 
@@ -697,40 +702,107 @@ Trade-off Transparency (0-4 points):
 WEBSITE URL: ${validatedWebsite}
 WEBSITE HTML CONTENT: ${websiteHtml.substring(0, 50000)}
 
+---
+
+CONTEXT-AWARE RECOMMENDATION RULES:
+
+Before generating recommendations, you MUST first detect what exists:
+- has_portfolio: Does the site have projects, portfolio, case studies, or work examples?
+- has_testimonials: Does the site have client quotes, reviews, or testimonials?
+- has_client_logos: Does the site show client/partner logos?
+- has_metrics: Does the site show specific numbers, percentages, or results?
+- has_credentials: Does the site mention certifications, awards, or years of experience?
+
+Then generate recommendations that ONLY suggest what's MISSING:
+
+IF has_portfolio AND has_testimonials:
+→ Recommend: "Add industry awards or certifications", "Include press mentions or media features", "Add video testimonials for deeper trust"
+
+IF has_portfolio AND NOT has_testimonials:
+→ Recommend: "Add 2-3 client testimonials with full names and companies", "Include star ratings or satisfaction metrics"
+
+IF has_testimonials AND NOT has_portfolio:
+→ Recommend: "Add 2-3 case studies showing your process and outcomes", "Include specific project examples with before/after metrics"
+
+IF NOT has_portfolio AND NOT has_testimonials:
+→ Recommend: "Add 3-5 case studies or project examples with client outcomes", "Include client testimonials with full attribution"
+
+**NEVER recommend something that already exists on the page.**
+
+---
+
 INSTRUCTIONS:
-1. Carefully analyze the homepage content against each rubric item above
-2. Assign scores based on the criteria (be specific and fair)
-3. Calculate total for each category
-4. Generate 3 actionable recommendations based on lowest-scoring categories
-5. Return ONLY valid JSON in this exact format (no markdown, no code blocks):
+1. Carefully analyze the homepage content against each rubric item
+2. Be GENEROUS with authority scoring if you find portfolio/project content - don't require exact keywords
+3. Return SPECIFIC evidence of what you found (not vague descriptions)
+4. Generate context-aware recommendations based on what's MISSING (not what exists)
+5. Return ONLY valid JSON in this exact format:
 
 {
   "content_clarity_score": 22,
+  "content_clarity_breakdown": {
+    "value_proposition": 8,
+    "target_audience": 5,
+    "service_specificity": 6,
+    "concrete_evidence": 3
+  },
   "structured_data_score": 12,
+  "structured_data_breakdown": {
+    "schema_implementation": 5,
+    "semantic_structure": 4,
+    "metadata_quality": 3
+  },
   "authority_score": 10,
+  "authority_breakdown": {
+    "credibility_markers": 6,
+    "social_proof": 4
+  },
   "discoverability_score": 18,
+  "discoverability_breakdown": {
+    "information_placement": 6,
+    "qa_alignment": 4,
+    "content_accessibility": 5,
+    "information_consistency": 3
+  },
   "comparison_score": 8,
+  "comparison_breakdown": {
+    "specific_positioning": 4,
+    "concrete_differentiators": 3,
+    "tradeoff_transparency": 1
+  },
   "total_score": 70,
+  "authority_detection": {
+    "has_portfolio": true,
+    "has_testimonials": false,
+    "has_client_logos": true,
+    "has_metrics": false,
+    "has_credentials": true,
+    "portfolio_details": "Found 'Selected Works' section with 5 detailed project cards including BT Group, showing UX research methodology",
+    "testimonial_details": "No client testimonials or direct quotes found",
+    "credentials_details": "Professional UX Research background mentioned, specific methodologies listed"
+  },
   "analysis_details": {
-    "content_clarity": "Strong value proposition but target audience could be more specific...",
-    "structured_data": "Missing Schema markup...",
-    "authority": "Has testimonials but needs case studies with metrics...",
-    "discoverability": "Key information is frontloaded but lacks FAQ...",
-    "comparison": "Positioning is clear but needs differentiation from competitors..."
+    "content_clarity": "Clear value proposition stating UX research consulting services...",
+    "structured_data": "No Schema.org markup detected...",
+    "authority": "Strong portfolio with 5 detailed projects including client names (BT Group). Missing testimonials.",
+    "discoverability": "Key information frontloaded, good section structure...",
+    "comparison": "Positioning is clear for UX research niche..."
   },
   "authority_evidence_found": [
-    "Found 3 portfolio projects with detailed outcomes",
-    "Has client testimonials section with names",
-    "Shows 5 years of experience"
+    "Found 'Selected Works' section with 5 detailed project cards",
+    "Projects include client name: BT Group",
+    "Detailed methodology descriptions: UX Research, Usability Testing, User Interviews",
+    "Professional background section with specific expertise areas"
   ],
   "authority_missing": [
-    "No client logos visible",
-    "No certifications mentioned"
+    "No client testimonials or direct quotes from clients",
+    "No quantitative results (e.g., '50% increase in engagement')",
+    "No industry awards or certifications visible"
   ],
   "recommendations": [
-    "Add FAQ section with 10+ common client questions",
-    "Include specific case studies with client names and measurable outcomes",
-    "Add Schema.org Organization markup with JSON-LD"
+    "Add 2-3 client testimonials with names and companies to complement your strong portfolio",
+    "Include specific metrics in project descriptions (e.g., 'improved task completion by 40%')",
+    "Add Schema.org Organization and Service markup for better AI discoverability"
   ]
 }`;
 
@@ -854,140 +926,99 @@ INSTRUCTIONS:
       (breakdown as any).score,
     );
 
+    // Extract sub-score breakdowns if available
+    const contentClarityBreakdown = (auditResults as any).content_clarity_breakdown || {};
+    const structuredDataBreakdown = (auditResults as any).structured_data_breakdown || {};
+    const authorityBreakdown = (auditResults as any).authority_breakdown || {};
+    const discoverabilityBreakdown = (auditResults as any).discoverability_breakdown || {};
+    const comparisonBreakdown = (auditResults as any).comparison_breakdown || {};
+    const authorityDetection = (auditResults as any).authority_detection || {};
+
     // === DEBUG: Log Individual Score Extraction ===
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] === INDIVIDUAL SCORE EXTRACTION ===`);
     console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] contentClarityScore extracted:`, contentClarityScore);
-    console.log(
-      `[${testId}]   - Tried: (auditResults as any).content_clarity_score =`,
-      (auditResults as any).content_clarity_score,
-    );
-    console.log(
-      `[${testId}]   - Tried: (auditResults as any).content_clarity =`,
-      (auditResults as any).content_clarity,
-    );
-    console.log(`[${testId}]   - Tried: breakdown.content_clarity_score =`, (breakdown as any).content_clarity_score);
-    console.log(`[${testId}] structuredDataScore extracted:`, structuredDataScore);
-    console.log(
-      `[${testId}]   - Tried: (auditResults as any).structured_data_score =`,
-      (auditResults as any).structured_data_score,
-    );
-    console.log(
-      `[${testId}]   - Tried: (auditResults as any).structured_data =`,
-      (auditResults as any).structured_data,
-    );
-    console.log(`[${testId}]   - Tried: breakdown.structured_data_score =`, (breakdown as any).structured_data_score);
-    console.log(`[${testId}] authorityScore extracted:`, authorityScore);
-    console.log(
-      `[${testId}]   - Tried: (auditResults as any).authority_score =`,
-      (auditResults as any).authority_score,
-    );
-    console.log(`[${testId}]   - Tried: (auditResults as any).authority =`, (auditResults as any).authority);
-    console.log(`[${testId}]   - Tried: breakdown.authority_score =`, (breakdown as any).authority_score);
-    console.log(`[${testId}] discoverabilityScore extracted:`, discoverabilityScore);
-    console.log(
-      `[${testId}]   - Tried: (auditResults as any).discoverability_score =`,
-      (auditResults as any).discoverability_score,
-    );
-    console.log(
-      `[${testId}]   - Tried: (auditResults as any).discoverability =`,
-      (auditResults as any).discoverability,
-    );
-    console.log(`[${testId}]   - Tried: breakdown.discoverability_score =`, (breakdown as any).discoverability_score);
-    console.log(`[${testId}] comparisonScore extracted:`, comparisonScore);
-    console.log(
-      `[${testId}]   - Tried: (auditResults as any).comparison_score =`,
-      (auditResults as any).comparison_score,
-    );
-    console.log(`[${testId}]   - Tried: (auditResults as any).comparison =`, (auditResults as any).comparison);
-    console.log(`[${testId}]   - Tried: breakdown.comparison_score =`, (breakdown as any).comparison_score);
-    console.log(`[${testId}] totalScore extracted:`, totalScore);
-    console.log(`[${testId}]   - Tried: (auditResults as any).total_score =`, (auditResults as any).total_score);
-    console.log(`[${testId}]   - Tried: (auditResults as any).score =`, (auditResults as any).score);
-    console.log(`[${testId}]   - Tried: breakdown.total_score =`, (breakdown as any).total_score);
+    console.log(`[${testId}] contentClarityScore: ${contentClarityScore}/30`);
+    console.log(`[${testId}] structuredDataScore: ${structuredDataScore}/15`);
+    console.log(`[${testId}] authorityScore: ${authorityScore}/15`);
+    console.log(`[${testId}] discoverabilityScore: ${discoverabilityScore}/25`);
+    console.log(`[${testId}] comparisonScore: ${comparisonScore}/15`);
+    console.log(`[${testId}] totalScore: ${totalScore}/100`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === AUTHORITY DETECTION RESULTS ===`);
+    console.log(`[${testId}] has_portfolio: ${authorityDetection.has_portfolio}`);
+    console.log(`[${testId}] has_testimonials: ${authorityDetection.has_testimonials}`);
+    console.log(`[${testId}] has_client_logos: ${authorityDetection.has_client_logos}`);
+    console.log(`[${testId}] has_metrics: ${authorityDetection.has_metrics}`);
+    console.log(`[${testId}] has_credentials: ${authorityDetection.has_credentials}`);
+    console.log(`[${testId}] portfolio_details: ${authorityDetection.portfolio_details || 'None'}`);
+    console.log(`[${testId}] testimonial_details: ${authorityDetection.testimonial_details || 'None'}`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === SUB-SCORE BREAKDOWNS ===`);
+    console.log(`[${testId}] Content Clarity breakdown:`, JSON.stringify(contentClarityBreakdown));
+    console.log(`[${testId}] Authority breakdown:`, JSON.stringify(authorityBreakdown));
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === EVIDENCE FOUND/MISSING ===`);
+    console.log(`[${testId}] Authority evidence found:`, JSON.stringify((auditResults as any).authority_evidence_found || []));
+    console.log(`[${testId}] Authority missing:`, JSON.stringify((auditResults as any).authority_missing || []));
     console.log(`[${testId}] ═══════════════════════════════════════`);
 
-    // === ENHANCED LOGGING: What OpenAI returned ===
-    console.log(`[${testId}] 
-═══════════════════════════════════════`);
-    console.log(`[${testId}] === AUDIT RESULTS FROM OPENAI ===`);
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] Raw audit JSON:`, JSON.stringify(auditResults, null, 2));
-    console.log(`[${testId}] Keys in auditResults:`, Object.keys(auditResults));
-    console.log(`[${testId}] Total score (normalized): ${totalScore}/100`);
-    console.log(`[${testId}] Content clarity (normalized): ${contentClarityScore}/25`);
-    console.log(`[${testId}] Structured data (normalized): ${structuredDataScore}/20`);
-    console.log(`[${testId}] Authority (normalized): ${authorityScore}/20`);
-    console.log(`[${testId}] Discoverability (normalized): ${discoverabilityScore}/20`);
-    console.log(`[${testId}] Comparison (normalized): ${comparisonScore}/15`);
-    console.log(
-      `[${testId}] Recommendations count: ${Array.isArray((auditResults as any).recommendations) ? (auditResults as any).recommendations.length : 0}`,
-    );
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-
-    console.log(`[${testId}] AI-Readiness Audit Complete:`);
-    console.log(`[${testId}] - Content Clarity: ${contentClarityScore}/25`);
-    console.log(`[${testId}] - Structured Data: ${structuredDataScore}/20`);
-    console.log(`[${testId}] - Authority Signals: ${authorityScore}/20`);
-    console.log(`[${testId}] - Discoverability: ${discoverabilityScore}/20`);
-    console.log(`[${testId}] - Comparison Content: ${comparisonScore}/15`);
-    console.log(`[${testId}] - TOTAL AI-READINESS SCORE: ${totalScore}/100`);
-    console.log(`[${testId}] - Recommendations: ${Array.isArray((auditResults as any).recommendations) ? (auditResults as any).recommendations.length : 0} improvements suggested`);
-
-    // CRITICAL: Validate that we got real scores, not zeros
-    const allScoresZero = totalScore === 0 && contentClarityScore === 0 && structuredDataScore === 0 && 
-                          authorityScore === 0 && discoverabilityScore === 0 && comparisonScore === 0;
+    // === SCORE VALIDATION ===
+    const calculatedTotal = contentClarityScore + structuredDataScore + authorityScore + discoverabilityScore + comparisonScore;
+    const allScoresZero = totalScore === 0 && calculatedTotal === 0;
+    const hasSubstantialContent = meaningfulTextLength > 500 || websiteHtml.length > 5000;
+    const hasHeadings = websiteHtml.toLowerCase().includes('<h1') || websiteHtml.toLowerCase().includes('<h2');
     
-    // Handle all-zero scores - return success with explanatory message
-    if (allScoresZero) {
-      console.error(`[${testId}] CRITICAL ERROR: All scores are 0 - OpenAI returned empty analysis`);
-      console.error(`[${testId}] Raw auditResults:`, JSON.stringify(auditResults, null, 2));
-      console.error(`[${testId}] Website HTML length: ${websiteHtml.length}`);
-      
-      // Determine the likely cause
-      const textContent = websiteHtml
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-      
-      let errorMessage: string;
-      let errorType: string;
-      
-      if (textContent.length < 300) {
-        errorType = "js_rendered_site";
-        errorMessage = "This website appears to use JavaScript rendering. The visible HTML content is minimal, which prevents accurate analysis. Try a different page or ensure server-side rendering.";
-      } else if (websiteHtml.length < 1000) {
-        errorType = "minimal_content";
-        errorMessage = "The website returned very little content. This could be due to blocking, JavaScript rendering, or a maintenance page.";
-      } else {
-        errorType = "analysis_failed";
-        errorMessage = "Our AI was unable to analyze the content structure. The page may use unusual formatting or have content that's difficult to parse.";
-      }
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    console.log(`[${testId}] === SCORE VALIDATION ===`);
+    console.log(`[${testId}] Calculated total from components: ${calculatedTotal}`);
+    console.log(`[${testId}] Total score from API: ${totalScore}`);
+    console.log(`[${testId}] All scores zero: ${allScoresZero}`);
+    console.log(`[${testId}] Has substantial content: ${hasSubstantialContent}`);
+    console.log(`[${testId}] Has headings: ${hasHeadings}`);
+    console.log(`[${testId}] Self-analysis (foundindex): ${isAnalyzingSelf}`);
+    console.log(`[${testId}] ═══════════════════════════════════════`);
+    
+    // Detect unreasonable 0-score for substantial content
+    if (allScoresZero && hasSubstantialContent) {
+      console.error(`[${testId}] ❌ CRITICAL: All scores are 0 but site has substantial content!`);
+      console.error(`[${testId}] This indicates OpenAI analysis failure, not an actual 0-score site.`);
+      console.error(`[${testId}] Text length: ${meaningfulTextLength}, HTML length: ${websiteHtml.length}`);
+      console.error(`[${testId}] Has headings: ${hasHeadings}`);
+      console.error(`[${testId}] OpenAI raw response keys:`, Object.keys(auditResults));
       
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Analysis incomplete",
-          errorType,
-          details: errorMessage,
+          error: "Analysis could not be completed",
+          errorType: "analysis_failed",
+          details: "Our AI analysis returned invalid results. This can happen with complex websites. Please try again or contact support if the issue persists.",
           testId,
-          websiteHtmlLength: websiteHtml.length,
-          textContentLength: textContent.length,
-          recommendation: "Try analyzing a different page with more visible HTML content.",
+          debug: {
+            textLength: meaningfulTextLength,
+            htmlLength: websiteHtml.length,
+            hasHeadings: hasHeadings,
+            calculatedTotal: calculatedTotal,
+            apiResponseKeys: Object.keys(auditResults)
+          }
         }),
         {
-          status: 200, // Return 200 with error details in body
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
       );
     }
-
+    
+    // Use calculated total if API total seems wrong (mismatch > 10 points)
+    const finalTotalScore = Math.abs(totalScore - calculatedTotal) > 10 && calculatedTotal > 0 
+      ? calculatedTotal 
+      : (totalScore > 0 ? totalScore : calculatedTotal);
+    
+    console.log(`[${testId}] Final total score: ${finalTotalScore}`);
+    
     // Warn if score seems suspiciously low for a real website
-    if (totalScore < 20 && websiteHtml.length > 1000) {
-      console.warn(`[${testId}] WARNING: Score (${totalScore}) seems unusually low for a website with ${websiteHtml.length} chars of content`);
+    if (finalTotalScore < 20 && websiteHtml.length > 5000) {
+      console.warn(`[${testId}] WARNING: Score (${finalTotalScore}) seems unusually low for a website with ${websiteHtml.length} chars of content`);
     }
 
     console.log(`[${testId}] ===================`);
@@ -1291,7 +1322,7 @@ Return ONLY valid JSON:
       testDate,
 
       // AI Readiness Scores (PRIMARY) - Use audit-based score as main score
-      foundIndexTotalScore: totalScore, // This is the AI-readiness audit score (0-100)
+      foundIndexTotalScore: finalTotalScore, // This is the AI-readiness audit score (0-100)
       contentClarity: contentClarityScore,
       structuredData: structuredDataScore,
       authority: authorityScore,
@@ -1299,6 +1330,16 @@ Return ONLY valid JSON:
       comparison: comparisonScore,
       analysisDetails: (auditResults as any).analysis_details,
       recommendations: (auditResults as any).recommendations,
+      
+      // Sub-score breakdowns for detailed display
+      contentClarityBreakdown,
+      structuredDataBreakdown,
+      authorityBreakdown,
+      authorityDetection,
+      discoverabilityBreakdown,
+      comparisonBreakdown,
+      authorityEvidenceFound: (auditResults as any).authority_evidence_found || [],
+      authorityMissing: (auditResults as any).authority_missing || [],
 
       // Query-Based Visibility (SECONDARY)
       businessType, // AI-identified business type
