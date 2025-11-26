@@ -1,15 +1,32 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { MessageSquare, FileText, Shield, Search, Scale, AlertTriangle, Mail } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { MessageSquare, FileText, Shield, Search, Scale, AlertTriangle, Mail, ArrowLeft } from "lucide-react";
 import Header from "@/components/layout/Header";
 
 const Methodology = () => {
+  const navigate = useNavigate();
+  const [resultsUrl, setResultsUrl] = useState<string | null>(null);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
+    
+    // Check if user came from results page
+    const storedResultsUrl = sessionStorage.getItem('foundindex_results_url');
+    if (storedResultsUrl) {
+      setResultsUrl(storedResultsUrl);
+    }
   }, []);
+
+  const handleBackClick = () => {
+    if (resultsUrl) {
+      navigate(resultsUrl);
+    } else {
+      navigate('/');
+    }
+  };
 
   const factors = [
     {
@@ -78,6 +95,18 @@ const Methodology = () => {
       <Header />
 
       <main className="container mx-auto px-4 py-16 max-w-5xl">
+        {/* Back Navigation */}
+        <div className="mb-8">
+          <Button
+            variant="ghost"
+            onClick={handleBackClick}
+            className="gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {resultsUrl ? "Back to your results" : "Back to home"}
+          </Button>
+        </div>
+
         <div className="text-center mb-16">
           <Badge variant="outline" className="mb-4">
             Methodology
@@ -266,9 +295,13 @@ const Methodology = () => {
         </section>
 
         <div className="text-center mt-12">
-          <Link to="/" className="text-link hover:underline font-medium">
-            ← Back to home
-          </Link>
+          <Button
+            variant="link"
+            onClick={handleBackClick}
+            className="text-link hover:underline font-medium"
+          >
+            ← {resultsUrl ? "Back to your results" : "Back to home"}
+          </Button>
         </div>
       </main>
     </div>

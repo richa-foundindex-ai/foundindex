@@ -173,6 +173,9 @@ const HeroSection = () => {
       }
 
       if (submitData?.testId) {
+        // Clear any stored results URL when starting a new test
+        sessionStorage.removeItem('foundindex_results_url');
+        
         // Record the test in cookie and localStorage
         recordTest(websiteUrl, submitData.score || 0, submitData.testId);
         localStorage.setItem('lastTestId', submitData.testId);
