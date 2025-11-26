@@ -3,8 +3,13 @@ import { Link, useLocation } from "react-router-dom";
 const Header = () => {
   const location = useLocation();
   
+  const handleHomeClick = () => {
+    // Clear stored results URL when navigating to home
+    sessionStorage.removeItem('foundindex_results_url');
+  };
+  
   const navLinks = [
-    { to: "/", label: "Home" },
+    { to: "/", label: "Home", onClick: handleHomeClick },
     { to: "/methodology", label: "Methodology" },
     { to: "/contact", label: "Contact" },
   ];
@@ -14,6 +19,7 @@ const Header = () => {
       <div className="container mx-auto max-w-7xl flex h-16 items-center justify-between px-4">
         <Link
           to="/"
+          onClick={handleHomeClick}
           className="text-xl font-bold text-foreground hover:text-primary transition-colors"
         >
           FoundIndex
@@ -24,6 +30,7 @@ const Header = () => {
             <Link
               key={link.to}
               to={link.to}
+              onClick={link.onClick}
               className={`text-sm font-medium transition-colors hover:text-link ${
                 location.pathname === link.to
                   ? "text-link"

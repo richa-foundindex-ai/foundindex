@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useLocation } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,13 +26,14 @@ import Footer from "@/components/landing/Footer";
 import Header from "@/components/layout/Header";
 
 // Generate proportional sub-scores from main category score
-const generateSubScores = (categoryScore: number, maxScore: number, breakdown: { label: string; max: number }[]) => {
+const generateSubScores = (categoryScore: number, maxScore: number, breakdown: { label: string; max: number; description?: string }[]) => {
   const ratio = (categoryScore ?? 0) / maxScore;
   
   return breakdown.map((item) => ({
     label: item.label,
     score: Math.round(item.max * ratio),
     max: item.max,
+    description: item.description,
   }));
 };
 
@@ -77,6 +78,7 @@ interface TestResult {
 
 const Results = () => {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const testId = searchParams.get("testId");
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<TestResult | null>(null);
@@ -87,6 +89,13 @@ const Results = () => {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [testsRemaining, setTestsRemaining] = useState(3);
   const [methodologyOpen, setMethodologyOpen] = useState(false);
+
+  // Store current results URL in sessionStorage for navigation back from methodology
+  useEffect(() => {
+    if (testId) {
+      sessionStorage.setItem('foundindex_results_url', location.pathname + location.search);
+    }
+  }, [testId, location]);
 
   useEffect(() => {
     const remaining = getRemainingTests();
@@ -195,7 +204,7 @@ const Results = () => {
 
   const score = result.foundIndexScore ?? 0;
 
-  // Category configurations with sub-score breakdowns
+  // Category configurations with sub-score breakdowns and descriptions
   const categoryConfigs = [
     {
       label: "Content Clarity",
@@ -203,10 +212,10 @@ const Results = () => {
       max: 30,
       tooltip: "How clearly your homepage explains what you do, for whom, and why it matters",
       subBreakdown: [
-        { label: "Value proposition clarity", max: 10 },
-        { label: "Target audience specification", max: 8 },
-        { label: "Service/product specificity", max: 8 },
-        { label: "Concrete evidence & examples", max: 4 },
+        { label: "Value proposition clarity", max: 10, description: "Can AI identify what you do?" },
+        { label: "Target audience specification", max: 8, description: "Can AI identify who you serve?" },
+        { label: "Service/product specificity", max: 8, description: "Can AI explain your offering?" },
+        { label: "Concrete evidence & examples", max: 4, description: "Are there specific results/examples?" },
       ],
     },
     {
@@ -215,10 +224,9 @@ const Results = () => {
       max: 25,
       tooltip: "How easily AI systems can extract and understand key information from your page structure",
       subBreakdown: [
-        { label: "Information placement", max: 8 },
-        { label: "Question-answer alignment", max: 7 },
-        { label: "Content accessibility", max: 6 },
-        { label: "Information consistency", max: 4 },
+        { label: "Clear section structure", max: 10, description: "Well-organized content sections?" },
+        { label: "Scannable headings", max: 8, description: "Descriptive headers that guide AI?" },
+        { label: "Visual hierarchy", max: 7, description: "Clear content priority/flow?" },
       ],
     },
     {
@@ -227,10 +235,8 @@ const Results = () => {
       max: 15,
       tooltip: "Credibility markers like case studies, testimonials, client logos, and expert credentials",
       subBreakdown: [
-        { label: "Evidence-based claims", max: 6 },
-        { label: "Relevant credentials", max: 4 },
-        { label: "Third-party validation", max: 3 },
-        { label: "Specificity & verifiability", max: 2 },
+        { label: "Credibility markers", max: 8, description: "Case studies, results, credentials?" },
+        { label: "Social proof elements", max: 7, description: "Testimonials, logos, reviews?" },
       ],
     },
     {
@@ -239,9 +245,9 @@ const Results = () => {
       max: 15,
       tooltip: "Meta descriptions, headers, and navigation that help AI understand your content",
       subBreakdown: [
-        { label: "Schema.org implementation", max: 7 },
-        { label: "HTML semantic structure", max: 5 },
-        { label: "Metadata quality", max: 3 },
+        { label: "Meta descriptions", max: 5, description: "Clear page descriptions for AI?" },
+        { label: "Header optimization", max: 5, description: "Structured H1/H2/H3 hierarchy?" },
+        { label: "Navigation clarity", max: 5, description: "Easy to understand site structure?" },
       ],
     },
     {
@@ -250,9 +256,8 @@ const Results = () => {
       max: 15,
       tooltip: "How clearly you differentiate yourself and provide comparison context",
       subBreakdown: [
-        { label: "Specific positioning", max: 6 },
-        { label: "Concrete differentiators", max: 5 },
-        { label: "Trade-off transparency", max: 4 },
+        { label: "Differentiation clarity", max: 10, description: "What makes you different/unique?" },
+        { label: "Comparison context", max: 5, description: "Context vs alternatives/competitors?" },
       ],
     },
   ];
@@ -274,6 +279,13 @@ const Results = () => {
           </div>
         </div>
 
+        {/* Breadcrumb Navigation */}
+        <nav className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
+          <span>›</span>
+          <span className="text-foreground">Results for {result.website || 'your website'}</span>
+        </nav>
+
         {/* Test Info Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -293,7 +305,12 @@ const Results = () => {
 
           {/* Category Breakdown with Expandable Sub-scores */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold mb-4">Category Breakdown</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Category Breakdown</h2>
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                💡 Click any category to see details
+              </span>
+            </div>
             <div className="space-y-4">
               {categoryConfigs.map((config, i) => (
                 <CategoryBreakdown
