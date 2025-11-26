@@ -562,29 +562,47 @@ Information Consistency (0-4 points):
 
 3. AUTHORITY SIGNALS (0-15 points total)
 
-Evidence-Based Claims (0-6 points):
-- 6 pts: 3+ detailed case studies with named clients, metrics, timeframes.
-- 4-5 pts: 1-2 case studies or multiple testimonials with attribution.
-- 2-3 pts: Client testimonials with names but limited detail.
-- 1 pt: Generic testimonials without attribution.
-- 0 pts: No case studies or testimonials.
+IMPORTANT: Look for authority signals using FLEXIBLE pattern recognition. Don't just match exact keywords.
 
-Relevant Credentials (0-4 points):
-- 4 pts: Specific, verifiable credentials directly relevant to services.
-- 2-3 pts: General industry credentials or memberships.
-- 1 pt: Self-reported expertise without validation.
-- 0 pts: No credentials mentioned.
+Credibility Markers (0-8 points):
+Look for ANY of these (be flexible with terminology):
+- Case studies: "case study", "client work", "project", "success story", "portfolio", "work samples", "examples", "showcase"
+- Client results: metrics, percentages, "increased by", "improved", "achieved", "grew", "reduced", specific numbers
+- Certifications/credentials: "certified", "accredited", "licensed", "qualified", professional designations
+- Awards/recognition: "award", "winner", "featured in", "recognized", "nominated"
+- Press mentions: "featured", "press", "media", "published", "as seen in"
+- Experience: "X years", "since 20XX", "established", "founded in"
+- Portfolio pieces with detailed outcomes COUNT as case studies
 
-Third-Party Validation (0-3 points):
-- 3 pts: Coverage in credible publications, recognized awards, verified partnerships.
-- 2 pts: Press mentions from less prominent sources.
-- 1 pt: Social proof only (reviews, followers).
-- 0 pts: No external validation.
+Scoring for Credibility Markers:
+- 8 pts: 3+ case studies/portfolio pieces with detailed outcomes AND metrics/numbers AND credentials
+- 6-7 pts: 2+ case studies with outcomes OR multiple strong credentials/awards
+- 4-5 pts: 1-2 case studies OR testimonials with specific results OR clear credentials
+- 2-3 pts: Some evidence of results or experience mentioned
+- 0-1 pts: No credibility evidence found
 
-Specificity & Verifiability (0-2 points):
-- 2 pts: Claims include specific numbers, dates, company names.
-- 1 pt: Some specific details, mostly general statements.
-- 0 pts: Pure marketing language, no verifiable claims.
+Social Proof (0-7 points):
+Look for ANY of these:
+- Client logos: image grids, "clients", "partners", "trusted by", "used by"
+- Testimonials: "testimonial", "review", "what clients say", quotes with attribution, named quotes
+- User metrics: "X+ users", "X companies", "X customers", "serving X"
+- Star ratings/reviews: rating displays, review counts
+- Video testimonials: embedded videos with client stories
+
+Scoring for Social Proof:
+- 7 pts: Client logos + named testimonials with specific outcomes + user metrics
+- 5-6 pts: Testimonials with names/companies + either logos or metrics
+- 3-4 pts: Generic testimonials OR client logos without testimonials
+- 1-2 pts: Only implied social proof (vague references to clients)
+- 0 pts: No social proof elements found
+
+AUTHORITY SIGNAL INSTRUCTIONS:
+- Be FLEXIBLE with terminology - a "Projects" section = case studies
+- Look for EVIDENCE not just keywords
+- If you see numbered results (e.g., "50% increase"), count as credibility
+- Portfolio pieces with detailed outcomes = case studies
+- Search the ENTIRE page content, not just headers
+- Award badges, certification logos, and "as seen in" sections count
 
 4. STRUCTURED DATA (0-15 points total)
 
@@ -653,6 +671,15 @@ INSTRUCTIONS:
     "discoverability": "Key information is frontloaded but lacks FAQ...",
     "comparison": "Positioning is clear but needs differentiation from competitors..."
   },
+  "authority_evidence_found": [
+    "Found 3 portfolio projects with detailed outcomes",
+    "Has client testimonials section with names",
+    "Shows 5 years of experience"
+  ],
+  "authority_missing": [
+    "No client logos visible",
+    "No certifications mentioned"
+  ],
   "recommendations": [
     "Add FAQ section with 10+ common client questions",
     "Include specific case studies with client names and measurable outcomes",
