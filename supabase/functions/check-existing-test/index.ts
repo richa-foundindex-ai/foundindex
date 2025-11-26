@@ -60,12 +60,12 @@ serve(async (req) => {
     const sevenDaysAgoISO = sevenDaysAgo.toISOString();
 
     // Search Airtable Tests table for this URL
-    // Using filterByFormula to find matching URLs from the last 7 days
+    // IMPORTANT: Use correct Airtable field name "website_url" (not "website")
     const filterFormula = encodeURIComponent(
-      `AND(SEARCH("${normalizedUrl}", LOWER({website})), IS_AFTER({test_date}, "${sevenDaysAgoISO}"))`
+      `AND(SEARCH("${normalizedUrl}", LOWER({website_url})), IS_AFTER({test_date}, "${sevenDaysAgoISO}"))`
     );
 
-    console.log(`[check-existing-test] Airtable filter: ${filterFormula}`);
+    console.log(`[check-existing-test] Airtable filter formula: AND(SEARCH("${normalizedUrl}", LOWER({website_url})), IS_AFTER({test_date}, "${sevenDaysAgoISO}"))`);
 
     const airtableResponse = await fetch(
       `https://api.airtable.com/v0/${airtableBaseId}/Tests?filterByFormula=${filterFormula}&sort[0][field]=test_date&sort[0][direction]=desc&maxRecords=1`,
@@ -79,7 +79,7 @@ serve(async (req) => {
 
     if (!airtableResponse.ok) {
       const errorText = await airtableResponse.text();
-      console.error(`[check-existing-test] Airtable error: ${errorText}`);
+      console.error(`[check-existing-test] Airtable error (${airtableResponse.status}): ${errorText}`);
       return new Response(
         JSON.stringify({ exists: false }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -93,14 +93,14 @@ serve(async (req) => {
       const record = airtableData.records[0];
       const fields = record.fields;
 
-      console.log(`[check-existing-test] Found existing test: ${fields.test_id}, score: ${fields.found_index_score}`);
+      console.log(`[check-existing-test] Found existing test: ${fields.test_id}, score: ${fields.foundindex_score}`);
 
       return new Response(
         JSON.stringify({
           exists: true,
           testId: fields.test_id,
-          score: fields.found_index_score,
-          website: fields.website,
+          score: fields.foundindex_score,
+          website: fields.website_url,
           testDate: fields.test_date,
           contentClarityScore: fields.content_clarity_score,
           discoverabilityScore: fields.discoverability_score,
@@ -112,6 +112,7 @@ serve(async (req) => {
       );
     }
 
+    console.log(`[check-existing-test] No existing test found for ${normalizedUrl}`);
     return new Response(
       JSON.stringify({ exists: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
