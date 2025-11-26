@@ -447,11 +447,14 @@ serve(async (req) => {
     // Fetch the user's website
     let websiteHtml = "";
     let fetchSuccess = false;
+    let fetchErrorReason = "";
 
     try {
+      console.log(`[${testId}] Attempting to fetch: ${validatedWebsite}`);
       const websiteResponse = await fetch(validatedWebsite, {
         headers: {
-          "User-Agent": "FoundIndex-Bot/1.0 (AI Recommendation Analyzer)",
+          "User-Agent": "Mozilla/5.0 (compatible; FoundIndex-Bot/1.0; +https://foundindex.com)",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         },
         redirect: "follow",
       });
@@ -460,11 +463,35 @@ serve(async (req) => {
         websiteHtml = await websiteResponse.text();
         fetchSuccess = true;
         console.log(`[${testId}] Website content fetched successfully (${websiteHtml.length} chars)`);
+        
+        // Check if we got meaningful content
+        if (websiteHtml.length < 500) {
+          console.warn(`[${testId}] WARNING: Website content is very short (${websiteHtml.length} chars) - may be blocked`);
+          fetchErrorReason = `Website returned very little content (${websiteHtml.length} chars)`;
+        }
       } else {
-        console.warn(`[${testId}] Website fetch returned ${websiteResponse.status}`);
+        fetchErrorReason = `Website returned HTTP ${websiteResponse.status}: ${websiteResponse.statusText}`;
+        console.warn(`[${testId}] ${fetchErrorReason}`);
       }
     } catch (fetchError) {
-      console.error(`[${testId}] Failed to fetch website:`, fetchError);
+      fetchErrorReason = fetchError instanceof Error ? fetchError.message : "Unknown fetch error";
+      console.error(`[${testId}] Failed to fetch website: ${fetchErrorReason}`);
+    }
+
+    // If website fetch completely failed, return an error instead of proceeding
+    if (!fetchSuccess || websiteHtml.length < 100) {
+      console.error(`[${testId}] CRITICAL: Cannot analyze website - fetch failed or returned no content`);
+      return new Response(
+        JSON.stringify({
+          error: "Unable to access website",
+          details: fetchErrorReason || "The website could not be reached or returned no content. Please check the URL and try again.",
+          testId,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     console.log(`[${testId}] ===================`);
@@ -826,13 +853,38 @@ INSTRUCTIONS:
     console.log(`[${testId}] ═══════════════════════════════════════`);
 
     console.log(`[${testId}] AI-Readiness Audit Complete:`);
-    console.log(`[${testId}] - Content Clarity: ${auditResults.content_clarity_score}/25`);
-    console.log(`[${testId}] - Structured Data: ${auditResults.structured_data_score}/20`);
-    console.log(`[${testId}] - Authority Signals: ${auditResults.authority_score}/20`);
-    console.log(`[${testId}] - Discoverability: ${auditResults.discoverability_score}/20`);
-    console.log(`[${testId}] - Comparison Content: ${auditResults.comparison_score}/15`);
-    console.log(`[${testId}] - TOTAL AI-READINESS SCORE: ${auditResults.total_score}/100`);
-    console.log(`[${testId}] - Recommendations: ${auditResults.recommendations.length} improvements suggested`);
+    console.log(`[${testId}] - Content Clarity: ${contentClarityScore}/25`);
+    console.log(`[${testId}] - Structured Data: ${structuredDataScore}/20`);
+    console.log(`[${testId}] - Authority Signals: ${authorityScore}/20`);
+    console.log(`[${testId}] - Discoverability: ${discoverabilityScore}/20`);
+    console.log(`[${testId}] - Comparison Content: ${comparisonScore}/15`);
+    console.log(`[${testId}] - TOTAL AI-READINESS SCORE: ${totalScore}/100`);
+    console.log(`[${testId}] - Recommendations: ${Array.isArray((auditResults as any).recommendations) ? (auditResults as any).recommendations.length : 0} improvements suggested`);
+
+    // CRITICAL: Validate that we got real scores, not zeros
+    const allScoresZero = totalScore === 0 && contentClarityScore === 0 && structuredDataScore === 0 && 
+                          authorityScore === 0 && discoverabilityScore === 0 && comparisonScore === 0;
+    
+    if (allScoresZero) {
+      console.error(`[${testId}] CRITICAL ERROR: All scores are 0 - OpenAI analysis likely failed`);
+      console.error(`[${testId}] Raw auditResults:`, JSON.stringify(auditResults, null, 2));
+      return new Response(
+        JSON.stringify({
+          error: "Analysis failed",
+          details: "Unable to score the website. This may be due to the website structure or content. Please try again or contact support.",
+          testId,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Warn if score seems suspiciously low for a real website
+    if (totalScore < 20 && websiteHtml.length > 1000) {
+      console.warn(`[${testId}] WARNING: Score (${totalScore}) seems unusually low for a website with ${websiteHtml.length} chars of content`);
+    }
 
     console.log(`[${testId}] ===================`);
     console.log(`[${testId}] STEP 3: Analyzing business type for query generation...`);
@@ -1521,13 +1573,14 @@ Return ONLY valid JSON:
       console.error(`[${testId}] Email send failed:`, emailError);
     }
 
-    console.log(`[${testId}] SUCCESS! Test ID: ${testId}, FoundIndex Score: ${foundIndexScore}`);
+    console.log(`[${testId}] SUCCESS! Test ID: ${testId}, AI-Readiness Score: ${totalScore}, ChatGPT Score: ${foundIndexScore}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         testId,
-        foundIndexScore,
+        score: totalScore, // Primary AI-readiness audit score (used by frontend)
+        foundIndexScore,   // Secondary ChatGPT recommendation score
         totalRecommendations,
         totalQueries: queries.length,
       }),
