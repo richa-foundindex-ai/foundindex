@@ -47,7 +47,7 @@ const FAQ = () => {
     {
       question: "How many tests can I run?",
       answer:
-        "3 tests per week per device. The limit resets automatically 7 days after your first test. If you test the same URL twice, we'll show you the previous score.",
+        "10 tests per week per device during beta. The limit resets automatically 7 days after your first test. If you test the same URL twice, we'll show you the previous score.",
     },
     {
       question: "Do you store my website content?",

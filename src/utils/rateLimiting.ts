@@ -1,4 +1,4 @@
-const TESTS_PER_PERIOD = 3; // 3 tests per period
+const TESTS_PER_PERIOD = 10; // 10 tests per period (beta phase)
 const RESET_PERIOD_DAYS = 7; // 7-day rolling window from first test
 const URL_COOLDOWN_DAYS = 30; // Days before same URL can be tested again
 const TEST_LOCK_KEY = 'test_lock';
@@ -136,7 +136,7 @@ export const checkRateLimit = (url: string) => {
       }
     }
     
-    // Check device limit (3 tests per 7-day period)
+    // Check device limit (10 tests per 7-day period during beta)
     if (deviceTests.count >= TESTS_PER_PERIOD) {
       // Calculate days until reset based on first test date
       let daysUntilReset = 0;

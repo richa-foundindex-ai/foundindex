@@ -111,7 +111,7 @@ const HeroSection = () => {
         const daysText = rateLimit.daysUntilReset === 1 ? "1 day" : `${rateLimit.daysUntilReset} days`;
         toast({
           title: "Weekly limit reached",
-          description: `You've used all 3 tests this week. Your tests reset in ${daysText}.`,
+          description: `You've used all 10 tests this week. Your tests reset in ${daysText}.`,
           variant: "destructive",
         });
         return;
@@ -323,7 +323,7 @@ const HeroSection = () => {
                   )}
                 </Button>
                 <p className="text-sm text-muted-foreground text-center">
-                  <strong>3 free tests per week</strong> • Takes 3 minutes • No credit card required
+                  <strong>10 free tests per week</strong> • Takes 3 minutes • No credit card required
                 </p>
               </div>
             </form>
