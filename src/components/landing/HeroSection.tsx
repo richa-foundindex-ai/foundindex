@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CoffeeBrewingLoader } from "./CoffeeBrewingLoader";
-import { checkRateLimit, recordTest } from "@/utils/rateLimiting";
+import { checkRateLimit, recordTest, releaseTestLock } from "@/utils/rateLimiting";
+import { validateAndNormalizeUrl, getErrorMessage } from "@/utils/urlValidation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,50 +42,50 @@ const HeroSection = () => {
   const [rateLimitInfo, setRateLimitInfo] = useState<{ url: string; score: number; remainingTests: number; testId?: string; daysUntilReset?: number } | null>(
     null,
   );
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [urlSuggestion, setUrlSuggestion] = useState<string | null>(null);
 
-  const normalizeUrl = (input: string): string | null => {
-    let url = input.trim();
+  // Clear validation errors when input changes
+  const handleInputChange = (value: string) => {
+    setFormData({ ...formData, website: value });
+    setValidationError(null);
+    setUrlSuggestion(null);
+  };
 
-    // Add https:// if no protocol is present
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      url = "https://" + url;
-    }
-
-    // Validate URL format and extract root domain
-    try {
-      const urlObj = new URL(url);
-      // Return only the root domain (protocol + hostname + /)
-      // This ensures all subpages are normalized to the homepage
-      return `${urlObj.protocol}//${urlObj.hostname}/`;
-    } catch (e) {
-      return null;
+  // Apply URL suggestion
+  const applySuggestion = () => {
+    if (urlSuggestion) {
+      setFormData({ ...formData, website: urlSuggestion });
+      setValidationError(null);
+      setUrlSuggestion(null);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setValidationError(null);
+    setUrlSuggestion(null);
 
     if (!formData.website) {
-      toast({
-        title: "Missing information",
-        description: "Please enter your website URL",
-        variant: "destructive",
-      });
+      setValidationError("Please enter your website URL");
       return;
     }
 
-    const websiteUrl = normalizeUrl(formData.website);
-
-    if (!websiteUrl) {
-      toast({
-        title: "Invalid URL",
-        description: "Please enter a valid website URL",
-        variant: "destructive",
-      });
+    // Step 1: Instant client-side validation
+    const validation = validateAndNormalizeUrl(formData.website);
+    
+    if (!validation.valid) {
+      const errorMsg = getErrorMessage(validation);
+      setValidationError(errorMsg.description);
+      if (validation.suggestion) {
+        setUrlSuggestion(validation.suggestion);
+      }
       return;
     }
 
-    // Check rate limiting first (local check)
+    const websiteUrl = validation.normalizedUrl!;
+
+    // Step 2: Check rate limiting (local check)
     const rateLimit = checkRateLimit(websiteUrl);
     if (!rateLimit.allowed) {
       // Check if it's a lock error (another test in progress)
@@ -118,7 +119,7 @@ const HeroSection = () => {
       }
     }
 
-    // Check Airtable for existing test (server-side check)
+    // Step 3: Check for existing test (server-side check)
     setIsCheckingExisting(true);
     try {
       const { data: existingData, error: existingError } = await supabase.functions.invoke("check-existing-test", {
@@ -127,6 +128,8 @@ const HeroSection = () => {
 
       if (!existingError && existingData?.exists) {
         console.log("[HeroSection] Found existing test:", existingData);
+        // Release the rate limit lock since we're not running a new test
+        releaseTestLock();
         setExistingTestInfo({
           testId: existingData.testId,
           score: existingData.score,
@@ -143,7 +146,7 @@ const HeroSection = () => {
     }
     setIsCheckingExisting(false);
 
-    // Proceed with new test
+    // Step 4: Proceed with new test
     setIsSubmitting(true);
 
     try {
@@ -155,20 +158,42 @@ const HeroSection = () => {
 
       if (submitError) throw new Error(submitError.message);
       
-      // Handle success: false responses (e.g., JS-rendered sites)
+      // Handle success: false responses with specific error types
       if (submitData?.success === false) {
-        const errorDetails = submitData.details || submitData.error || "Unable to analyze this website";
+        const errorType = submitData.errorType || 'unknown';
+        let errorTitle = submitData.error || "Analysis issue";
+        let errorDescription = submitData.details || "Unable to analyze this website";
+        
+        // Customize error messages based on error type
+        switch (errorType) {
+          case 'fetch_failed':
+            errorTitle = "Website not reachable";
+            errorDescription = "We couldn't access this website. Please check the URL is correct and the site is online.";
+            break;
+          case 'js_rendered_site':
+            errorTitle = "JavaScript-heavy website";
+            errorDescription = "This website loads content with JavaScript. We tried our best but couldn't extract enough content. Try a different page URL or contact support.";
+            break;
+          case 'analysis_failed':
+            errorTitle = "Analysis error";
+            errorDescription = "We encountered an issue analyzing this website. Please try again or contact support if this persists.";
+            break;
+        }
+        
         toast({
-          title: submitData.error || "Analysis issue",
-          description: errorDetails,
+          title: errorTitle,
+          description: errorDescription,
           variant: "destructive",
         });
+        // Don't count failed analyses against rate limit
+        releaseTestLock();
         setIsSubmitting(false);
         return;
       }
       
       // Handle legacy error format
       if (submitData?.error && !submitData?.testId) {
+        releaseTestLock();
         throw new Error(submitData.details || submitData.error);
       }
 
@@ -189,6 +214,7 @@ const HeroSection = () => {
       }
     } catch (error) {
       console.error("[HeroSection] Submit error:", error);
+      releaseTestLock();
       toast({
         title: "Something went wrong",
         description: error instanceof Error ? error.message : "Please try again",
@@ -303,10 +329,27 @@ const HeroSection = () => {
                   type="text"
                   placeholder="slack.com or https://yourwebsite.com"
                   value={formData.website}
-                  onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+                  onChange={(e) => handleInputChange(e.target.value)}
                   required
-                  className="h-12"
+                  className={`h-12 ${validationError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 />
+                {validationError && (
+                  <div className="flex items-start gap-2 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <span>{validationError}</span>
+                      {urlSuggestion && (
+                        <button
+                          type="button"
+                          onClick={applySuggestion}
+                          className="ml-1 text-primary hover:underline font-medium"
+                        >
+                          Use "{urlSuggestion}"?
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
