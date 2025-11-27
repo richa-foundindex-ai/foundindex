@@ -99,13 +99,12 @@ export const releaseTestLock = () => {
 };
 
 export const checkRateLimit = (url: string) => {
-  const normalizedUrl = normalizeUrl(url);
-  
-  // Acquire lock to prevent concurrent checks
+  // RATE LIMITING DISABLED (beta phase)
+  // Acquire lock to prevent concurrent checks only
   if (!acquireTestLock()) {
     return {
       allowed: false,
-      remainingTests: 0,
+      remainingTests: 999,
       previousScore: undefined,
       testId: undefined,
       daysUntilReset: 0,
@@ -113,60 +112,13 @@ export const checkRateLimit = (url: string) => {
     };
   }
   
-  try {
-    // Get fresh data from localStorage
-    const deviceTests = getDeviceTests();
-    const now = Date.now();
-    const cooldownMs = URL_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
-    
-    // Check if this URL was tested recently
-    const urlTest = deviceTests.tests.find(t => normalizeUrl(t.url) === normalizedUrl);
-    if (urlTest) {
-      const timeSinceTest = now - urlTest.timestamp;
-      if (timeSinceTest < cooldownMs) {
-        const daysRemaining = Math.ceil((cooldownMs - timeSinceTest) / (24 * 60 * 60 * 1000));
-        releaseTestLock();
-        return {
-          allowed: false,
-          remainingTests: TESTS_PER_PERIOD - deviceTests.count,
-          previousScore: urlTest.score,
-          testId: urlTest.testId,
-          daysUntilReset: daysRemaining
-        };
-      }
-    }
-    
-    // Check device limit (10 tests per 7-day period during beta)
-    if (deviceTests.count >= TESTS_PER_PERIOD) {
-      // Calculate days until reset based on first test date
-      let daysUntilReset = 0;
-      if (deviceTests.firstTestDate) {
-        const firstTestDate = new Date(deviceTests.firstTestDate);
-        const resetDate = new Date(firstTestDate.getTime() + (RESET_PERIOD_DAYS * 24 * 60 * 60 * 1000));
-        daysUntilReset = Math.ceil((resetDate.getTime() - now) / (24 * 60 * 60 * 1000));
-      }
-      
-      releaseTestLock();
-      return {
-        allowed: false,
-        remainingTests: 0,
-        previousScore: undefined,
-        testId: undefined,
-        daysUntilReset: Math.max(0, daysUntilReset)
-      };
-    }
-    
-    // Don't release lock yet - keep it until test is recorded
-    return {
-      allowed: true,
-      remainingTests: TESTS_PER_PERIOD - deviceTests.count - 1,
-      previousScore: undefined,
-      testId: undefined
-    };
-  } catch (error) {
-    releaseTestLock();
-    throw error;
-  }
+  // Always allow tests during beta
+  return {
+    allowed: true,
+    remainingTests: 999,
+    previousScore: undefined,
+    testId: undefined
+  };
 };
 
 export const recordTest = (url: string, score: number, testId: string) => {
