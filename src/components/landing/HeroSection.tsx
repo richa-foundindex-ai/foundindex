@@ -119,32 +119,8 @@ const HeroSection = () => {
       }
     }
 
-    // Step 3: Check for existing test (server-side check)
-    setIsCheckingExisting(true);
-    try {
-      const { data: existingData, error: existingError } = await supabase.functions.invoke("check-existing-test", {
-        body: { website: websiteUrl },
-      });
-
-      if (!existingError && existingData?.exists) {
-        console.log("[HeroSection] Found existing test:", existingData);
-        // Release the rate limit lock since we're not running a new test
-        releaseTestLock();
-        setExistingTestInfo({
-          testId: existingData.testId,
-          score: existingData.score,
-          website: existingData.website,
-          testDate: existingData.testDate,
-        });
-        setShowExistingTestModal(true);
-        setIsCheckingExisting(false);
-        return;
-      }
-    } catch (error) {
-      console.error("[HeroSection] Error checking existing test:", error);
-      // Continue with new test if check fails
-    }
-    setIsCheckingExisting(false);
+    // Step 3: Duplicate URL detection DISABLED (beta phase)
+    // Users can test the same URL multiple times
 
     // Step 4: Proceed with new test
     setIsSubmitting(true);
@@ -177,6 +153,10 @@ const HeroSection = () => {
           case 'analysis_failed':
             errorTitle = "Analysis error";
             errorDescription = "We encountered an issue analyzing this website. Please try again or contact support if this persists.";
+            break;
+          case 'rate_limit':
+            errorTitle = "High demand";
+            errorDescription = submitData.details || "Our AI analysis service is experiencing high demand. Please try again in a few minutes.";
             break;
         }
         

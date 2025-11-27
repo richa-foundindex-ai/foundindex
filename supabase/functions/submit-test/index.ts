@@ -944,7 +944,38 @@ INSTRUCTIONS:
 
     if (!auditResponse.ok) {
       console.error(`[${testId}] OpenAI audit API error:`, auditResponse.status);
-      throw new Error("Failed to perform AI-readiness audit");
+      
+      // Handle rate limit errors gracefully
+      if (auditResponse.status === 429) {
+        console.error(`[${testId}] OpenAI rate limit hit - returning degraded response`);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            errorType: 'rate_limit',
+            error: 'AI Analysis Temporarily Unavailable',
+            details: 'Our AI analysis service is experiencing high demand. Please try again in a few minutes.'
+          }),
+          {
+            status: 503,
+            headers: { ...corsHeaders, "Content-Type": "application/json" }
+          }
+        );
+      }
+      
+      // Handle other API errors
+      console.error(`[${testId}] OpenAI API error: ${auditResponse.status}`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          errorType: 'analysis_failed',
+          error: 'Analysis Error',
+          details: 'We encountered an issue analyzing this website. Please try again.'
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        }
+      );
     }
 
     const auditData = await auditResponse.json();
