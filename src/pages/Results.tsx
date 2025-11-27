@@ -87,7 +87,7 @@ const Results = () => {
   const [proEmail, setProEmail] = useState("");
   const [isSubmittingProInterest, setIsSubmittingProInterest] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
-  const [testsRemaining, setTestsRemaining] = useState(3);
+  const [testsRemaining, setTestsRemaining] = useState(10);
   const [methodologyOpen, setMethodologyOpen] = useState(false);
 
   // Store current results URL in sessionStorage for navigation back from methodology
@@ -292,7 +292,7 @@ const Results = () => {
             {result.website && <Badge variant="outline" className="text-xs">{result.website}</Badge>}
           </div>
           <span className="text-sm text-muted-foreground">
-            Tests remaining: {testsRemaining}/3 this week
+            Tests remaining: {testsRemaining}/10 this week
           </span>
         </div>
 
