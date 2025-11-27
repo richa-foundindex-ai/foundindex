@@ -94,7 +94,7 @@ const acquireTestLock = (): boolean => {
   return true;
 };
 
-const releaseTestLock = () => {
+export const releaseTestLock = () => {
   localStorage.removeItem(TEST_LOCK_KEY);
 };
 
