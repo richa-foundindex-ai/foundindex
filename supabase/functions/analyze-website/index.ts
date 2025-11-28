@@ -8,12 +8,10 @@ const corsHeaders = {
 };
 
 interface TestSubmission {
-  email?: string;
   website: string;
-  industry?: string;
+  testType: "homepage" | "blog";
+  email?: string;
 }
-
-const ALLOWED_INDUSTRIES = ["saas", "financial", "ecommerce", "professional", "healthcare", "other"];
 
 const validateEmail = (email: string | undefined): string => {
   if (!email) return `anonymous-${Date.now()}@foundindex.local`;
@@ -38,78 +36,33 @@ const validateWebsite = (website: string): string => {
   if (trimmed.length === 0) throw new Error("Please enter a website URL");
   const normalized = normalizeUrl(trimmed);
   if (normalized.startsWith("https://") && normalized.includes(".")) return normalized;
-  throw new Error('Please enter a valid website URL (like "slack.com")');
+  throw new Error('Please enter a valid website URL (like "example.com")');
 };
 
-const validateIndustry = (industry: string | undefined): string => {
-  if (!industry) return "other";
-  if (!ALLOWED_INDUSTRIES.includes(industry)) {
-    throw new Error("Invalid industry. Must be one of: " + ALLOWED_INDUSTRIES.join(", "));
-  }
-  return industry;
+const detectPageType = (url: string, html: string): "homepage" | "blog" => {
+  const urlLower = url.toLowerCase();
+  
+  // Check URL patterns
+  const blogPatterns = ['/blog/', '/post/', '/article/', '/news/'];
+  const hasBlogUrl = blogPatterns.some(pattern => urlLower.includes(pattern));
+  
+  // Check HTML patterns
+  const hasBlogHTML = 
+    html.includes('<article') || 
+    html.includes('class="post') ||
+    html.includes('class="article') ||
+    html.includes('id="post-') ||
+    html.includes('itemtype="http://schema.org/BlogPosting"');
+  
+  return (hasBlogUrl || hasBlogHTML) ? "blog" : "homepage";
 };
 
-const industryQueries: Record<string, string[]> = {
-  saas: [
-    "best project management software for remote teams",
-    "top collaboration tools for startups",
-    "recommended CRM platforms for small business",
-    "best workflow automation software",
-    "top productivity tools for distributed teams",
-    "best SaaS solutions for team communication",
-    "recommended cloud-based project tools",
-    "top software for agile teams",
-  ],
-  financial: [
-    "best accounting software for small business",
-    "top financial planning tools",
-    "recommended investment platforms",
-    "best budgeting software for families",
-    "top fintech solutions for businesses",
-    "best tools for financial management",
-    "recommended platforms for expense tracking",
-    "top software for bookkeeping",
-  ],
-  ecommerce: [
-    "best e-commerce platforms for startups",
-    "top online store builders",
-    "recommended shopping cart software",
-    "best solutions for online retail",
-    "top platforms for dropshipping",
-    "best tools for e-commerce marketing",
-    "recommended software for inventory management",
-    "top solutions for online payments",
-  ],
-  professional: [
-    "best software for professional services",
-    "top tools for consulting firms",
-    "recommended platforms for service businesses",
-    "best solutions for client management",
-    "top software for professional scheduling",
-    "best tools for time tracking professionals",
-    "recommended platforms for service delivery",
-    "top solutions for professional billing",
-  ],
-  healthcare: [
-    "best healthcare management software",
-    "top platforms for medical practices",
-    "recommended EHR systems",
-    "best solutions for patient management",
-    "top software for healthcare providers",
-    "best tools for medical scheduling",
-    "recommended platforms for telehealth",
-    "top solutions for healthcare billing",
-  ],
-  other: [
-    "best software solutions for businesses",
-    "top tools for operations",
-    "recommended platforms for growth",
-    "best solutions for efficiency",
-    "top software for business management",
-    "best tools for productivity",
-    "recommended platforms for automation",
-    "top solutions for communication",
-  ],
+const getGrade = (score: number): string => {
+  if (score >= 90) return "A";
+  if (score >= 80) return "B";
+  if (score >= 70) return "C";
+  if (score >= 60) return "D";
+  return "F";
 };
 
 serve(async (req) => {
@@ -118,24 +71,30 @@ serve(async (req) => {
   }
 
   try {
-    const { email, website, industry }: TestSubmission = await req.json();
+    const { email, website, testType }: TestSubmission = await req.json();
+
+    if (!testType || !["homepage", "blog"].includes(testType)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "testType must be 'homepage' or 'blog'" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const validatedEmail = validateEmail(email);
     const validatedWebsite = validateWebsite(website);
-    const validatedIndustry = validateIndustry(industry);
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || 
+                     req.headers.get("x-real-ip") || "unknown";
     const testId = crypto.randomUUID();
-    const testDate = new Date().toISOString();
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
     const modelName = Deno.env.get("OPENAI_MODEL_NAME") || "gpt-4-turbo-2024-04-09";
 
-    console.log(`[${testId}] Starting analysis with model: ${modelName}`);
+    console.log(`[${testId}] Starting analysis for ${testType}: ${validatedWebsite}`);
 
     // Fetch website
     let websiteHtml = "";
@@ -163,7 +122,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Unable to access website",
+          error: "Unable to access website. Please check the URL and try again.",
           testId,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -184,7 +143,7 @@ serve(async (req) => {
     let isLikelyJSRendered = hasSPAMarker && textContent.length < 500;
 
     if (isLikelyJSRendered) {
-      console.log(`[${testId}] JS-rendered, trying Jina.ai...`);
+      console.log(`[${testId}] JS-rendered detected, trying Jina.ai...`);
       try {
         const jinaResponse = await fetch(`https://r.jina.ai/${validatedWebsite}`, {
           headers: { "Accept": "text/html" },
@@ -201,7 +160,7 @@ serve(async (req) => {
           }
         }
       } catch (e) {
-        console.warn(`[${testId}] Jina.ai failed`);
+        console.warn(`[${testId}] Jina.ai failed:`, e);
       }
     }
 
@@ -209,342 +168,203 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Unable to analyze JavaScript-rendered website",
+          error: "Unable to analyze JavaScript-rendered website. Please ensure your content is server-rendered.",
           testId,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Helper function for API calls with retry
-    async function callWithRetry(messages: any[], retries = 1): Promise<any> {
-      try {
-        const response = await fetch("https://api.openai.com/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${openaiApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: modelName,
-            temperature: 0,
-            response_format: { type: "json_object" },
-            messages: messages,
-          }),
-        });
+    // Detect actual page type
+    const detectedType = detectPageType(validatedWebsite, websiteHtml);
+    console.log(`[${testId}] Detected type: ${detectedType}, Requested: ${testType}`);
 
-        if (!response.ok) {
-          if (response.status === 429 && retries > 0) {
-            console.log(`[${testId}] 429 - retrying in 2s...`);
-            await new Promise(r => setTimeout(r, 2000));
-            return callWithRetry(messages, retries - 1);
-          }
-          throw new Error(`OpenAI error: ${response.status}`);
-        }
-
-        const data = await response.json();
-        const content = data.choices[0].message.content
-          .replace(/```json\n?/g, "")
-          .replace(/```\n?/g, "")
-          .trim();
-        return JSON.parse(content);
-      } catch (error) {
-        if (retries > 0) {
-          await new Promise(r => setTimeout(r, 2000));
-          return callWithRetry(messages, retries - 1);
-        }
-        throw error;
-      }
-    }
-
+    // Analyze with OpenAI
     const extractedContent = websiteHtml.substring(0, 50000);
+    
+    const analysisPrompt = testType === "homepage" 
+      ? `You are analyzing a business homepage for AI search engine visibility.
 
-    console.log(`[${testId}] STEP 2: AI-Readiness Audit (2 parallel calls)...`);
+Website URL: ${validatedWebsite}
+HTML Content: ${extractedContent}
 
-    const structuralPrompt = `Analyze website structure. Return ONLY JSON:
+Analyze this homepage across these 5 categories and provide detailed recommendations:
 
+1. ANSWER STRUCTURE (max 30 points): How clearly does the homepage answer "what is this business?"
+2. SCANNABILITY (max 25 points): How easy is it to quickly understand key information?
+3. FAQ & SCHEMA (max 20 points): Are there FAQs and structured data for AI parsing?
+4. EXPERTISE SIGNALS (max 15 points): Does it demonstrate authority and credibility?
+5. TECHNICAL SEO (max 10 points): Meta tags, headings, page structure
+
+For each issue found, provide:
+- Priority: "critical" (major blocker), "medium" (improvement needed), or "good" (doing well)
+- Title: Short, clear issue name
+- Points Lost: Numeric value
+- Problem: What's wrong
+- How to Fix: Specific actionable steps
+- Code Example: HTML/code snippet if applicable
+- Expected Improvement: Estimated point gain
+
+Return ONLY valid JSON in this exact format:
 {
-  "content_clarity_score": number (0-25),
-  "discoverability_score": number (0-20),
-  "technical_score": number (0-15)
-}
+  "categories": {
+    "answerStructure": { "score": 18, "max": 30 },
+    "scannability": { "score": 14, "max": 25 },
+    "faqSchema": { "score": 6, "max": 20 },
+    "expertiseSignals": { "score": 12, "max": 15 },
+    "technicalSEO": { "score": 8, "max": 10 }
+  },
+  "recommendations": [
+    {
+      "priority": "critical",
+      "title": "Missing clear value proposition",
+      "pointsLost": 10,
+      "problem": "The homepage doesn't clearly state what the business does in the first paragraph.",
+      "howToFix": "Add a clear 1-2 sentence description at the top that explains what you do and who you serve.",
+      "codeExample": "<h1>We help [audience] achieve [outcome] through [method]</h1>",
+      "expectedImprovement": "+8-10 points"
+    }
+  ]
+}`
+      : `You are analyzing a blog post for AI search engine visibility.
 
-Website: ${validatedWebsite}
-Content: ${extractedContent}
+Website URL: ${validatedWebsite}
+HTML Content: ${extractedContent}
 
-Return ONLY JSON.`;
+Analyze this blog post across these 5 categories and provide detailed recommendations:
 
-    const businessPrompt = `Analyze business credibility. Return ONLY JSON:
+1. ANSWER STRUCTURE (max 30 points): Does it answer the main question directly and early?
+2. SCANNABILITY (max 25 points): Subheadings, bullet points, clear sections?
+3. FAQ & SCHEMA (max 20 points): FAQ section and structured data?
+4. EXPERTISE SIGNALS (max 15 points): Author credentials, sources, data?
+5. TECHNICAL SEO (max 10 points): Title, meta, headings hierarchy
 
+For each issue found, provide:
+- Priority: "critical" (major blocker), "medium" (improvement needed), or "good" (doing well)
+- Title: Short, clear issue name
+- Points Lost: Numeric value
+- Problem: What's wrong
+- How to Fix: Specific actionable steps
+- Code Example: HTML/code snippet if applicable
+- Expected Improvement: Estimated point gain
+
+Return ONLY valid JSON in this exact format:
 {
-  "authority_score": number (0-15),
-  "positioning_score": number (0-15),
-  "recommendations": [array of 3-5 improvements]
-}
+  "categories": {
+    "answerStructure": { "score": 18, "max": 30 },
+    "scannability": { "score": 14, "max": 25 },
+    "faqSchema": { "score": 6, "max": 20 },
+    "expertiseSignals": { "score": 12, "max": 15 },
+    "technicalSEO": { "score": 8, "max": 10 }
+  },
+  "recommendations": [
+    {
+      "priority": "critical",
+      "title": "Answer appears too late",
+      "pointsLost": 12,
+      "problem": "The direct answer to the title question doesn't appear until paragraph 4.",
+      "howToFix": "Add a 2-3 sentence direct answer immediately after the introduction.",
+      "codeExample": "<p class='direct-answer'>To [achieve goal], you need to [action]. This works because [reason].</p>",
+      "expectedImprovement": "+10-12 points"
+    }
+  ]
+}`;
 
-Website: ${validatedWebsite}
-Content: ${extractedContent}
+    console.log(`[${testId}] Calling OpenAI for ${testType} analysis...`);
 
-Return ONLY JSON.`;
-
-    let structuralResult: any = null;
-    let businessResult: any = null;
+    let analysisResult: any;
 
     try {
-      [structuralResult, businessResult] = await Promise.all([
-        callWithRetry([{ role: "user", content: structuralPrompt }]),
-        callWithRetry([{ role: "user", content: businessPrompt }])
-      ]);
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openaiApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: modelName,
+          temperature: 0.3,
+          response_format: { type: "json_object" },
+          messages: [{ role: "user", content: analysisPrompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[${testId}] OpenAI API error:`, response.status, errorText);
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0].message.content
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
+      
+      analysisResult = JSON.parse(content);
+      console.log(`[${testId}] Analysis complete`);
     } catch (error) {
-      console.error(`[${testId}] Audit failed:`, error);
+      console.error(`[${testId}] Analysis failed:`, error);
       return new Response(
-        JSON.stringify({ success: false, error: "AI analysis failed" }),
+        JSON.stringify({ 
+          success: false, 
+          error: "AI analysis failed. Please try again.",
+          details: error instanceof Error ? error.message : "Unknown error"
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const scores = {
-      content_clarity_score: structuralResult?.content_clarity_score || 0,
-      discoverability_score: structuralResult?.discoverability_score || 0,
-      technical_score: structuralResult?.technical_score || 0,
-      authority_score: businessResult?.authority_score || 0,
-      positioning_score: businessResult?.positioning_score || 0,
-      recommendations: businessResult?.recommendations || []
-    };
-
-    const foundindex_score =
-      scores.content_clarity_score +
-      scores.discoverability_score +
-      scores.authority_score +
-      scores.technical_score +
-      scores.positioning_score;
-
-    console.log(`[${testId}] Audit complete - Score: ${foundindex_score}/100`);
-
-    console.log(`[${testId}] STEP 3: Generate queries...`);
-
-    let businessType = validatedIndustry;
-    let queries: string[] = [];
-
-    try {
-      const analysisResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${openaiApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "user",
-              content: `Analyze: ${validatedWebsite}. Industry: ${validatedIndustry}. Return JSON: {"business_type": "...", "queries": [8 buyer queries]}`,
-            },
-          ],
-          max_tokens: 1000,
-          temperature: 0.7,
-        }),
-      });
-
-      if (analysisResponse.ok) {
-        const data = await analysisResponse.json();
-        let text = data.choices[0].message.content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-        const parsed = JSON.parse(text);
-        businessType = parsed.business_type || validatedIndustry;
-        queries = parsed.queries || [];
-      }
-
-      if (!queries || queries.length < 5) {
-        queries = industryQueries[validatedIndustry] || industryQueries.other;
-      }
-    } catch (error) {
-      queries = industryQueries[validatedIndustry] || industryQueries.other;
-    }
-
-    console.log(`[${testId}] STEP 4: Visibility test (SINGLE BATCH)...`);
-
-    let totalRecommendations = 0;
-    const queryResults = [];
-
-    try {
-      const testQueries = queries.slice(0, 8);
-      
-      const batchPrompt = `Test these queries for ${validatedWebsite}. Return JSON:
-{"results": [{"query": "...", "was_recommended": true/false, "reason": "..."}]}
-
-Queries:
-${testQueries.map((q, i) => `${i + 1}. ${q}`).join('\n')}`;
-
-      console.log(`[${testId}] Single batch: ${testQueries.length} queries...`);
-
-      const batchResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${openaiApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          temperature: 0,
-          response_format: { type: "json_object" },
-          messages: [{ role: "user", content: batchPrompt }],
-        }),
-      });
-
-      const batchData = await batchResponse.json();
-      const batchContent = batchData.choices[0].message.content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      const parsed = JSON.parse(batchContent);
-      const results = parsed.results || [];
-
-      totalRecommendations = results.filter((r: any) => r.was_recommended).length;
-
-      results.forEach((result: any, index: number) => {
-        queryResults.push({
-          query_number: index + 1,
-          query_text: result.query || testQueries[index],
-          engine: "ChatGPT",
-          was_recommended: result.was_recommended,
-          context_snippet: result.reason || "Batch analyzed",
-          recommendation_position: result.was_recommended ? 1 : null,
-          quality_rating: result.was_recommended ? "high" : "none",
-        });
-      });
-
-      console.log(`[${testId}] Batch complete: ${totalRecommendations}/${results.length}`);
-
-    } catch (error) {
-      console.error(`[${testId}] Batch failed, fallback:`, error);
-
-      // Fallback: 3 queries
-      const fallbackQueries = queries.slice(0, 3);
-
-      for (let i = 0; i < fallbackQueries.length; i++) {
-        try {
-          const response = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${openaiApiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "gpt-4o-mini",
-              messages: [{ role: "user", content: fallbackQueries[i] }],
-              max_tokens: 300,
-            }),
-          });
-
-          const data = await response.json();
-          const aiResponse = data.choices[0].message.content;
-
-          let domain = validatedWebsite.replace(/^https?:\/\/(www\.)?/, "").split("/")[0];
-          const brandName = domain.split(".")[0];
-          const wasRecommended = aiResponse.toLowerCase().includes(domain.toLowerCase()) || 
-                                 aiResponse.toLowerCase().includes(brandName.toLowerCase());
-
-          if (wasRecommended) totalRecommendations++;
-
-          queryResults.push({
-            query_number: i + 1,
-            query_text: fallbackQueries[i],
-            engine: "ChatGPT",
-            was_recommended: wasRecommended,
-            context_snippet: aiResponse.substring(0, 200),
-            recommendation_position: wasRecommended ? 1 : null,
-            quality_rating: wasRecommended ? "high" : "none",
-          });
-        } catch (e) {
-          queryResults.push({
-            query_number: i + 1,
-            query_text: fallbackQueries[i],
-            engine: "ChatGPT",
-            was_recommended: false,
-            context_snippet: "Error",
-            recommendation_position: null,
-            quality_rating: "none",
-          });
-        }
-      }
-    }
-
-    const recommendationRate = (totalRecommendations / Math.max(queryResults.length, 1)) * 100;
-    const chatgptScore = Math.round(recommendationRate);
-
-    console.log(`[${testId}] Final: ${totalRecommendations}/${queryResults.length} = ${chatgptScore}%`);
+    // Calculate total score
+    const categories = analysisResult.categories || {};
+    const totalScore = Object.values(categories).reduce(
+      (sum: number, cat: any) => sum + (cat.score || 0), 
+      0
+    );
+    
+    const grade = getGrade(totalScore);
+    
+    // Add percentages to categories
+    const categoriesWithPercentages = Object.entries(categories).reduce((acc: any, [key, value]: [string, any]) => {
+      acc[key] = {
+        ...value,
+        percentage: Math.round((value.score / value.max) * 100)
+      };
+      return acc;
+    }, {});
 
     // Save to Supabase
     await supabaseAdmin.from("test_submissions").insert({
       email: validatedEmail,
       ip_address: clientIP,
       test_id: testId,
-      created_at: testDate,
     });
 
-    // Save to Airtable
-    const airtableApiKey = Deno.env.get("AIRTABLE_API_KEY");
-    const airtableBaseId = Deno.env.get("AIRTABLE_BASE_ID");
+    const response = {
+      success: true,
+      testId,
+      score: totalScore,
+      grade,
+      detectedType,
+      requestedType: testType,
+      categories: categoriesWithPercentages,
+      recommendations: analysisResult.recommendations || [],
+      industryAverage: 62
+    };
 
-    await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${airtableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        fields: {
-          test_id: testId,
-          user_email: validatedEmail,
-          website_url: validatedWebsite,
-          industry: validatedIndustry,
-          test_date: testDate,
-          foundindex_score: foundindex_score,
-          content_clarity_score: scores.content_clarity_score,
-          structured_data_score: scores.technical_score,
-          authority_score: scores.authority_score,
-          discoverability_score: scores.discoverability_score,
-          comparison_score: scores.positioning_score,
-          recommendations: JSON.stringify(scores.recommendations),
-          business_type: businessType,
-          chatgpt_score: chatgptScore,
-          recommendations_count: totalRecommendations,
-          recommendation_rate: parseFloat(recommendationRate.toFixed(3)),
-        },
-      }),
-    });
-
-    // Save query results
-    for (let i = 0; i < queryResults.length; i += 10) {
-      const batch = queryResults.slice(i, i + 10);
-      await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Query_Results`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${airtableApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          records: batch.map((result) => ({ fields: { test_id: testId, ...result } })),
-        }),
-      });
-    }
-
-    console.log(`[${testId}] SUCCESS`);
+    console.log(`[${testId}] SUCCESS - Score: ${totalScore}, Grade: ${grade}`);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        testId,
-        score: foundindex_score,
-        foundIndexScore: chatgptScore,
-        totalRecommendations,
-        totalQueries: queryResults.length,
-      }),
+      JSON.stringify(response),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
     console.error("Error:", error);
     return new Response(
       JSON.stringify({
-        error: "An error occurred",
-        details: error instanceof Error ? error.message : "Unknown",
+        success: false,
+        error: "An unexpected error occurred",
+        details: error instanceof Error ? error.message : "Unknown error",
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
