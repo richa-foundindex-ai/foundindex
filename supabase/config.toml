@@ -21,3 +21,7 @@ verify_jwt = false
 
 [functions.check-existing-test]
 verify_jwt = false
+
+[functions.analyze-website]
+verify_jwt = false
+timeout = 180
