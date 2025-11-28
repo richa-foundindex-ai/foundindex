@@ -113,7 +113,12 @@ export const ContactForm = () => {
           <div className="flex items-center justify-center gap-6 pt-2 text-sm">
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">hello@foundindex.com</span>
+              <a 
+                href="mailto:hello@foundindex.com" 
+                className="text-blue-600 hover:underline dark:text-blue-400"
+              >
+                hello@foundindex.com
+              </a>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
@@ -209,7 +214,12 @@ export const ContactForm = () => {
             className="gap-2"
           >
             <Copy className="h-4 w-4" />
-            hello@foundindex.com
+            <a 
+              href="mailto:hello@foundindex.com"
+              className="text-blue-600 hover:underline dark:text-blue-400"
+            >
+              hello@foundindex.com
+            </a>
           </Button>
         </div>
       </div>

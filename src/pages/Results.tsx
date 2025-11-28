@@ -494,7 +494,7 @@ export default function Results() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="container mx-auto px-4 py-6 md:py-8 max-w-5xl" role="main">
+      <main className="container mx-auto px-4 py-8 md:py-16 max-w-5xl leading-relaxed" role="main">
         <div className="mb-6 md:mb-8 text-center md:text-left">
           <p className="text-sm md:text-base text-muted-foreground">
             Analysis results for: <span className="font-semibold break-all">{website}</span>
@@ -544,7 +544,7 @@ export default function Results() {
             <div className={`text-2xl md:text-3xl font-bold ${gradeInfo.color}`}>
               Grade: {gradeInfo.grade} ({gradeInfo.label})
             </div>
-            <p className="text-xs md:text-sm text-muted-foreground">Confidence range: ±4 points</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Confidence range: ±10 points</p>
           </div>
         </div>
 
@@ -559,11 +559,11 @@ export default function Results() {
         </div>
 
         {/* Category Breakdown */}
-        <Card className="mb-6 md:mb-8">
+        <Card className="mb-8 md:mb-16">
           <CardHeader>
-            <CardTitle className="text-lg md:text-xl">Category Breakdown</CardTitle>
+            <CardTitle className="text-lg md:text-xl">Category breakdown</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 md:space-y-6">
+          <CardContent className="space-y-6 md:space-y-8">
             {resultData?.categories.map((category, index) => {
               const color = category.percentage >= 70 ? "bg-green-500" : category.percentage >= 50 ? "bg-yellow-500" : "bg-red-500";
               return (
@@ -592,11 +592,11 @@ export default function Results() {
         </Card>
 
         {/* Industry Comparison */}
-        <Card className="mb-8 border-2">
+        <Card className="mb-16 border-2">
           <CardHeader>
-            <CardTitle>Category Breakdown</CardTitle>
+            <CardTitle>Category breakdown</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-8">
             {resultData?.categories.map((category, index) => {
               const color = category.percentage >= 70 ? "bg-green-500" : category.percentage >= 50 ? "bg-yellow-500" : "bg-red-500";
               return (
@@ -625,10 +625,10 @@ export default function Results() {
         </Card>
 
         {/* Industry Comparison */}
-        <Card className="mb-8 border-2">
+        <Card className="mb-16 border-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              📊 Industry Comparison
+              📊 Industry comparison
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -657,9 +657,9 @@ export default function Results() {
         </Card>
 
         {/* All Recommendations */}
-        <Card className="mb-8">
+        <Card className="mb-16">
           <CardHeader>
-            <CardTitle>📋 ALL RECOMMENDATIONS</CardTitle>
+            <CardTitle>📋 All recommendations</CardTitle>
             <CardDescription>
               Beta perk: Full audit normally costs $27-97
             </CardDescription>

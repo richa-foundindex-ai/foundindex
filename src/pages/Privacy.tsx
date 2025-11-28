@@ -106,9 +106,9 @@ const Privacy = () => {
             {/* Contact */}
             <section>
               <h2 className="text-2xl font-bold mb-4">7. Contact</h2>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground leading-relaxed">
                 For privacy-related questions, email us at:{" "}
-                <a href="mailto:privacy@foundindex.com" className="text-primary hover:underline">
+                <a href="mailto:privacy@foundindex.com" className="text-blue-600 hover:underline dark:text-blue-400">
                   privacy@foundindex.com
                 </a>
               </p>
