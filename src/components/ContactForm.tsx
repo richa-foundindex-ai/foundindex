@@ -3,9 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Mail, CheckCircle2, Copy } from "lucide-react";
+import { Mail, CheckCircle2, Copy, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 export const ContactForm = () => {
@@ -13,6 +20,7 @@ export const ContactForm = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    subject: "",
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,7 +39,7 @@ export const ContactForm = () => {
     e.preventDefault();
 
     // Validate fields
-    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
+    if (!formData.name.trim() || !formData.email.trim() || !formData.subject || !formData.message.trim()) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -48,6 +56,7 @@ export const ContactForm = () => {
         body: {
           name: formData.name.trim(),
           email: formData.email.trim(),
+          subject: formData.subject,
           message: formData.message.trim(),
         },
       });
@@ -81,12 +90,23 @@ export const ContactForm = () => {
   return (
     <div className="max-w-md mx-auto px-4 py-16">
       <div className="space-y-6">
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-4">
           <Mail className="h-12 w-12 mx-auto text-primary" />
-          <h1 className="text-3xl font-bold">Contact</h1>
+          <h1 className="text-3xl font-bold">Contact Us</h1>
           <p className="text-muted-foreground">
-            Questions about FoundIndex? Direct line open.
+            Questions? Feedback? We'd love to hear from you.
           </p>
+          
+          <div className="flex items-center justify-center gap-6 pt-2 text-sm">
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">hello@foundindex.com</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Response: Within 24 hours</span>
+            </div>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -114,6 +134,27 @@ export const ContactForm = () => {
               disabled={isSubmitting}
               required
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="subject">Subject</Label>
+            <Select
+              value={formData.subject}
+              onValueChange={(value) => setFormData({ ...formData, subject: value })}
+              disabled={isSubmitting}
+              required
+            >
+              <SelectTrigger id="subject">
+                <SelectValue placeholder="Select a subject" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="general">General question</SelectItem>
+                <SelectItem value="technical">Technical issue</SelectItem>
+                <SelectItem value="beta">Beta partnership</SelectItem>
+                <SelectItem value="feedback">Feedback</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
