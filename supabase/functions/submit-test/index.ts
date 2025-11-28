@@ -595,381 +595,141 @@ serve(async (req) => {
     }
 
     console.log(`[${testId}] ===================`);
-    console.log(`[${testId}] STEP 2: AI-Readiness Audit Analysis...`);
+    console.log(`[${testId}] STEP 2: AI-Readiness Audit Analysis (Parallel Mode)...`);
     console.log(`[${testId}] ===================`);
     console.log(`[${testId}] Website URL: ${validatedWebsite}`);
     console.log(`[${testId}] HTML content length being sent to OpenAI: ${Math.min(websiteHtml.length, 50000)} chars`);
     console.log(`[${testId}] Text content preview (first 500 chars): ${textContent.substring(0, 500)}`);
 
-    // AI-Readiness Audit with COMPLETE SCORING RUBRIC and CONTEXT-AWARE RECOMMENDATIONS
-    const auditPrompt = `You are an AI visibility expert analyzing websites. Score this homepage using the FoundIndex rubric below.
+    // Configurable model name with default to gpt-4-turbo
+    const modelName = Deno.env.get("OPENAI_MODEL_NAME") || "gpt-4-turbo";
+    console.log(`[${testId}] Using OpenAI model: ${modelName}`);
 
-COMPLETE SCORING RUBRIC:
+    // Shared retry helper for OpenAI calls
+    async function callWithRetry(messages: any[], retries = 1): Promise<any> {
+      try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${openaiApiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: modelName,
+            temperature: 0,
+            response_format: { type: "json_object" },
+            messages: messages,
+          }),
+        });
 
-1. CONTENT CLARITY (0-30 points total)
+        if (!response.ok) {
+          if (response.status === 429 && retries > 0) {
+            console.log(`[${testId}] Rate limit hit, retrying after 2s... (${retries} retries left)`);
+            await new Promise(r => setTimeout(r, 2000));
+            return callWithRetry(messages, retries - 1);
+          }
+          throw new Error(`OpenAI API error: ${response.status}`);
+        }
 
-Value Proposition Clarity (0-10 points):
-- 10 pts: First paragraph explicitly states what they do + who it's for + outcome/benefit. No jargon.
-- 7-8 pts: Core offering clear within first 2-3 paragraphs. Target mentioned but broad.
-- 4-6 pts: Core offering identifiable but requires reading multiple sections. Some jargon.
-- 1-3 pts: Core offering buried or heavily obscured by marketing language.
-- 0 pts: No clear statement of what the business does.
+        const data = await response.json();
+        const content = data.choices[0].message.content
+          .replace(/```json\n?/g, "")
+          .replace(/```\n?/g, "")
+          .trim();
+        return JSON.parse(content);
+      } catch (error) {
+        if (error instanceof Error && error.message.includes("429") && retries > 0) {
+          await new Promise(r => setTimeout(r, 2000));
+          return callWithRetry(messages, retries - 1);
+        }
+        throw error;
+      }
+    }
 
-Target Audience Specification (0-8 points):
-- 8 pts: Explicit, narrow target with 3+ characteristics (industry + size + use case).
-- 5-7 pts: Target audience with 1-2 characteristics.
-- 3-4 pts: Broad definition ("growing businesses").
-- 1-2 pts: Implied audience only.
-- 0 pts: No indication of who they serve.
-
-Service/Product Specificity (0-8 points):
-- 8 pts: Named offerings with clear descriptions and deliverables.
-- 5-7 pts: Services/products have names and basic descriptions.
-- 3-4 pts: Broad categories without detail.
-- 1-2 pts: Vague "solutions" mentioned.
-- 0 pts: No description of deliverables.
-
-Concrete Evidence (0-4 points):
-- 4 pts: Multiple specific metrics, numbers, or examples.
-- 2-3 pts: Some concrete details mixed with generic claims.
-- 1 pt: Only abstract benefit claims.
-- 0 pts: No concrete evidence.
-
-2. DISCOVERABILITY (0-25 points total)
-
-Information Placement (0-8 points):
-- 8 pts: All critical info in first 2 screen sections.
-- 5-7 pts: Critical info in first 3-4 sections.
-- 3-4 pts: Requires significant scrolling (5+ sections).
-- 1-2 pts: Critical info buried deep or scattered.
-- 0 pts: Essential info missing from homepage.
-
-Question-Answer Alignment (0-7 points):
-- 7 pts: Comprehensive FAQ (10+ questions) or content structured as Q&A.
-- 5-6 pts: FAQ with 5-9 questions or content answers common queries.
-- 3-4 pts: Limited FAQ (3-4 questions) or partial answers.
-- 1-2 pts: No FAQ, content requires inference.
-- 0 pts: Cannot answer common questions from homepage.
-
-Content Accessibility (0-6 points):
-- 6 pts: All key info in visible HTML text, no interaction required.
-- 4-5 pts: Primary info accessible, some in dropdowns/tabs.
-- 2-3 pts: Significant info hidden in accordions or behind interactions.
-- 0-1 pts: Critical info behind forms, login, or PDFs.
-
-Information Consistency (0-4 points):
-- 4 pts: Key details repeated 3+ times, identical terminology.
-- 2-3 pts: Some repetition, mostly consistent terminology.
-- 1 pt: Information mentioned once only, inconsistent terms.
-- 0 pts: Conflicting information.
-
-3. AUTHORITY SIGNALS (0-15 points total)
-
-**CRITICAL INSTRUCTION FOR AUTHORITY SIGNALS:**
-
-Portfolio and case study content appears in MANY forms. You MUST award high scores when you detect ANY of these patterns:
-
-PORTFOLIO INDICATORS (award 6-8 points for credibility):
-✓ Sections titled: "portfolio", "work", "projects", "selected works", "featured works", "case studies", "our work", "my work", "client work", "success stories"
-✓ Project cards or grids showing multiple projects (3+ projects)
-✓ Each project includes: title, description, client name/logo
-✓ Project descriptions mention outcomes, methodologies, or tools used
-✓ ANY section that displays past work with details = portfolio (even without "portfolio" in the title)
-
-EXPLICIT SCORING EXAMPLES:
-- "Selected Works" with project cards = 7-8 points for credibility
-- "Projects" section with 5+ detailed items = 7-8 points for credibility
-- "Case Studies" with client outcomes = 8 points for credibility
-- "Our Work" showcase with client logos = 6-7 points for credibility
-- "What We Do" with past project examples = 5-6 points for credibility
-
-DO NOT REQUIRE:
-- Formal "case study" keyword
-- Traditional case study format  
-- Specific section titles
-- Long-form write-ups
-
-DO LOOK FOR:
-- Visual evidence (project cards, grids, galleries)
-- Client names or logos ANYWHERE on page
-- Descriptions of past work
-- Examples with any level of detail
-- Process/methodology descriptions
-- Before/after descriptions
-
-**Credibility Markers (0-8 points):**
-Detect ANY of these patterns (use FLEXIBLE matching):
-- Case studies / Portfolio: "case study", "client work", "project", "projects", "success story", "portfolio", "work samples", "our work", "examples", "showcase", "featured work", "selected works", "what we've built", "work we're proud of"
-- Client results: ANY metrics, percentages, "increased by X%", "improved", "achieved", "grew by", "reduced", "saved", specific numbers like "$1M revenue", "2x growth", "50% improvement"
-- Certifications: "certified", "accredited", "licensed", "qualified", "registered", professional letters (MBA, CPA, PMP, PhD)
-- Awards: "award", "winner", "featured in", "recognized", "honored", "nominated", "best of", "top rated"
-- Press: "press", "media", "published in", "as seen in", "mentioned in", logos of publications (Forbes, TechCrunch, etc.)
-- Experience: "X years", "since 20XX", "established", "founded in", "serving since", "over X years"
-
-**IMPORTANT FLEXIBILITY RULES:**
-- A "Projects" or "Our Work" or "Selected Works" section with detailed descriptions = case studies (award 5-7 points)
-- Portfolio pieces showing client names + process + outcomes = case studies
-- If you see specific client outcomes (e.g., "helped BT Group improve user engagement") = count as HIGH credibility (6-8 pts)
-- Professional methodology descriptions (e.g., "UX Research, Usability Testing, User Interviews") = credibility evidence (4-6 pts)
-- Industry experience mentioned with specific clients = credibility (4-6 pts)
-
-Scoring:
-- 7-8 pts: 3+ detailed projects/case studies with client names, outcomes, AND/OR methodology detail
-- 5-6 pts: 2-3 projects with moderate detail OR multiple credentials/awards OR clear client work
-- 3-4 pts: 1-2 projects with basic descriptions OR clear credentials mentioned
-- 1-2 pts: Mentions experience but no specific examples
-- 0 pts: No credibility evidence whatsoever
-
-**Social Proof (0-7 points):**
-- Client logos: image grids, "clients", "partners", "trusted by", "working with", "companies we've helped"
-- Testimonials: "testimonial", "review", "what clients say", "what people say", quotes with attribution, star ratings, "feedback"
-- User metrics: "X+ users", "X companies", "X customers", "served X", "helped X businesses"
-- Video testimonials: embedded client story videos
-- Trust badges: security badges, payment logos, certification marks, "featured in" logos
-
-Scoring:
-- 6-7 pts: Named testimonials with attribution + client logos + user metrics
-- 4-5 pts: Testimonials with names/companies + logos OR detailed reviews
-- 2-3 pts: Generic testimonials OR logos only OR client list without quotes
-- 1 pt: Vague trust indicators ("trusted by thousands")
-- 0 pts: No social proof found
-
-4. STRUCTURED DATA (0-15 points total)
-
-Schema.org Implementation (0-7 points):
-- 7 pts: Valid JSON-LD for Organization/Service + additional schemas (FAQPage, Product).
-- 5-6 pts: Organization Schema with core properties + one additional type.
-- 3-4 pts: Basic Organization Schema only with minimal properties.
-- 1-2 pts: Schema present but incomplete or with errors.
-- 0 pts: No Schema.org markup.
-
-HTML Semantic Structure (0-5 points):
-- 5 pts: Proper heading hierarchy, semantic HTML5 elements throughout.
-- 3-4 pts: Mostly semantic with some issues.
-- 1-2 pts: Minimal semantic structure, heavy div usage.
-- 0 pts: Pure div-based layout, no semantic HTML.
-
-Metadata Quality (0-3 points):
-- 3 pts: Descriptive title tag, meta description, Open Graph tags, Twitter Cards.
-- 2 pts: Basic title and meta description, some Open Graph.
-- 1 pt: Minimal metadata, generic descriptions.
-- 0 pts: No meta description or generic title only.
-
-5. COMPARISON CONTENT (0-15 points total)
-
-Specific Positioning (0-6 points):
-- 6 pts: Explicit target customer with 3+ characteristics and clear use cases.
-- 4-5 pts: Target market and specialization clearly stated.
-- 2-3 pts: Broad positioning without specificity.
-- 0-1 pts: No clear positioning or claims to be best for everyone.
-
-Concrete Differentiators (0-5 points):
-- 5 pts: 3+ specific, verifiable differences from alternatives.
-- 3-4 pts: 1-2 concrete differentiators plus generic claims.
-- 1-2 pts: Primarily generic differentiation claims.
-- 0 pts: No differentiation content.
-
-Trade-off Transparency (0-4 points):
-- 4 pts: Explicitly acknowledges limitations or who they're NOT for.
-- 2-3 pts: Implicit trade-offs through positioning.
-- 1 pt: Vague focus areas, no real limitations acknowledged.
-- 0 pts: Claims to be best for everyone.
-
----
-
-WEBSITE URL: ${validatedWebsite}
-WEBSITE HTML CONTENT: ${websiteHtml.substring(0, 50000)}
-
----
-
-CONTEXT-AWARE RECOMMENDATION RULES:
-
-**STEP 1: Detect what EXISTS on the page:**
-- has_portfolio: Does the site have projects, portfolio, case studies, work examples, "selected works", "our work", "featured projects"?
-- has_testimonials: Does the site have client quotes, reviews, testimonials, "what clients say", star ratings?
-- has_client_logos: Does the site show client/partner logos, "trusted by", "working with"?
-- has_metrics: Does the site show specific numbers, percentages, results, "X% improvement", "$X saved"?
-- has_credentials: Does the site mention certifications, awards, years of experience, "since 20XX"?
-
-**COMMON PATTERNS TO DETECT:**
-
-Agency/Consultancy Patterns:
-- "Clients" or "Clients we've worked with" + logos = Social Proof (5-7 pts)
-- "Success Stories" = Case Studies (6-8 pts)
-- "Results" or "Impact" section with metrics = Credibility (6-8 pts)
-- "Featured Projects" = Portfolio (6-8 pts)
-- "Partnerships" with company logos = Social Proof (4-6 pts)
-
-Freelancer/Individual Patterns:
-- "Selected Works" = Portfolio (6-8 pts) - VERY COMMON, award high score!
-- "What I Do" with examples = Portfolio (5-6 pts)
-- "Experience" section listing clients = Credibility (4-5 pts)
-- Professional methodology descriptions = Credibility (4-6 pts)
-
-E-commerce/SaaS Patterns:
-- "Customer Stories" = Case Studies (6-8 pts)
-- "Trusted by X customers" with count = Social Proof (5-6 pts)
-- Brand/company logos grid = Social Proof (5-7 pts)
-- "Reviews" or star ratings = Social Proof (6-7 pts)
-
-B2B Service Patterns:
-- "Industry Experience" with company names = Credibility (4-5 pts)
-- "Featured in" with media logos = Authority (5-6 pts)
-- "Certifications" or "Accreditations" = Credibility (3-4 pts)
-- "Awards" or "Recognition" = Credibility (4-5 pts)
-
-**STEP 2: Generate CONTEXT-AWARE recommendations:**
-
-IF has_portfolio AND has_testimonials:
-→ "Strong authority foundation. Consider adding: industry awards or certifications, press mentions or media features, video testimonials for deeper trust"
-
-IF has_portfolio AND NOT has_testimonials:
-→ "Detected portfolio/project work. Strengthen authority by: adding 2-3 client testimonials with full names and companies, including star ratings or satisfaction metrics"
-
-IF has_testimonials AND NOT has_portfolio:
-→ "Client testimonials present but missing project detail. Add: 2-3 case studies showing your process and outcomes, specific project examples with before/after metrics"
-
-IF NOT has_portfolio AND NOT has_testimonials:
-→ "Build authority foundation by: adding 3-5 case studies or project examples with client outcomes, including client testimonials with full attribution, adding relevant certifications or years of experience"
-
-IF has_client_logos BUT NOT has_metrics:
-→ "Client logos visible. Strengthen by: adding specific results achieved for these clients, including project outcomes with numbers/percentages"
-
-**STEP 3: NEVER recommend what already exists!**
-- Before suggesting "add case studies", verify portfolio section doesn't exist
-- Before suggesting "add testimonials", verify social proof doesn't exist  
-- Be SPECIFIC about what's MISSING, not generic improvement advice
-
----
-
-INSTRUCTIONS:
-1. Carefully analyze the homepage content against each rubric item
-2. Be GENEROUS with authority scoring if you find portfolio/project content - "Selected Works", "Projects", "Our Work" ALL count as portfolio!
-3. Return SPECIFIC, DETAILED evidence of what you found (include section names, client names, project titles)
-4. Generate context-aware recommendations based on what's MISSING (not what exists)
-5. Return ONLY valid JSON in this exact format:
+    // Optimize content extraction (reduce tokens)
+    const extractedContent = websiteHtml.substring(0, 50000);
+    
+    // CALL 1: STRUCTURAL ANALYSIS PROMPT
+    const structuralPrompt = `Analyze this website's structure and content. Return ONLY valid JSON:
 
 {
-  "content_clarity_score": 22,
-  "content_clarity_breakdown": {
-    "value_proposition": 8,
-    "target_audience": 5,
-    "service_specificity": 6,
-    "concrete_evidence": 3
-  },
-  "structured_data_score": 12,
-  "structured_data_breakdown": {
-    "schema_implementation": 5,
-    "semantic_structure": 4,
-    "metadata_quality": 3
-  },
-  "authority_score": 10,
-  "authority_breakdown": {
-    "credibility_markers": 6,
-    "social_proof": 4
-  },
-  "discoverability_score": 18,
-  "discoverability_breakdown": {
-    "information_placement": 6,
-    "qa_alignment": 4,
-    "content_accessibility": 5,
-    "information_consistency": 3
-  },
-  "comparison_score": 8,
-  "comparison_breakdown": {
-    "specific_positioning": 4,
-    "concrete_differentiators": 3,
-    "tradeoff_transparency": 1
-  },
-  "total_score": 70,
-  "authority_detection": {
-    "has_portfolio": true,
-    "has_testimonials": false,
-    "has_client_logos": true,
-    "has_metrics": false,
-    "has_credentials": true,
-    "portfolio_details": "Found 'Selected Works' section with 5 detailed project cards including BT Group, showing UX research methodology",
-    "testimonial_details": "No client testimonials or direct quotes found",
-    "credentials_details": "Professional UX Research background mentioned, specific methodologies listed"
-  },
-  "analysis_details": {
-    "content_clarity": "Clear value proposition stating UX research consulting services...",
-    "structured_data": "No Schema.org markup detected...",
-    "authority": "Strong portfolio with 5 detailed projects including client names (BT Group). Missing testimonials.",
-    "discoverability": "Key information frontloaded, good section structure...",
-    "comparison": "Positioning is clear for UX research niche..."
-  },
-  "authority_evidence_found": [
-    "Found 'Selected Works' section with 5 detailed project cards",
-    "Projects include client name: BT Group",
-    "Detailed methodology descriptions: UX Research, Usability Testing, User Interviews",
-    "Professional background section with specific expertise areas"
-  ],
-  "authority_missing": [
-    "No client testimonials or direct quotes from clients",
-    "No quantitative results (e.g., '50% increase in engagement')",
-    "No industry awards or certifications visible"
-  ],
-  "recommendations": [
-    "Add 2-3 client testimonials with names and companies to complement your strong portfolio",
-    "Include specific metrics in project descriptions (e.g., 'improved task completion by 40%')",
-    "Add Schema.org Organization and Service markup for better AI discoverability"
-  ]
-}`;
+  "content_clarity_score": number (0-25),
+  "discoverability_score": number (0-20),
+  "technical_score": number (0-15)
+}
 
-    const auditResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${openaiApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4-turbo-preview",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert at analyzing websites for AI comprehension. You score accurately and consistently using provided rubrics. Return only valid JSON with no markdown.",
-          },
-          {
-            role: "user",
-            content: auditPrompt,
-          },
-        ],
-        max_tokens: 2000,
-        temperature: 0.3,
-        response_format: { type: "json_object" },
-      }),
-    });
+Criteria:
+- Content Clarity (0-25): Is the value proposition clear in the first 100 words? Is the target audience explicit? Are services/products named with clear descriptions? Any concrete metrics or examples?
+- Discoverability (0-20): Is critical info in first 2-3 screen sections? Are headers clear and descriptive? Is content scannable? Is info repeated for consistency?
+- Technical (0-15): Proper HTML structure (semantic tags like header, main, section)? Title tag and meta description present? Schema.org markup?
 
-    if (!auditResponse.ok) {
-      console.error(`[${testId}] OpenAI audit API error:`, auditResponse.status);
+Website URL: ${validatedWebsite}
+Website content:
+${extractedContent}
+
+Return ONLY the JSON object, no markdown.`;
+
+    // CALL 2: BUSINESS ANALYSIS PROMPT
+    const businessPrompt = `Analyze this business's credibility and positioning. Return ONLY valid JSON:
+
+{
+  "authority_score": number (0-15),
+  "positioning_score": number (0-15),
+  "recommendations": [array of 3-5 specific actionable improvements]
+}
+
+Criteria:
+- Authority (0-15): 
+  * Portfolio/case studies: Look for "portfolio", "work", "projects", "selected works", "case studies", "client work", "success stories" sections
+  * Testimonials: Client quotes with attribution, reviews, "what clients say"
+  * Client logos: "clients", "partners", "trusted by" sections
+  * Specific results: metrics, percentages, "X% improvement", "$X revenue"
+  * Certifications: awards, "since 20XX", years of experience
+  
+- Positioning (0-15): Clear target customer with specific characteristics? What makes them different from competitors? Do they acknowledge who they're NOT for?
+
+- Recommendations: List 3-5 specific, actionable improvements based on what's MISSING (don't recommend what already exists!)
+
+Website URL: ${validatedWebsite}
+Website content:
+${extractedContent}
+
+Return ONLY the JSON object, no markdown.`;
+
+    console.log(`[${testId}] Running parallel OpenAI analysis (2 calls)...`);
+    
+    let structuralResult: any = null;
+    let businessResult: any = null;
+    let structuralError = false;
+    let businessError = false;
+
+    // RUN BOTH CALLS IN PARALLEL
+    try {
+      [structuralResult, businessResult] = await Promise.all([
+        callWithRetry([{ role: "user", content: structuralPrompt }]).catch(err => {
+          console.error(`[${testId}] Structural analysis failed:`, err);
+          structuralError = true;
+          return null;
+        }),
+        callWithRetry([{ role: "user", content: businessPrompt }]).catch(err => {
+          console.error(`[${testId}] Business analysis failed:`, err);
+          businessError = true;
+          return null;
+        })
+      ]);
+    } catch (error) {
+      console.error(`[${testId}] Parallel OpenAI calls failed:`, error);
+    }
+
+    // Handle complete failure (both calls failed)
+    if (structuralError && businessError) {
+      console.error(`[${testId}] CRITICAL: Both OpenAI analysis calls failed`);
       
-      // Handle rate limit errors gracefully
-      if (auditResponse.status === 429) {
-        console.error(`[${testId}] OpenAI rate limit hit - returning degraded response`);
-        return new Response(
-          JSON.stringify({
-            success: false,
-            errorType: 'rate_limit',
-            error: 'AI Analysis Temporarily Unavailable',
-            details: 'Our AI analysis service is experiencing high demand. Please try again in a few minutes.'
-          }),
-          {
-            status: 503,
-            headers: { ...corsHeaders, "Content-Type": "application/json" }
-          }
-        );
-      }
-      
-      // Handle other API errors
-      console.error(`[${testId}] OpenAI API error: ${auditResponse.status}`);
       return new Response(
         JSON.stringify({
           success: false,
-          errorType: 'analysis_failed',
-          error: 'Analysis Error',
-          details: 'We encountered an issue analyzing this website. Please try again.'
+          error: "AI analysis temporarily unavailable. Please try again in 1-2 minutes.",
+          message: "Our AI service is currently busy. Your request was not charged."
         }),
         {
           status: 500,
@@ -978,190 +738,92 @@ INSTRUCTIONS:
       );
     }
 
-    const auditData = await auditResponse.json();
-
-    // === DEBUG: Log FULL OpenAI API Response ===
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] === FULL OPENAI API RESPONSE ===`);
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] Full auditData object:`, JSON.stringify(auditData, null, 2));
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-
-    let auditText = auditData.choices[0].message.content
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
-
-    // === DEBUG: Log Extracted Content ===
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] === EXTRACTED CONTENT FROM OPENAI ===`);
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] Raw audit text (full):`, auditText);
-    console.log(`[${testId}] Raw audit text length:`, auditText.length);
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-
-    const auditResults = JSON.parse(auditText);
-
-    // === DEBUG: Log Parsed JSON ===
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] === PARSED JSON FROM OPENAI ===`);
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] Parsed auditResults:`, JSON.stringify(auditResults, null, 2));
-    console.log(`[${testId}] Type of auditResults:`, typeof auditResults);
-    console.log(`[${testId}] Keys in auditResults:`, Object.keys(auditResults));
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-
-    // Normalize scores in case OpenAI returns different shapes
-    const getScore = (primary: any, ...fallbacks: any[]): number => {
-      const candidates = [primary, ...fallbacks];
-      for (const value of candidates) {
-        if (typeof value === "number" && !Number.isNaN(value)) return value;
-        if (typeof value === "string") {
-          const parsed = parseFloat(value);
-          if (!Number.isNaN(parsed)) return parsed;
-        }
-      }
-      return 0;
+    // Merge results and compute scores
+    const scores = {
+      content_clarity_score: structuralResult?.content_clarity_score || 0,
+      discoverability_score: structuralResult?.discoverability_score || 0,
+      technical_score: structuralResult?.technical_score || 0,
+      authority_score: businessResult?.authority_score || 0,
+      positioning_score: businessResult?.positioning_score || 0,
+      recommendations: businessResult?.recommendations || []
     };
 
-    const breakdown = (auditResults as any).breakdown || (auditResults as any).scores || {};
+    const foundindex_score = 
+      scores.content_clarity_score +
+      scores.discoverability_score +
+      scores.authority_score +
+      scores.technical_score +
+      scores.positioning_score;
 
-    const contentClarityScore = getScore(
-      (auditResults as any).content_clarity_score,
-      (auditResults as any).content_clarity,
-      (breakdown as any).content_clarity_score,
-      (breakdown as any).content_clarity,
-    );
-
-    const structuredDataScore = getScore(
-      (auditResults as any).structured_data_score,
-      (auditResults as any).structured_data,
-      (breakdown as any).structured_data_score,
-      (breakdown as any).structured_data,
-    );
-
-    const authorityScore = getScore(
-      (auditResults as any).authority_score,
-      (auditResults as any).authority,
-      (breakdown as any).authority_score,
-      (breakdown as any).authority,
-    );
-
-    const discoverabilityScore = getScore(
-      (auditResults as any).discoverability_score,
-      (auditResults as any).discoverability,
-      (breakdown as any).discoverability_score,
-      (breakdown as any).discoverability,
-    );
-
-    const comparisonScore = getScore(
-      (auditResults as any).comparison_score,
-      (auditResults as any).comparison,
-      (breakdown as any).comparison_score,
-      (breakdown as any).comparison,
-    );
-
-    const totalScore = getScore(
-      (auditResults as any).total_score,
-      (auditResults as any).score,
-      (breakdown as any).total_score,
-      (breakdown as any).score,
-    );
-
-    // Extract sub-score breakdowns if available
-    const contentClarityBreakdown = (auditResults as any).content_clarity_breakdown || {};
-    const structuredDataBreakdown = (auditResults as any).structured_data_breakdown || {};
-    const authorityBreakdown = (auditResults as any).authority_breakdown || {};
-    const discoverabilityBreakdown = (auditResults as any).discoverability_breakdown || {};
-    const comparisonBreakdown = (auditResults as any).comparison_breakdown || {};
-    const authorityDetection = (auditResults as any).authority_detection || {};
-
-    // === DEBUG: Log Individual Score Extraction ===
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] === INDIVIDUAL SCORE EXTRACTION ===`);
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] contentClarityScore: ${contentClarityScore}/30`);
-    console.log(`[${testId}] structuredDataScore: ${structuredDataScore}/15`);
-    console.log(`[${testId}] authorityScore: ${authorityScore}/15`);
-    console.log(`[${testId}] discoverabilityScore: ${discoverabilityScore}/25`);
-    console.log(`[${testId}] comparisonScore: ${comparisonScore}/15`);
-    console.log(`[${testId}] totalScore: ${totalScore}/100`);
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] === AUTHORITY DETECTION RESULTS ===`);
-    console.log(`[${testId}] has_portfolio: ${authorityDetection.has_portfolio}`);
-    console.log(`[${testId}] has_testimonials: ${authorityDetection.has_testimonials}`);
-    console.log(`[${testId}] has_client_logos: ${authorityDetection.has_client_logos}`);
-    console.log(`[${testId}] has_metrics: ${authorityDetection.has_metrics}`);
-    console.log(`[${testId}] has_credentials: ${authorityDetection.has_credentials}`);
-    console.log(`[${testId}] portfolio_details: ${authorityDetection.portfolio_details || 'None'}`);
-    console.log(`[${testId}] testimonial_details: ${authorityDetection.testimonial_details || 'None'}`);
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] === SUB-SCORE BREAKDOWNS ===`);
-    console.log(`[${testId}] Content Clarity breakdown:`, JSON.stringify(contentClarityBreakdown));
-    console.log(`[${testId}] Authority breakdown:`, JSON.stringify(authorityBreakdown));
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] === EVIDENCE FOUND/MISSING ===`);
-    console.log(`[${testId}] Authority evidence found:`, JSON.stringify((auditResults as any).authority_evidence_found || []));
-    console.log(`[${testId}] Authority missing:`, JSON.stringify((auditResults as any).authority_missing || []));
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-
-    // === SCORE VALIDATION ===
-    const calculatedTotal = contentClarityScore + structuredDataScore + authorityScore + discoverabilityScore + comparisonScore;
-    const allScoresZero = totalScore === 0 && calculatedTotal === 0;
-    const hasSubstantialContent = meaningfulTextLength > 500 || websiteHtml.length > 5000;
-    const hasHeadings = websiteHtml.toLowerCase().includes('<h1') || websiteHtml.toLowerCase().includes('<h2');
+    // Set status based on partial failures
+    let analysisStatus = "complete";
+    let errorMessage = null;
     
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    console.log(`[${testId}] === SCORE VALIDATION ===`);
-    console.log(`[${testId}] Calculated total from components: ${calculatedTotal}`);
-    console.log(`[${testId}] Total score from API: ${totalScore}`);
-    console.log(`[${testId}] All scores zero: ${allScoresZero}`);
-    console.log(`[${testId}] Has substantial content: ${hasSubstantialContent}`);
-    console.log(`[${testId}] Has headings: ${hasHeadings}`);
-    console.log(`[${testId}] Self-analysis (foundindex): ${isAnalyzingSelf}`);
-    console.log(`[${testId}] ═══════════════════════════════════════`);
-    
-    // Detect unreasonable 0-score for substantial content
-    if (allScoresZero && hasSubstantialContent) {
-      console.error(`[${testId}] ❌ CRITICAL: All scores are 0 but site has substantial content!`);
-      console.error(`[${testId}] This indicates OpenAI analysis failure, not an actual 0-score site.`);
-      console.error(`[${testId}] Text length: ${meaningfulTextLength}, HTML length: ${websiteHtml.length}`);
-      console.error(`[${testId}] Has headings: ${hasHeadings}`);
-      console.error(`[${testId}] OpenAI raw response keys:`, Object.keys(auditResults));
-      
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Analysis could not be completed",
-          errorType: "analysis_failed",
-          details: "Our AI analysis returned invalid results. This can happen with complex websites. Please try again or contact support if the issue persists.",
-          testId,
-          debug: {
-            textLength: meaningfulTextLength,
-            htmlLength: websiteHtml.length,
-            hasHeadings: hasHeadings,
-            calculatedTotal: calculatedTotal,
-            apiResponseKeys: Object.keys(auditResults)
-          }
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+    if (structuralError) {
+      analysisStatus = "degraded";
+      errorMessage = "structural_analysis_failed";
+      console.warn(`[${testId}] Returning degraded results - structural analysis failed`);
+    } else if (businessError) {
+      analysisStatus = "degraded";
+      errorMessage = "business_analysis_failed";
+      console.warn(`[${testId}] Returning degraded results - business analysis failed`);
     }
+
+    // Create audit results object in expected format
+    const auditResults = {
+      content_clarity_score: scores.content_clarity_score,
+      structured_data_score: scores.technical_score, // Map technical to structured_data
+      authority_score: scores.authority_score,
+      discoverability_score: scores.discoverability_score,
+      comparison_score: scores.positioning_score, // Map positioning to comparison
+      total_score: foundindex_score,
+      recommendations: scores.recommendations,
+      analysis_details: {
+        content_clarity: structuralResult ? "Analysis completed" : "Analysis failed",
+        structured_data: structuralResult ? "Analysis completed" : "Analysis failed",
+        authority: businessResult ? "Analysis completed" : "Analysis failed",
+        discoverability: structuralResult ? "Analysis completed" : "Analysis failed",
+        comparison: businessResult ? "Analysis completed" : "Analysis failed"
+      },
+      authority_detection: {
+        has_portfolio: false,
+        has_testimonials: false,
+        has_client_logos: false,
+        has_metrics: false,
+        has_credentials: false
+      },
+      content_clarity_breakdown: {},
+      structured_data_breakdown: {},
+      authority_breakdown: {},
+      discoverability_breakdown: {},
+      comparison_breakdown: {},
+      authority_evidence_found: [],
+      authority_missing: [],
+      status: analysisStatus,
+      error_message: errorMessage
+    };
+
+    console.log(`[${testId}] Parallel analysis complete - Status: ${analysisStatus}`);
+    console.log(`[${testId}] Scores: Content=${scores.content_clarity_score}, Discoverability=${scores.discoverability_score}, Technical=${scores.technical_score}, Authority=${scores.authority_score}, Positioning=${scores.positioning_score}`);
+    console.log(`[${testId}] Total FoundIndex score: ${foundindex_score}/100`);
+
+    // Continue with existing variable names for compatibility
+    const contentClarityScore = scores.content_clarity_score;
+    const structuredDataScore = scores.technical_score;
+    const authorityScore = scores.authority_score;
+    const discoverabilityScore = scores.discoverability_score;
+    const comparisonScore = scores.positioning_score;
+    const finalTotalScore = foundindex_score;
     
-    // Use calculated total if API total seems wrong (mismatch > 10 points)
-    const finalTotalScore = Math.abs(totalScore - calculatedTotal) > 10 && calculatedTotal > 0 
-      ? calculatedTotal 
-      : (totalScore > 0 ? totalScore : calculatedTotal);
-    
-    console.log(`[${testId}] Final total score: ${finalTotalScore}`);
-    
-    // Warn if score seems suspiciously low for a real website
-    if (finalTotalScore < 20 && websiteHtml.length > 5000) {
-      console.warn(`[${testId}] WARNING: Score (${finalTotalScore}) seems unusually low for a website with ${websiteHtml.length} chars of content`);
-    }
+    const contentClarityBreakdown = {};
+    const structuredDataBreakdown = {};
+    const authorityBreakdown = {};
+    const discoverabilityBreakdown = {};
+    const comparisonBreakdown = {};
+    const authorityDetection = auditResults.authority_detection;
+
+
+    // Skip the old sequential OpenAI audit call - now using parallel calls above
 
     console.log(`[${testId}] ===================`);
     console.log(`[${testId}] STEP 3: Analyzing business type for query generation...`);
@@ -1528,7 +1190,7 @@ Return ONLY valid JSON:
     console.log(`[${testId}] === FINAL SCORES OBJECT BEFORE AIRTABLE WRITE ===`);
     console.log(`[${testId}] ═══════════════════════════════════════`);
     console.log(`[${testId}] Final scores being written to Airtable:`);
-    console.log(`[${testId}]   foundindex_score (totalScore):`, totalScore);
+    console.log(`[${testId}]   foundindex_score (finalTotalScore):`, finalTotalScore);
     console.log(`[${testId}]   content_clarity_score:`, contentClarityScore);
     console.log(`[${testId}]   structured_data_score:`, structuredDataScore);
     console.log(`[${testId}]   authority_score:`, authorityScore);
@@ -1860,13 +1522,13 @@ Return ONLY valid JSON:
       console.error(`[${testId}] Email send failed:`, emailError);
     }
 
-    console.log(`[${testId}] SUCCESS! Test ID: ${testId}, AI-Readiness Score: ${totalScore}, ChatGPT Score: ${foundIndexScore}`);
+    console.log(`[${testId}] SUCCESS! Test ID: ${testId}, AI-Readiness Score: ${finalTotalScore}, ChatGPT Score: ${foundIndexScore}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         testId,
-        score: totalScore, // Primary AI-readiness audit score (used by frontend)
+        score: finalTotalScore, // Primary AI-readiness audit score (used by frontend)
         foundIndexScore,   // Secondary ChatGPT recommendation score
         totalRecommendations,
         totalQueries: queries.length,
