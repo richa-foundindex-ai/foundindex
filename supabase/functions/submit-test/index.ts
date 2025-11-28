@@ -13,7 +13,6 @@ interface TestSubmission {
   industry?: string;
 }
 
-// Input validation schemas
 const ALLOWED_INDUSTRIES = ["saas", "financial", "ecommerce", "professional", "healthcare", "other"];
 
 const validateEmail = (email: string | undefined): string => {
@@ -72,13 +71,6 @@ const industryQueries: Record<string, string[]> = {
     "best SaaS solutions for team communication",
     "recommended cloud-based project tools",
     "top software for agile teams",
-    "best tools for remote work collaboration",
-    "recommended software for startup growth",
-    "top platforms for team productivity",
-    "best SaaS tools for business operations",
-    "recommended solutions for workflow management",
-    "top software for project tracking",
-    "best cloud tools for team collaboration",
   ],
   financial: [
     "best accounting software for small business",
@@ -89,13 +81,6 @@ const industryQueries: Record<string, string[]> = {
     "best tools for financial management",
     "recommended platforms for expense tracking",
     "top software for bookkeeping",
-    "best solutions for financial analytics",
-    "recommended tools for portfolio management",
-    "top platforms for payment processing",
-    "best software for financial reporting",
-    "recommended solutions for tax management",
-    "top tools for invoicing",
-    "best platforms for financial planning",
   ],
   ecommerce: [
     "best e-commerce platforms for startups",
@@ -106,13 +91,6 @@ const industryQueries: Record<string, string[]> = {
     "best tools for e-commerce marketing",
     "recommended software for inventory management",
     "top solutions for online payments",
-    "best platforms for digital products",
-    "recommended tools for store optimization",
-    "top e-commerce solutions for small business",
-    "best software for product catalogs",
-    "recommended platforms for multi-channel selling",
-    "top tools for order fulfillment",
-    "best solutions for customer reviews",
   ],
   professional: [
     "best software for professional services",
@@ -123,13 +101,6 @@ const industryQueries: Record<string, string[]> = {
     "best tools for time tracking professionals",
     "recommended platforms for service delivery",
     "top solutions for professional billing",
-    "best software for contract management",
-    "recommended tools for professional collaboration",
-    "top platforms for service automation",
-    "best solutions for client communication",
-    "recommended software for professional reporting",
-    "top tools for resource planning",
-    "best platforms for professional workflows",
   ],
   healthcare: [
     "best healthcare management software",
@@ -140,13 +111,6 @@ const industryQueries: Record<string, string[]> = {
     "best tools for medical scheduling",
     "recommended platforms for telehealth",
     "top solutions for healthcare billing",
-    "best software for patient records",
-    "recommended tools for healthcare analytics",
-    "top platforms for medical compliance",
-    "best solutions for healthcare communication",
-    "recommended software for practice management",
-    "top tools for healthcare workflows",
-    "best platforms for patient engagement",
   ],
   other: [
     "best software solutions for businesses",
@@ -157,13 +121,6 @@ const industryQueries: Record<string, string[]> = {
     "best tools for productivity",
     "recommended platforms for automation",
     "top solutions for communication",
-    "best software for collaboration",
-    "recommended tools for analytics",
-    "top platforms for customer service",
-    "best solutions for workflow",
-    "recommended software for reporting",
-    "top tools for data management",
-    "best platforms for business operations",
   ],
 };
 
@@ -202,7 +159,7 @@ serve(async (req) => {
     let fetchErrorReason = "";
 
     try {
-      console.log(`[${testId}] Attempting to fetch: ${validatedWebsite}`);
+      console.log(`[${testId}] Fetching: ${validatedWebsite}`);
       const websiteResponse = await fetch(validatedWebsite, {
         headers: {
           "User-Agent": "Mozilla/5.0 (compatible; FoundIndex-Bot/1.0; +https://foundindex.com)",
@@ -214,29 +171,23 @@ serve(async (req) => {
       if (websiteResponse.ok) {
         websiteHtml = await websiteResponse.text();
         fetchSuccess = true;
-        console.log(`[${testId}] Website content fetched successfully (${websiteHtml.length} chars)`);
-
-        if (websiteHtml.length < 500) {
-          console.warn(`[${testId}] WARNING: Website content is very short (${websiteHtml.length} chars)`);
-          fetchErrorReason = `Website returned very little content (${websiteHtml.length} chars)`;
-        }
+        console.log(`[${testId}] ✅ Fetched ${websiteHtml.length} chars`);
       } else {
-        fetchErrorReason = `Website returned HTTP ${websiteResponse.status}: ${websiteResponse.statusText}`;
+        fetchErrorReason = `HTTP ${websiteResponse.status}`;
         console.warn(`[${testId}] ${fetchErrorReason}`);
       }
     } catch (fetchError) {
-      fetchErrorReason = fetchError instanceof Error ? fetchError.message : "Unknown fetch error";
-      console.error(`[${testId}] Failed to fetch website: ${fetchErrorReason}`);
+      fetchErrorReason = fetchError instanceof Error ? fetchError.message : "Unknown error";
+      console.error(`[${testId}] Fetch failed: ${fetchErrorReason}`);
     }
 
     if (!fetchSuccess || websiteHtml.length < 100) {
-      console.error(`[${testId}] CRITICAL: Cannot analyze website - fetch failed`);
       return new Response(
         JSON.stringify({
           success: false,
           error: "Unable to access website",
           errorType: "fetch_failed",
-          details: fetchErrorReason || "The website could not be reached. Please check the URL and try again.",
+          details: fetchErrorReason || "Website could not be reached",
           testId,
         }),
         {
@@ -246,7 +197,7 @@ serve(async (req) => {
       );
     }
 
-    const spaMarkers = ['id="root"', 'id="app"', "__NEXT_DATA__", "window.__NUXT__", "data-reactroot"];
+    const spaMarkers = ['id="root"', 'id="app"', "__NEXT_DATA__", "window.__NUXT__"];
     const hasSPAMarker = spaMarkers.some((marker) => websiteHtml.includes(marker));
 
     let textContent = websiteHtml
@@ -256,53 +207,38 @@ serve(async (req) => {
       .replace(/\s+/g, " ")
       .trim();
 
-    let meaningfulTextLength = textContent.length;
-    let isLikelyJSRendered = hasSPAMarker && meaningfulTextLength < 500;
+    let isLikelyJSRendered = hasSPAMarker && textContent.length < 500;
 
-    console.log(
-      `[${testId}] HTML length: ${websiteHtml.length}, Text length: ${meaningfulTextLength}, JS-rendered: ${isLikelyJSRendered}`,
-    );
-
-    if (isLikelyJSRendered && meaningfulTextLength < 500) {
-      console.log(`[${testId}] 🔄 JS-rendered site detected - attempting headless browser fetch...`);
+    if (isLikelyJSRendered) {
+      console.log(`[${testId}] 🔄 JS-rendered detected, trying Jina.ai...`);
 
       try {
-        const jinaUrl = `https://r.jina.ai/${validatedWebsite}`;
-        const jinaResponse = await fetch(jinaUrl, {
-          headers: {
-            Accept: "text/html",
-            "User-Agent": "Mozilla/5.0 (compatible; FoundIndex-Bot/1.0; +https://foundindex.com)",
-          },
+        const jinaResponse = await fetch(`https://r.jina.ai/${validatedWebsite}`, {
+          headers: { Accept: "text/html" },
           signal: AbortSignal.timeout(30000),
         });
 
         if (jinaResponse.ok) {
-          const renderedContent = await jinaResponse.text();
-          console.log(`[${testId}] ✅ Jina.ai returned ${renderedContent.length} chars`);
-
-          if (renderedContent.length > meaningfulTextLength) {
-            textContent = renderedContent;
-            meaningfulTextLength = textContent.length;
+          const rendered = await jinaResponse.text();
+          if (rendered.length > textContent.length) {
+            textContent = rendered;
+            websiteHtml = `<!DOCTYPE html><html><body>${rendered}</body></html>`;
             isLikelyJSRendered = false;
-            websiteHtml = `<!DOCTYPE html><html><head><title>${validatedWebsite}</title></head><body>${renderedContent}</body></html>`;
+            console.log(`[${testId}] ✅ Jina.ai rendered ${rendered.length} chars`);
           }
         }
-      } catch (jinaError) {
-        console.warn(
-          `[${testId}] ⚠️ Jina.ai fetch failed: ${jinaError instanceof Error ? jinaError.message : "Unknown"}`,
-        );
+      } catch (e) {
+        console.warn(`[${testId}] Jina.ai failed`);
       }
     }
 
-    if (isLikelyJSRendered && meaningfulTextLength < 200) {
-      console.warn(`[${testId}] CRITICAL: JS-rendered site with minimal content`);
+    if (isLikelyJSRendered && textContent.length < 200) {
       return new Response(
         JSON.stringify({
           success: false,
           error: "Unable to analyze JavaScript-rendered website",
           errorType: "js_rendered_site",
-          details:
-            "This website uses JavaScript rendering. We couldn't extract meaningful content. Try enabling SSR or contact support.",
+          details: "Website uses JS rendering. Enable SSR or contact support.",
           testId,
         }),
         {
@@ -313,11 +249,11 @@ serve(async (req) => {
     }
 
     console.log(`[${testId}] ===================`);
-    console.log(`[${testId}] STEP 2: AI-Readiness Audit (Parallel)...`);
+    console.log(`[${testId}] STEP 2: AI-Readiness Audit (2 Parallel Calls)...`);
     console.log(`[${testId}] ===================`);
 
     const modelName = Deno.env.get("OPENAI_MODEL_NAME") || "gpt-4-turbo";
-    console.log(`[${testId}] Using model: ${modelName}`);
+    console.log(`[${testId}] Model: ${modelName}`);
 
     async function callWithRetry(messages: any[], retries = 1): Promise<any> {
       try {
@@ -337,11 +273,11 @@ serve(async (req) => {
 
         if (!response.ok) {
           if (response.status === 429 && retries > 0) {
-            console.log(`[${testId}] Rate limit hit, retrying after 2s...`);
+            console.log(`[${testId}] 429 - retrying in 2s...`);
             await new Promise((r) => setTimeout(r, 2000));
             return callWithRetry(messages, retries - 1);
           }
-          throw new Error(`OpenAI API error: ${response.status}`);
+          throw new Error(`OpenAI error: ${response.status}`);
         }
 
         const data = await response.json();
@@ -351,7 +287,7 @@ serve(async (req) => {
           .trim();
         return JSON.parse(content);
       } catch (error) {
-        if (error instanceof Error && error.message.includes("429") && retries > 0) {
+        if (retries > 0 && error instanceof Error && error.message.includes("429")) {
           await new Promise((r) => setTimeout(r, 2000));
           return callWithRetry(messages, retries - 1);
         }
@@ -361,7 +297,7 @@ serve(async (req) => {
 
     const extractedContent = websiteHtml.substring(0, 50000);
 
-    const structuralPrompt = `Analyze this website's structure and content. Return ONLY valid JSON:
+    const structuralPrompt = `Analyze website structure. Return ONLY JSON:
 
 {
   "content_clarity_score": number (0-25),
@@ -370,34 +306,32 @@ serve(async (req) => {
 }
 
 Criteria:
-- Content Clarity (0-25): Value proposition clear in first 100 words? Target audience explicit? Services/products clearly described?
-- Discoverability (0-20): Critical info in first 2-3 screen sections? Clear headers? Scannable content?
-- Technical (0-15): Semantic HTML? Title tag and meta description? Schema.org markup?
+- Content Clarity: Value prop clear in first 100 words? Target audience explicit?
+- Discoverability: Critical info in first sections? Clear headers? Scannable?
+- Technical: Semantic HTML? Title/meta tags? Schema markup?
 
 Website: ${validatedWebsite}
 Content: ${extractedContent}
 
-Return ONLY JSON, no markdown.`;
+Return ONLY JSON.`;
 
-    const businessPrompt = `Analyze this business's credibility and positioning. Return ONLY valid JSON:
+    const businessPrompt = `Analyze business credibility. Return ONLY JSON:
 
 {
   "authority_score": number (0-15),
   "positioning_score": number (0-15),
-  "recommendations": [array of 3-5 specific improvements]
+  "recommendations": [array of 3-5 improvements]
 }
 
 Criteria:
-- Authority (0-15): Portfolio/case studies? Client testimonials with attribution? Client logos? Specific results/metrics? Certifications?
-- Positioning (0-15): Clear target customer? What makes them different? Who they're NOT for?
-- Recommendations: List 3-5 specific missing elements
+- Authority: Portfolio? Testimonials? Client logos? Results? Certifications?
+- Positioning: Clear target? Differentiation? Who they're NOT for?
+- Recommendations: List specific missing elements
 
 Website: ${validatedWebsite}
 Content: ${extractedContent}
 
-Return ONLY JSON, no markdown.`;
-
-    console.log(`[${testId}] Running parallel OpenAI analysis...`);
+Return ONLY JSON.`;
 
     let structuralResult: any = null;
     let businessResult: any = null;
@@ -407,12 +341,12 @@ Return ONLY JSON, no markdown.`;
     try {
       [structuralResult, businessResult] = await Promise.all([
         callWithRetry([{ role: "user", content: structuralPrompt }]).catch((err) => {
-          console.error(`[${testId}] Structural analysis failed:`, err);
+          console.error(`[${testId}] Structural failed:`, err);
           structuralError = true;
           return null;
         }),
         callWithRetry([{ role: "user", content: businessPrompt }]).catch((err) => {
-          console.error(`[${testId}] Business analysis failed:`, err);
+          console.error(`[${testId}] Business failed:`, err);
           businessError = true;
           return null;
         }),
@@ -422,11 +356,10 @@ Return ONLY JSON, no markdown.`;
     }
 
     if (structuralError && businessError) {
-      console.error(`[${testId}] CRITICAL: Both analysis calls failed`);
       return new Response(
         JSON.stringify({
           success: false,
-          error: "AI analysis temporarily unavailable. Please try again in 1-2 minutes.",
+          error: "AI analysis temporarily unavailable. Retry in 1-2 minutes.",
         }),
         {
           status: 500,
@@ -451,18 +384,7 @@ Return ONLY JSON, no markdown.`;
       scores.technical_score +
       scores.positioning_score;
 
-    let analysisStatus = "complete";
-    let errorMessage = null;
-
-    if (structuralError) {
-      analysisStatus = "degraded";
-      errorMessage = "structural_analysis_failed";
-    } else if (businessError) {
-      analysisStatus = "degraded";
-      errorMessage = "business_analysis_failed";
-    }
-
-    console.log(`[${testId}] Analysis complete - Status: ${analysisStatus}, Score: ${foundindex_score}/100`);
+    console.log(`[${testId}] ✅ Audit complete - Score: ${foundindex_score}/100`);
 
     console.log(`[${testId}] ===================`);
     console.log(`[${testId}] STEP 3: Business type analysis...`);
@@ -472,20 +394,6 @@ Return ONLY JSON, no markdown.`;
     let queries: string[] = [];
 
     try {
-      const analysisPrompt = `Analyze this business: ${validatedWebsite}
-
-Industry hint: ${validatedIndustry}
-
-Determine:
-1. Specific business type
-2. 15 buyer-intent queries people would ask when looking for this
-
-Return ONLY valid JSON:
-{
-  "business_type": "specific category",
-  "queries": ["query 1", "query 2", ...]
-}`;
-
       const analysisResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -498,11 +406,19 @@ Return ONLY valid JSON:
           messages: [
             {
               role: "system",
-              content: "You analyze businesses and search behavior. Return ONLY valid JSON, no markdown.",
+              content: "Analyze businesses and generate search queries. Return ONLY JSON.",
             },
             {
               role: "user",
-              content: analysisPrompt,
+              content: `Analyze: ${validatedWebsite}
+
+Industry: ${validatedIndustry}
+
+Return ONLY JSON:
+{
+  "business_type": "specific type",
+  "queries": [8 buyer-intent queries]
+}`,
             },
           ],
           max_tokens: 1000,
@@ -511,27 +427,27 @@ Return ONLY valid JSON:
       });
 
       if (analysisResponse.ok) {
-        const analysisData = await analysisResponse.json();
-        let analysisText = analysisData.choices[0].message.content
+        const data = await analysisResponse.json();
+        let text = data.choices[0].message.content
           .replace(/```json\n?/g, "")
           .replace(/```\n?/g, "")
           .trim();
 
         try {
-          const parsed = JSON.parse(analysisText);
+          const parsed = JSON.parse(text);
           businessType = parsed.business_type || validatedIndustry;
           queries = parsed.queries || [];
-        } catch (parseError) {
-          const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
+        } catch (e) {
+          const match = text.match(/\{[\s\S]*\}/);
+          if (match) {
+            const parsed = JSON.parse(match[0]);
             businessType = parsed.business_type || validatedIndustry;
             queries = parsed.queries || [];
           }
         }
       }
 
-      if (!queries || queries.length < 10) {
+      if (!queries || queries.length < 5) {
         queries = industryQueries[validatedIndustry] || industryQueries.other;
         businessType = validatedIndustry;
       }
@@ -541,30 +457,62 @@ Return ONLY valid JSON:
     }
 
     console.log(`[${testId}] ===================`);
-    console.log(`[${testId}] STEP 4: ChatGPT Visibility Test (OPTIMIZED - Parallel Batches)...`);
+    console.log(`[${testId}] STEP 4: Visibility Test (SINGLE BATCH CALL)...`);
     console.log(`[${testId}] ===================`);
-    console.log(`[${testId}] Testing ${queries.length} queries in parallel batches of 5...`);
 
     let totalRecommendations = 0;
     const queryResults = [];
 
-    // OPTIMIZED: Process queries in parallel batches of 5
-    const BATCH_SIZE = 5;
-    const batches = [];
+    try {
+      // SINGLE API CALL FOR ALL QUERIES
+      const testQueries = queries.slice(0, 8);
 
-    for (let i = 0; i < queries.length; i += BATCH_SIZE) {
-      batches.push(queries.slice(i, i + BATCH_SIZE));
+      const batchPrompt = `Test these search queries for website: ${validatedWebsite}
+
+For each query, determine if this website would be a relevant recommendation.
+
+Return ONLY valid JSON:
+{
+  "results": [
+    {
+      "query": "exact query text",
+      "was_recommended": true/false,
+      "reason": "brief explanation"
     }
+  ]
+}
 
-    console.log(`[${testId}] Created ${batches.length} batches of up to ${BATCH_SIZE} queries each`);
+Queries:
+${testQueries.map((q, i) => `${i + 1}. ${q}`).join("\n")}`;
 
-    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-      const batch = batches[batchIndex];
-      console.log(`[${testId}] Processing batch ${batchIndex + 1}/${batches.length} (${batch.length} queries)...`);
+      console.log(`[${testId}] Single batch call for ${testQueries.length} queries...`);
 
-      // Process all queries in this batch in parallel
-      const batchPromises = batch.map(async (query, indexInBatch) => {
-        const queryNumber = batchIndex * BATCH_SIZE + indexInBatch + 1;
+      const batchResponse = await callWithRetry([{ role: "user", content: batchPrompt }]);
+      const results = batchResponse.results || [];
+
+      totalRecommendations = results.filter((r: any) => r.was_recommended).length;
+
+      results.forEach((result: any, index: number) => {
+        queryResults.push({
+          query_number: index + 1,
+          query_text: result.query || testQueries[index],
+          engine: "ChatGPT",
+          was_recommended: result.was_recommended,
+          context_snippet: result.reason || "Batch analyzed",
+          recommendation_position: result.was_recommended ? 1 : null,
+          quality_rating: result.was_recommended ? "high" : "none",
+        });
+      });
+
+      console.log(`[${testId}] ✅ Batch complete: ${totalRecommendations}/${results.length}`);
+    } catch (error) {
+      console.error(`[${testId}] ❌ Batch failed, using fallback:`, error);
+
+      // FALLBACK: Test 3 queries individually
+      const fallbackQueries = queries.slice(0, 3);
+
+      for (let i = 0; i < fallbackQueries.length; i++) {
+        const query = fallbackQueries[i];
 
         try {
           const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -579,8 +527,7 @@ Return ONLY valid JSON:
               messages: [
                 {
                   role: "system",
-                  content:
-                    "You are a helpful assistant that recommends software and services. Provide specific recommendations.",
+                  content: "You recommend software and services.",
                 },
                 {
                   role: "user",
@@ -595,7 +542,6 @@ Return ONLY valid JSON:
           const data = await response.json();
           const aiResponse = data.choices[0].message.content;
 
-          // Check if website is mentioned
           let domain = validatedWebsite;
           try {
             const url = new URL(validatedWebsite);
@@ -607,89 +553,53 @@ Return ONLY valid JSON:
           const brandName = domain.split(".")[0];
           const responseText = aiResponse.toLowerCase();
 
-          const domainFound = responseText.includes(domain.toLowerCase());
-          const brandFound = responseText.includes(brandName.toLowerCase());
-          const brandWithSpaces = brandName.replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase();
-          const brandSpacedFound = responseText.includes(brandWithSpaces);
+          const wasRecommended =
+            responseText.includes(domain.toLowerCase()) || responseText.includes(brandName.toLowerCase());
 
-          const wasRecommended = domainFound || brandFound || brandSpacedFound;
+          if (wasRecommended) totalRecommendations++;
 
-          // Extract context snippet
-          let contextSnippet = aiResponse.substring(0, 400);
-          if (wasRecommended) {
-            const sentences = aiResponse.split(/[.!?]\s+/);
-            const relevantSentence = sentences.find(
-              (s: string) =>
-                s.toLowerCase().includes(brandName.toLowerCase()) || s.toLowerCase().includes(domain.toLowerCase()),
-            );
-            if (relevantSentence && relevantSentence.length < 400) {
-              contextSnippet = relevantSentence;
-            }
-          }
-
-          return {
-            query_number: queryNumber,
+          queryResults.push({
+            query_number: i + 1,
             query_text: query,
             engine: "ChatGPT",
             was_recommended: wasRecommended,
-            context_snippet: contextSnippet,
+            context_snippet: aiResponse.substring(0, 200),
             recommendation_position: wasRecommended ? 1 : null,
             quality_rating: wasRecommended ? "high" : "none",
-          };
-        } catch (error) {
-          console.error(`[${testId}] Query ${queryNumber} failed:`, error);
-          return {
-            query_number: queryNumber,
+          });
+        } catch (e) {
+          queryResults.push({
+            query_number: i + 1,
             query_text: query,
             engine: "ChatGPT",
             was_recommended: false,
-            context_snippet: "Error occurred during testing",
+            context_snippet: "Error",
             recommendation_position: null,
             quality_rating: "none",
-          };
+          });
         }
-      });
-
-      // Wait for all queries in this batch to complete
-      const batchResults = await Promise.all(batchPromises);
-
-      // Count recommendations and add to results
-      batchResults.forEach((result) => {
-        if (result.was_recommended) {
-          totalRecommendations++;
-        }
-        queryResults.push(result);
-      });
-
-      console.log(
-        `[${testId}] Batch ${batchIndex + 1}/${batches.length} complete - Total recommendations so far: ${totalRecommendations}/${queryResults.length}`,
-      );
+      }
     }
 
-    console.log(`[${testId}] ✅ All ${queries.length} queries completed in ${batches.length} parallel batches`);
-    console.log(`[${testId}] Final: ${totalRecommendations}/${queries.length} recommendations`);
-
-    const recommendationRate = (totalRecommendations / queries.length) * 100;
+    const recommendationRate = (totalRecommendations / Math.max(queryResults.length, 1)) * 100;
     const chatgptScore = Math.round(recommendationRate);
 
+    console.log(`[${testId}] Final: ${totalRecommendations}/${queryResults.length} = ${chatgptScore}%`);
+
     // Record submission
-    const { error: insertError } = await supabaseAdmin.from("test_submissions").insert({
+    await supabaseAdmin.from("test_submissions").insert({
       email: validatedEmail,
       ip_address: clientIP,
       test_id: testId,
       created_at: testDate,
     });
 
-    if (insertError) {
-      console.error(`[${testId}] Failed to record submission:`, insertError);
-    }
-
-    // Store in Airtable
-    console.log(`[${testId}] Writing results to Airtable...`);
+    // Airtable storage
+    console.log(`[${testId}] Writing to Airtable...`);
     const airtableApiKey = Deno.env.get("AIRTABLE_API_KEY");
     const airtableBaseId = Deno.env.get("AIRTABLE_BASE_ID");
 
-    const testRecordFields: Record<string, any> = {
+    const testFields: Record<string, any> = {
       test_id: testId,
       user_email: validatedEmail,
       website_url: validatedWebsite,
@@ -701,33 +611,23 @@ Return ONLY valid JSON:
       authority_score: scores.authority_score,
       discoverability_score: scores.discoverability_score,
       comparison_score: scores.positioning_score,
-      recommendations: JSON.stringify(scores.recommendations, null, 2),
+      recommendations: JSON.stringify(scores.recommendations),
       business_type: businessType,
-      generated_queries: JSON.stringify(queries, null, 2),
       chatgpt_score: chatgptScore,
-      claude_score: 0,
-      perplexity_score: 0,
       recommendations_count: totalRecommendations,
       recommendation_rate: parseFloat(recommendationRate.toFixed(3)),
     };
 
-    const testRecordResponse = await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
+    await fetch(`https://api.airtable.com/v0/${airtableBaseId}/Tests`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${airtableApiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ fields: testRecordFields }),
+      body: JSON.stringify({ fields: testFields }),
     });
 
-    if (!testRecordResponse.ok) {
-      const errorText = await testRecordResponse.text();
-      console.error(`[${testId}] Airtable write failed:`, errorText);
-    } else {
-      console.log(`[${testId}] ✅ Airtable write successful`);
-    }
-
-    // Store query results in batches
+    // Store query results
     const airtableBatchSize = 10;
     for (let i = 0; i < queryResults.length; i += airtableBatchSize) {
       const batch = queryResults.slice(i, i + airtableBatchSize);
@@ -740,16 +640,13 @@ Return ONLY valid JSON:
         },
         body: JSON.stringify({
           records: batch.map((result) => ({
-            fields: {
-              test_id: testId,
-              ...result,
-            },
+            fields: { test_id: testId, ...result },
           })),
         }),
       });
     }
 
-    console.log(`[${testId}] ✅ SUCCESS! AI-Readiness: ${foundindex_score}/100, ChatGPT: ${chatgptScore}%`);
+    console.log(`[${testId}] ✅ SUCCESS - AI: ${foundindex_score}, ChatGPT: ${chatgptScore}%`);
 
     return new Response(
       JSON.stringify({
@@ -758,14 +655,14 @@ Return ONLY valid JSON:
         score: foundindex_score,
         foundIndexScore: chatgptScore,
         totalRecommendations,
-        totalQueries: queries.length,
+        totalQueries: queryResults.length,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
     );
   } catch (error) {
-    console.error("Request error:", error);
+    console.error("Error:", error);
 
     if (
       error instanceof Error &&
@@ -779,7 +676,7 @@ Return ONLY valid JSON:
 
     return new Response(
       JSON.stringify({
-        error: "An error occurred processing your request. Please try again.",
+        error: "An error occurred. Please try again.",
         details: error instanceof Error ? error.message : "Unknown error",
       }),
       {
