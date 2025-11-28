@@ -1,5 +1,5 @@
-const TESTS_PER_PERIOD = 10; // 10 tests per period (beta phase)
-const RESET_PERIOD_DAYS = 7; // 7-day rolling window from first test
+const TESTS_PER_PERIOD = 10; // 10 tests per month (beta phase)
+const RESET_PERIOD_DAYS = 30; // 30-day rolling window from first test
 const URL_COOLDOWN_DAYS = 30; // Days before same URL can be tested again
 const TEST_LOCK_KEY = 'test_lock';
 const TEST_LOCK_TIMEOUT = 30000; // 30 seconds lock timeout
@@ -99,12 +99,11 @@ export const releaseTestLock = () => {
 };
 
 export const checkRateLimit = (url: string) => {
-  // RATE LIMITING DISABLED (beta phase)
-  // Acquire lock to prevent concurrent checks only
+  // Acquire lock to prevent concurrent checks
   if (!acquireTestLock()) {
     return {
       allowed: false,
-      remainingTests: 999,
+      remainingTests: 0,
       previousScore: undefined,
       testId: undefined,
       daysUntilReset: 0,
@@ -112,10 +111,47 @@ export const checkRateLimit = (url: string) => {
     };
   }
   
-  // Always allow tests during beta
+  const normalizedUrl = normalizeUrl(url);
+  const deviceTests = getDeviceTests();
+  const now = new Date();
+  
+  // Check if monthly limit is reached
+  if (deviceTests.count >= TESTS_PER_PERIOD) {
+    const resetDate = deviceTests.firstTestDate 
+      ? new Date(new Date(deviceTests.firstTestDate).getTime() + RESET_PERIOD_DAYS * 24 * 60 * 60 * 1000)
+      : now;
+    const daysUntilReset = Math.ceil((resetDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return {
+      allowed: false,
+      remainingTests: 0,
+      previousScore: undefined,
+      testId: undefined,
+      daysUntilReset: Math.max(0, daysUntilReset),
+      resetDate: resetDate.toISOString()
+    };
+  }
+  
+  // Check if this specific URL was tested recently (cooldown)
+  const existingTest = deviceTests.tests.find(t => normalizeUrl(t.url) === normalizedUrl);
+  if (existingTest) {
+    const daysSinceTest = (now.getTime() - existingTest.timestamp) / (1000 * 60 * 60 * 24);
+    if (daysSinceTest < URL_COOLDOWN_DAYS) {
+      const daysUntilCanRetest = Math.ceil(URL_COOLDOWN_DAYS - daysSinceTest);
+      return {
+        allowed: false,
+        remainingTests: TESTS_PER_PERIOD - deviceTests.count,
+        previousScore: existingTest.score,
+        testId: existingTest.testId,
+        daysUntilReset: daysUntilCanRetest
+      };
+    }
+  }
+  
+  // Allow test
   return {
     allowed: true,
-    remainingTests: 999,
+    remainingTests: TESTS_PER_PERIOD - deviceTests.count - 1,
     previousScore: undefined,
     testId: undefined
   };
