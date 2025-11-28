@@ -63,6 +63,14 @@ export default {
           hover: "hsl(var(--link-hover))",
           visited: "hsl(var(--link-visited))",
         },
+        blue: {
+          DEFAULT: "hsl(var(--blue))",
+          light: "hsl(var(--blue-light))",
+        },
+        purple: {
+          DEFAULT: "hsl(var(--purple))",
+          light: "hsl(var(--purple-light))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

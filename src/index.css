@@ -59,6 +59,12 @@ All colors MUST be HSL.
     --link: 217 91% 60%;
     --link-hover: 217 91% 50%;
     --link-visited: 217 91% 40%;
+    
+    /* Beta Launch Colors */
+    --blue: 217 91% 60%;
+    --blue-light: 217 91% 95%;
+    --purple: 258 90% 66%;
+    --purple-light: 258 90% 95%;
   }
 }
 
