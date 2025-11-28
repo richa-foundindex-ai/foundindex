@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
-import { Mail, CheckCircle2, Copy, Clock } from "lucide-react";
+import { Mail, CheckCircle2, Copy, Clock, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { analytics } from "@/utils/analytics";
 
 export const ContactForm = () => {
   const navigate = useNavigate();
@@ -25,6 +26,10 @@ export const ContactForm = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  useEffect(() => {
+    analytics.pageView('contact');
+  }, []);
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -50,6 +55,7 @@ export const ContactForm = () => {
     }
 
     setIsSubmitting(true);
+    analytics.formSubmit('contact_form');
 
     try {
       const { error } = await supabase.functions.invoke("submit-contact", {
@@ -64,8 +70,15 @@ export const ContactForm = () => {
       if (error) throw error;
 
       setIsSuccess(true);
+      toast.success("Message sent successfully!");
+      
+      // Auto-dismiss after 3 seconds
+      setTimeout(() => {
+        navigate("/");
+      }, 3000);
     } catch (error: any) {
       console.error("Error submitting contact form:", error);
+      analytics.error('contact_form_error', error.message);
       toast.error("Failed to send message. Please try again or use the email button below.");
     } finally {
       setIsSubmitting(false);
@@ -74,15 +87,15 @@ export const ContactForm = () => {
 
   if (isSuccess) {
     return (
-      <div className="max-w-md mx-auto px-4 py-16 text-center space-y-6">
-        <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
+      <div className="max-w-md mx-auto px-4 py-16 text-center space-y-6 animate-fade-in">
+        <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto animate-scale-in" />
         <h2 className="text-2xl font-bold">Message Sent!</h2>
         <p className="text-muted-foreground">
-          Thank you for reaching out. We'll get back to you soon.
+          Thank you for reaching out. We'll get back to you within 24 hours.
         </p>
-        <Button onClick={() => navigate("/")} className="mt-6">
-          Back to Home
-        </Button>
+        <p className="text-sm text-muted-foreground">
+          Redirecting to home...
+        </p>
       </div>
     );
   }
@@ -170,8 +183,20 @@ export const ContactForm = () => {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Sending..." : "Submit"}
+          <Button 
+            type="submit" 
+            className="w-full min-h-[48px]" 
+            disabled={isSubmitting}
+            aria-label="Send message"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Sending...
+              </>
+            ) : (
+              "Send Message"
+            )}
           </Button>
         </form>
 

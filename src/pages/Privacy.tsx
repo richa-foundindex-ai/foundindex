@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import Header from "@/components/layout/Header";
 import { XCircle } from "lucide-react";
+import { analytics } from "@/utils/analytics";
 
 const Privacy = () => {
   const lastUpdated = new Date().toLocaleDateString('en-US', { 
@@ -10,6 +12,10 @@ const Privacy = () => {
     month: 'long', 
     day: 'numeric' 
   });
+
+  useEffect(() => {
+    analytics.pageView('privacy');
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
