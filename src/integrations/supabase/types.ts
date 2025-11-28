@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      beta_applications: {
+        Row: {
+          allow_case_study: boolean
+          commitment_confirmed: boolean
+          content_type: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          notes: string | null
+          status: string
+          website: string
+          why_apply: string | null
+        }
+        Insert: {
+          allow_case_study?: boolean
+          commitment_confirmed?: boolean
+          content_type: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          notes?: string | null
+          status?: string
+          website: string
+          why_apply?: string | null
+        }
+        Update: {
+          allow_case_study?: boolean
+          commitment_confirmed?: boolean
+          content_type?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          status?: string
+          website?: string
+          why_apply?: string | null
+        }
+        Relationships: []
+      }
       test_submissions: {
         Row: {
           created_at: string
