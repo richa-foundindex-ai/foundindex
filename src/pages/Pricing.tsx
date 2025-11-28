@@ -382,7 +382,7 @@ const Pricing = () => {
                 How long is beta free?
               </AccordionTrigger>
               <AccordionContent>
-                Until March 2025 or 1000 users, whichever comes first. We'll
+                Until February 2025 or 1000 users, whichever comes first. We'll
                 notify all beta testers well in advance before any changes.
               </AccordionContent>
             </AccordionItem>
@@ -403,8 +403,7 @@ const Pricing = () => {
                 Can I test multiple URLs?
               </AccordionTrigger>
               <AccordionContent>
-                Yes! During beta, you can test unlimited URLs for both homepage
-                and blog post audits. There are no restrictions.
+                Yes! Up to 10 tests per month during beta to manage costs. Your limit resets automatically 30 days after your first test.
               </AccordionContent>
             </AccordionItem>
 

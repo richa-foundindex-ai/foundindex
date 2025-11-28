@@ -40,9 +40,11 @@ const HeroSection = () => {
   const [showRateLimitModal, setShowRateLimitModal] = useState(false);
   const [showExistingTestModal, setShowExistingTestModal] = useState(false);
   const [existingTestInfo, setExistingTestInfo] = useState<ExistingTestInfo | null>(null);
-  const [rateLimitInfo, setRateLimitInfo] = useState<{ url: string; score: number; remainingTests: number; testId?: string; daysUntilReset?: number } | null>(
+  const [rateLimitInfo, setRateLimitInfo] = useState<{ url: string; score: number; remainingTests: number; testId?: string; daysUntilReset?: number; resetDate?: string } | null>(
     null,
   );
+  const [showMonthlyLimitModal, setShowMonthlyLimitModal] = useState(false);
+  const [monthlyLimitResetDate, setMonthlyLimitResetDate] = useState<string>("");
   const [validationError, setValidationError] = useState<string | null>(null);
   const [urlSuggestion, setUrlSuggestion] = useState<string | null>(null);
 
@@ -101,6 +103,7 @@ const HeroSection = () => {
         return;
       }
       
+      // If user tested this URL recently, show existing results
       if (rateLimit.previousScore !== undefined) {
         setRateLimitInfo({
           url: websiteUrl,
@@ -111,13 +114,12 @@ const HeroSection = () => {
         });
         setShowRateLimitModal(true);
         return;
-      } else {
-        const daysText = rateLimit.daysUntilReset === 1 ? "1 day" : `${rateLimit.daysUntilReset} days`;
-        toast({
-          title: "Weekly limit reached",
-          description: `You've used all 10 tests this week. Your tests reset in ${daysText}.`,
-          variant: "destructive",
-        });
+      }
+      
+      // Monthly limit reached
+      if ('resetDate' in rateLimit && rateLimit.resetDate) {
+        setMonthlyLimitResetDate(rateLimit.resetDate);
+        setShowMonthlyLimitModal(true);
         return;
       }
     }
@@ -213,7 +215,46 @@ const HeroSection = () => {
     <>
       {isSubmitting && <CoffeeBrewingLoader website={formData.website} />}
 
-      {/* Rate Limit Modal */}
+      {/* Monthly Limit Modal */}
+      <AlertDialog open={showMonthlyLimitModal} onOpenChange={setShowMonthlyLimitModal}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Monthly test limit reached</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  You've used all 10 free tests this month. Your limit resets on{" "}
+                  <strong>
+                    {monthlyLimitResetDate 
+                      ? new Date(monthlyLimitResetDate).toLocaleDateString('en-US', { 
+                          month: 'long', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })
+                      : 'soon'}
+                  </strong>.
+                </p>
+                <p className="text-base font-semibold text-foreground">
+                  Want unlimited tests?
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setShowMonthlyLimitModal(false);
+                navigate('/pricing');
+              }}
+            >
+              Apply to be a beta partner →
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* URL Cooldown Modal */}
       <AlertDialog open={showRateLimitModal} onOpenChange={setShowRateLimitModal}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -367,7 +408,7 @@ const HeroSection = () => {
                   )}
                 </Button>
                 <p className="text-sm text-muted-foreground text-center">
-                  <strong>10 free tests per week</strong> • Takes 3 minutes • No credit card required
+                  <strong>10 free tests per month</strong> • Takes 3 minutes • No credit card required
                 </p>
               </div>
             </form>
