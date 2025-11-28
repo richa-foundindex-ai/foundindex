@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { analytics } from "@/utils/analytics";
 import {
   Accordion,
   AccordionContent,
@@ -18,6 +19,7 @@ const Methodology = () => {
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
+    analytics.pageView('methodology');
     
     // Check if user came from results page
     const storedResultsUrl = sessionStorage.getItem('foundindex_results_url');

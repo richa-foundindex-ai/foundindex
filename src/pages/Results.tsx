@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertCircle, CheckCircle, AlertTriangle, XCircle, Copy, Check } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle, CheckCircle, AlertTriangle, XCircle, Copy, Check, Loader2 } from "lucide-react";
 import Header from "@/components/layout/Header";
+import { analytics } from "@/utils/analytics";
 
 // Mock data for development
 const MOCK_DATA = {
@@ -301,11 +303,17 @@ export default function Results() {
   const [showWrongTypeAlert, setShowWrongTypeAlert] = useState(false);
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
   const url = searchParams.get("url") || "";
   const type = searchParams.get("type") || "homepage";
 
   useEffect(() => {
+    analytics.pageView('results');
+    
+    // Simulate loading for demonstration
+    setTimeout(() => setIsLoading(false), 1500);
+    
     // Check localStorage for dismissed alert
     const dismissed = localStorage.getItem("wrongTypeAlertDismissed");
     if (!dismissed) {
@@ -331,6 +339,7 @@ export default function Results() {
   };
 
   const handleFeedbackSubmit = () => {
+    analytics.formSubmit('results_feedback');
     // In production, send to backend
     console.log("Feedback submitted:", { rating, feedback });
     alert("Thank you for your feedback!");
@@ -341,24 +350,41 @@ export default function Results() {
   const gradeInfo = getGradeInfo(MOCK_DATA.score);
   const scoreColor = getScoreColor(MOCK_DATA.score);
 
+  // Loading skeleton
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8 max-w-5xl">
+          <div className="space-y-8">
+            <Skeleton className="h-20 w-full" />
+            <div className="flex justify-center">
+              <Skeleton className="h-64 w-64 rounded-full" />
+            </div>
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-96 w-full" />
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+      <main className="container mx-auto px-4 py-6 md:py-8 max-w-5xl" role="main">
         {/* Wrong Test Type Alert */}
         {showWrongTypeAlert && (
-          <Alert className="mb-6 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800">
-            <AlertCircle className="h-4 w-4 text-yellow-600" />
-            <AlertDescription className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <span>🔍 We detected this is a {type === "homepage" ? "BLOG POST" : "HOMEPAGE"}. For accurate analysis, use the {type === "homepage" ? "Blog Post" : "Homepage"} Audit box.</span>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={switchTest}>
-                  Switch to Correct Test
+          <Alert className="mb-6 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800" role="alert">
+            <AlertCircle className="h-4 w-4 text-yellow-600" aria-hidden="true" />
+            <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <span className="text-sm">🔍 We detected this is a {type === "homepage" ? "BLOG POST" : "HOMEPAGE"}. For accurate analysis, use the {type === "homepage" ? "Blog Post" : "Homepage"} Audit box.</span>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button size="sm" variant="outline" onClick={switchTest} className="flex-1 sm:flex-none">
+                  Switch Test
                 </Button>
-                <Button size="sm" variant="ghost" onClick={dismissAlert}>
+                <Button size="sm" variant="ghost" onClick={dismissAlert} className="flex-1 sm:flex-none">
                   Dismiss
                 </Button>
               </div>
@@ -367,15 +393,15 @@ export default function Results() {
         )}
 
         {/* Beta Access Banner */}
-        <Alert className="mb-8 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
-          <AlertDescription className="text-green-800 dark:text-green-300 font-medium">
+        <Alert className="mb-6 md:mb-8 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800" role="status">
+          <AlertDescription className="text-sm md:text-base text-green-800 dark:text-green-300 font-medium">
             🎉 BETA ACCESS: All features unlocked during free beta
           </AlertDescription>
         </Alert>
 
         {/* FI Score Display */}
-        <div className="text-center mb-12">
-          <div className="inline-block w-64 h-64 mb-6">
+        <div className="text-center mb-8 md:mb-12 animate-fade-in">
+          <div className="inline-block w-48 h-48 md:w-64 md:h-64 mb-4 md:mb-6">
             <CircularProgressbar
               value={MOCK_DATA.score}
               text={`${MOCK_DATA.score}`}
@@ -385,28 +411,62 @@ export default function Results() {
                 textColor: scoreColor,
                 trailColor: "#e5e7eb",
               })}
+              aria-label={`FI Score: ${MOCK_DATA.score} out of 100`}
             />
           </div>
           <div className="space-y-2">
-            <div className={`text-3xl font-bold ${gradeInfo.color}`}>
+            <div className={`text-2xl md:text-3xl font-bold ${gradeInfo.color}`}>
               Grade: {gradeInfo.grade} ({gradeInfo.label})
             </div>
-            <p className="text-sm text-muted-foreground">Confidence range: ±4 points</p>
+            <p className="text-xs md:text-sm text-muted-foreground">Confidence range: ±4 points</p>
           </div>
         </div>
 
         {/* Analysis Info */}
-        <div className="text-center mb-8">
-          <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+        <div className="text-center mb-6 md:mb-8">
+          <p className="text-xs md:text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             EVALUATED ACROSS 18 CORE CRITERIA
           </p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs md:text-sm text-muted-foreground">
             Analyzing structure, content, and technical SEO
           </p>
         </div>
 
         {/* Category Breakdown */}
-        <Card className="mb-8">
+        <Card className="mb-6 md:mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg md:text-xl">Category Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 md:space-y-6">
+            {MOCK_DATA.categories.map((category, index) => {
+              const color = category.percentage >= 70 ? "bg-green-500" : category.percentage >= 50 ? "bg-yellow-500" : "bg-red-500";
+              return (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-center justify-between text-xs md:text-sm">
+                    <span className="font-medium">{category.name}</span>
+                    <div className="flex items-center gap-2 md:gap-4">
+                      <span className="text-muted-foreground">
+                        {category.score}/{category.max}
+                      </span>
+                      <span className="font-semibold w-10 md:w-12 text-right">
+                        {category.percentage}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="relative h-2 bg-muted rounded-full overflow-hidden" role="progressbar" aria-valuenow={category.percentage} aria-valuemin={0} aria-valuemax={100}>
+                    <div
+                      className={`absolute top-0 left-0 h-full ${color} transition-all duration-500`}
+                      style={{ width: `${category.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        {/* Industry Comparison */}
+        <Card className="mb-8 border-2">
           <CardHeader>
             <CardTitle>Category Breakdown</CardTitle>
           </CardHeader>
@@ -581,7 +641,7 @@ export default function Results() {
           </CardHeader>
           <CardContent>
             <p className="mb-4">Make the changes above, then check your new score</p>
-            <Button onClick={handleRetest} className="w-full" size="lg">
+            <Button onClick={handleRetest} className="w-full min-h-[48px]" size="lg">
               Retest This URL
             </Button>
           </CardContent>
@@ -594,7 +654,7 @@ export default function Results() {
           </CardHeader>
           <CardContent>
             <p className="mb-4">Limited beta slots: We'll optimize one page for FREE</p>
-            <Button variant="outline" className="w-full" size="lg">
+            <Button variant="outline" className="w-full min-h-[48px]" size="lg">
               Apply for Free Service
             </Button>
           </CardContent>

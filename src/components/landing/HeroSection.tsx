@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { ArrowRight, AlertCircle } from "lucide-react";
+import { ArrowRight, AlertCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CoffeeBrewingLoader } from "./CoffeeBrewingLoader";
 import { checkRateLimit, recordTest, releaseTestLock } from "@/utils/rateLimiting";
 import { validateAndNormalizeUrl, getErrorMessage } from "@/utils/urlValidation";
+import { analytics } from "@/utils/analytics";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,6 +66,8 @@ const HeroSection = () => {
     e.preventDefault();
     setValidationError(null);
     setUrlSuggestion(null);
+    
+    analytics.buttonClick('Analyze Website', 'hero_section');
 
     if (!formData.website) {
       setValidationError("Please enter your website URL");
@@ -311,11 +314,15 @@ const HeroSection = () => {
                   value={formData.website}
                   onChange={(e) => handleInputChange(e.target.value)}
                   required
-                  className={`h-12 ${validationError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  className={`h-12 min-h-[48px] ${validationError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                  style={{ fontSize: '16px' }}
+                  aria-label="Website URL"
+                  aria-invalid={!!validationError}
+                  aria-describedby={validationError ? "url-error" : undefined}
                 />
                 {validationError && (
-                  <div className="flex items-start gap-2 text-sm text-destructive">
-                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <div id="url-error" className="flex items-start gap-2 text-sm text-destructive" role="alert">
+                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
                     <div>
                       <span>{validationError}</span>
                       {urlSuggestion && (
@@ -323,6 +330,7 @@ const HeroSection = () => {
                           type="button"
                           onClick={applySuggestion}
                           className="ml-1 text-primary hover:underline font-medium"
+                          aria-label={`Use suggested URL: ${urlSuggestion}`}
                         >
                           Use "{urlSuggestion}"?
                         </button>
@@ -333,15 +341,27 @@ const HeroSection = () => {
               </div>
 
               <div className="space-y-4">
-                <Button type="submit" size="lg" className="w-full h-14 text-lg" disabled={isSubmitting || isCheckingExisting}>
+                <Button 
+                  type="submit" 
+                  size="lg" 
+                  className="w-full h-14 min-h-[48px] text-lg" 
+                  disabled={isSubmitting || isCheckingExisting}
+                  aria-label={isSubmitting ? "Analyzing website" : "Analyze my website"}
+                >
                   {isCheckingExisting ? (
-                    "Checking..."
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden="true" />
+                      Checking...
+                    </>
                   ) : isSubmitting ? (
-                    "Analyzing..."
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden="true" />
+                      Analyzing... (~3 min)
+                    </>
                   ) : (
                     <>
                       Analyze my website →
-                      <ArrowRight className="ml-2 h-5 w-5 hidden" />
+                      <ArrowRight className="ml-2 h-5 w-5 hidden" aria-hidden="true" />
                     </>
                   )}
                 </Button>

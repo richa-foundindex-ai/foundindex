@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/layout/Header";
+import { analytics } from "@/utils/analytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,10 @@ const Pricing = () => {
     commitmentConfirmed: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    analytics.pageView('pricing');
+  }, []);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
