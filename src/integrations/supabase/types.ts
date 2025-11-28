@@ -83,6 +83,45 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback: {
+        Row: {
+          created_at: string
+          describe_to_colleague: string
+          email: string
+          id: string
+          preventing_improvements: string
+          score: number
+          surprising_result: string
+          test_id: string
+          user_type: string
+          website: string
+        }
+        Insert: {
+          created_at?: string
+          describe_to_colleague: string
+          email: string
+          id?: string
+          preventing_improvements: string
+          score: number
+          surprising_result: string
+          test_id: string
+          user_type: string
+          website: string
+        }
+        Update: {
+          created_at?: string
+          describe_to_colleague?: string
+          email?: string
+          id?: string
+          preventing_improvements?: string
+          score?: number
+          surprising_result?: string
+          test_id?: string
+          user_type?: string
+          website?: string
+        }
+        Relationships: []
+      }
       test_history: {
         Row: {
           categories: Json
