@@ -175,7 +175,7 @@ const Pricing = () => {
         </div>
 
         {/* Main Free Beta Card */}
-        <div className="max-w-2xl mx-auto mb-16">
+        <div className="max-w-2xl mx-auto mb-24">
           <Card className="border-2 border-primary shadow-lg">
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-3xl mb-4">Free Beta Access</CardTitle>
@@ -232,7 +232,7 @@ const Pricing = () => {
         </div>
 
         {/* Beta Partner Section */}
-        <div className="max-w-4xl mx-auto mb-16">
+        <div className="max-w-4xl mx-auto mb-24">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold mb-2 text-foreground">
               💎 Become a Beta Partner
@@ -247,7 +247,7 @@ const Pricing = () => {
                 Everything in Free Beta, PLUS:
               </p>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-8">
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
@@ -286,9 +286,12 @@ const Pricing = () => {
               <Button
                 className="w-full text-lg py-6"
                 variant="default"
-                onClick={() => setShowPartnerModal(true)}
+                onClick={() => {
+                  console.log("Beta Partner button clicked, opening modal");
+                  setShowPartnerModal(true);
+                }}
               >
-                Apply to be a Beta Partner
+                Apply to be a beta partner
               </Button>
 
               <div className="text-center">
@@ -301,7 +304,7 @@ const Pricing = () => {
         </div>
 
         {/* Coming Soon Pricing */}
-        <div className="max-w-5xl mx-auto mb-16">
+        <div className="max-w-5xl mx-auto mb-24">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold mb-2 text-foreground">
               Post-Beta Pricing
