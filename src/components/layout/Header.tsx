@@ -9,8 +9,8 @@ const Header = () => {
   };
   
   const navLinks = [
-    { to: "/", label: "Home", onClick: handleHomeClick },
     { to: "/methodology", label: "Methodology" },
+    { to: "/pricing", label: "Pricing" },
     { to: "/contact", label: "Contact" },
   ];
 
@@ -30,7 +30,6 @@ const Header = () => {
             <Link
               key={link.to}
               to={link.to}
-              onClick={link.onClick}
               className={`text-sm font-medium transition-colors hover:text-link ${
                 location.pathname === link.to
                   ? "text-link"
