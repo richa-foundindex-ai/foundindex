@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.83.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +16,15 @@ interface FeedbackRequest {
   userType: string;
   email: string;
 }
+
+const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+  console.error("submit-feedback: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not configured");
+}
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -33,68 +43,55 @@ const handler = async (req: Request): Promise<Response> => {
       email,
     }: FeedbackRequest = await req.json();
 
-    console.log("📝 Submitting feedback to Airtable:", {
-      testId,
+    if (!testId || !email || !surprisingResult || !describeToColleague) {
+      return new Response(
+        JSON.stringify({ error: "Required fields are missing" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid email address" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    console.log("[submit-feedback] Inserting feedback", { testId, website, email: trimmedEmail });
+
+    const { error } = await supabaseAdmin.from("feedback").insert({
+      test_id: testId,
       score,
-      website,
-      email,
+      website: website.trim(),
+      surprising_result: surprisingResult.trim(),
+      describe_to_colleague: describeToColleague.trim(),
+      preventing_improvements: preventingImprovements.trim(),
+      user_type: userType.trim(),
+      email: trimmedEmail,
     });
 
-    const AIRTABLE_API_KEY = Deno.env.get("AIRTABLE_API_KEY");
-    const AIRTABLE_BASE_ID = Deno.env.get("AIRTABLE_BASE_ID");
-
-    if (!AIRTABLE_API_KEY || !AIRTABLE_BASE_ID) {
-      throw new Error("Airtable credentials not configured");
+    if (error) {
+      console.error("[submit-feedback] Insert error", error);
+      return new Response(
+        JSON.stringify({ error: "Failed to save feedback" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
-    // Submit to Airtable Feedback table
-    // Field names MUST match Airtable EXACTLY (check screenshot for exact capitalization)
-    const requestBody = {
-      fields: {
-        Email: email, // Capital E
-        Website: website, // Capital W
-        Score: score, // Capital S
-        "Surprising Result": surprisingResult, // Both words capitalized
-        "Describe to Colleague": describeToColleague, // Both words capitalized
-        "Preventing Improvements": preventingImprovements, // Both words capitalized
-        "User Type": userType, // Both words capitalized
-        "Test ID": testId, // Both words capitalized
-        // Timestamp is auto-populated by Airtable (Created time field)
-      },
-    };
+    console.log("✅ Feedback submitted successfully");
 
-    console.log("🔍 Complete request body being sent to Airtable:");
-    console.log(JSON.stringify(requestBody, null, 2));
-    console.log("🔍 Field names:", Object.keys(requestBody.fields));
-
-    const airtableResponse = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Feedback`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${AIRTABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!airtableResponse.ok) {
-      const errorText = await airtableResponse.text();
-      console.error("❌ Airtable error:", errorText);
-      throw new Error(`Airtable submission failed: ${errorText}`);
-    }
-
-    const result = await airtableResponse.json();
-    console.log("✅ Feedback submitted successfully:", result.id);
-
-    return new Response(JSON.stringify({ success: true, recordId: result.id }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error: any) {
-    console.error("❌ Error in submit-feedback function:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+  } catch (error) {
+    console.error("[submit-feedback] Unexpected error", error);
+    return new Response(
+      JSON.stringify({ error: "An unexpected error occurred" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 };
 
