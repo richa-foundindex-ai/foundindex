@@ -56,6 +56,72 @@ export type Database = {
         }
         Relationships: []
       }
+      contacts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          subject?: string
+        }
+        Relationships: []
+      }
+      test_history: {
+        Row: {
+          categories: Json
+          created_at: string
+          detected_type: string | null
+          grade: string
+          id: string
+          recommendations: Json
+          score: number
+          test_id: string
+          test_type: string
+          website: string
+        }
+        Insert: {
+          categories: Json
+          created_at?: string
+          detected_type?: string | null
+          grade: string
+          id?: string
+          recommendations: Json
+          score: number
+          test_id: string
+          test_type: string
+          website: string
+        }
+        Update: {
+          categories?: Json
+          created_at?: string
+          detected_type?: string | null
+          grade?: string
+          id?: string
+          recommendations?: Json
+          score?: number
+          test_id?: string
+          test_type?: string
+          website?: string
+        }
+        Relationships: []
+      }
       test_submissions: {
         Row: {
           created_at: string
