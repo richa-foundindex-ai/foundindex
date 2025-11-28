@@ -333,12 +333,28 @@ Return ONLY valid JSON in this exact format:
       return acc;
     }, {});
 
-    // Save to Supabase
+    // Save to Supabase (submission log)
     await supabaseAdmin.from("test_submissions").insert({
       email: validatedEmail,
       ip_address: clientIP,
       test_id: testId,
     });
+
+    // Save full analysis snapshot to test_history for later retrieval
+    try {
+      await supabaseAdmin.from("test_history").insert({
+        test_id: testId,
+        website: validatedWebsite,
+        test_type: testType,
+        detected_type: detectedType,
+        score: totalScore,
+        grade,
+        categories: categoriesWithPercentages,
+        recommendations: analysisResult.recommendations || [],
+      });
+    } catch (historyError) {
+      console.error(`[${testId}] Failed to insert into test_history:`, historyError);
+    }
 
     const response = {
       success: true,

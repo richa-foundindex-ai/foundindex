@@ -129,9 +129,10 @@ const HeroSection = () => {
     setIsSubmitting(true);
 
     try {
-      const { data: submitData, error: submitError } = await supabase.functions.invoke("submit-test", {
+      const { data: submitData, error: submitError } = await supabase.functions.invoke("analyze-website", {
         body: {
           website: websiteUrl,
+          testType: "homepage",
         },
       });
 
@@ -190,10 +191,10 @@ const HeroSection = () => {
         localStorage.setItem('lastTestedUrl', websiteUrl);
 
         toast({
-          title: "Test started!",
-          description: "Analyzing your website...",
+          title: "Test complete!",
+          description: "Loading your analysis results...",
         });
-        navigate(`/results?testId=${submitData.testId}`);
+        navigate(`/results?testId=${submitData.testId}&url=${encodeURIComponent(websiteUrl)}`);
       }
     } catch (error) {
       console.error("[HeroSection] Submit error:", error);
