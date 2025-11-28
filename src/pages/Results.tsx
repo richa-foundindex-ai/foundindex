@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle, CheckCircle, AlertTriangle, XCircle, Copy, Check, Loader2 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { analytics } from "@/utils/analytics";
+import { supabase } from "@/integrations/supabase/client";
 
 // Mock data for development
 const MOCK_DATA = {
@@ -231,6 +232,21 @@ const MOCK_DATA = {
   ],
 };
 
+type CategorySummary = {
+  name: string;
+  score: number;
+  max: number;
+  percentage: number;
+};
+
+type ResultData = {
+  score: number;
+  grade: string;
+  gradeLabel: string;
+  categories: CategorySummary[];
+  recommendations: typeof MOCK_DATA.recommendations;
+};
+
 const getGradeInfo = (score: number) => {
   if (score >= 90) return { grade: "A", label: "Elite", color: "text-green-600" };
   if (score >= 80) return { grade: "B", label: "Excellent", color: "text-green-500" };
@@ -304,25 +320,113 @@ export default function Results() {
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [resultData, setResultData] = useState<ResultData | null>(null);
+  const [website, setWebsite] = useState<string>("");
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const url = searchParams.get("url") || "";
   const type = searchParams.get("type") || "homepage";
+  const testId = searchParams.get("testId");
 
   useEffect(() => {
-    analytics.pageView('results');
-    
-    // Simulate loading for demonstration
-    setTimeout(() => setIsLoading(false), 1500);
-    
-    // Check localStorage for dismissed alert
-    const dismissed = localStorage.getItem("wrongTypeAlertDismissed");
-    if (!dismissed) {
-      // Mock detection: randomly show wrong type for demo
-      // In production, this would come from actual analysis
-      const isWrongType = Math.random() > 0.7;
-      setShowWrongTypeAlert(isWrongType);
+    analytics.pageView("results");
+
+    const initialWebsite = url || "";
+    if (initialWebsite) {
+      setWebsite(initialWebsite);
     }
-  }, []);
+
+    if (!testId) {
+      setLoadError("Missing test ID. Please start a new test from the homepage.");
+      setIsLoading(false);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const loadResults = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("test_history")
+          .select("*")
+          .eq("test_id", testId)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (!data) {
+          setLoadError("No results found for this test. Please run a new analysis.");
+          return;
+        }
+
+        const categoriesSource = (data as any).categories || {};
+        const categories: CategorySummary[] = [
+          {
+            name: "Answer Structure",
+            score: categoriesSource.answerStructure?.score ?? 0,
+            max: categoriesSource.answerStructure?.max ?? 30,
+            percentage: categoriesSource.answerStructure?.percentage ?? 0,
+          },
+          {
+            name: "Scannability",
+            score: categoriesSource.scannability?.score ?? 0,
+            max: categoriesSource.scannability?.max ?? 25,
+            percentage: categoriesSource.scannability?.percentage ?? 0,
+          },
+          {
+            name: "FAQ & Schema",
+            score: categoriesSource.faqSchema?.score ?? 0,
+            max: categoriesSource.faqSchema?.max ?? 20,
+            percentage: categoriesSource.faqSchema?.percentage ?? 0,
+          },
+          {
+            name: "Expertise Signals",
+            score: categoriesSource.expertiseSignals?.score ?? 0,
+            max: categoriesSource.expertiseSignals?.max ?? 15,
+            percentage: categoriesSource.expertiseSignals?.percentage ?? 0,
+          },
+          {
+            name: "Technical SEO",
+            score: categoriesSource.technicalSEO?.score ?? 0,
+            max: categoriesSource.technicalSEO?.max ?? 10,
+            percentage: categoriesSource.technicalSEO?.percentage ?? 0,
+          },
+        ];
+
+        const score = (data as any).score ?? 0;
+        const gradeMeta = getGradeInfo(score);
+        const recommendations = ((data as any).recommendations || []) as typeof MOCK_DATA.recommendations;
+
+        if (!isCancelled) {
+          setResultData({
+            score,
+            grade: gradeMeta.grade,
+            gradeLabel: gradeMeta.label,
+            categories,
+            recommendations,
+          });
+          setWebsite((data as any).website || initialWebsite);
+
+          sessionStorage.setItem("foundindex_results_url", window.location.pathname + window.location.search);
+        }
+      } catch (error) {
+        console.error("[Results] Failed to load results", error);
+        if (!isCancelled) {
+          setLoadError("Unable to load results. Please try again.");
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadResults();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [testId, url]);
 
   const dismissAlert = () => {
     setShowWrongTypeAlert(false);
@@ -339,7 +443,7 @@ export default function Results() {
   };
 
   const handleFeedbackSubmit = () => {
-    analytics.formSubmit('results_feedback');
+    analytics.formSubmit("results_feedback");
     // In production, send to backend
     console.log("Feedback submitted:", { rating, feedback });
     alert("Thank you for your feedback!");
@@ -347,8 +451,8 @@ export default function Results() {
     setFeedback("");
   };
 
-  const gradeInfo = getGradeInfo(MOCK_DATA.score);
-  const scoreColor = getScoreColor(MOCK_DATA.score);
+  const gradeInfo = getGradeInfo(resultData?.score ?? 0);
+  const scoreColor = getScoreColor(resultData?.score ?? 0);
 
   // Loading skeleton
   if (isLoading) {
@@ -369,11 +473,33 @@ export default function Results() {
     );
   }
 
+  if (loadError || !resultData) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container mx-auto px-4 py-8 max-w-3xl">
+          <Alert className="mb-6" role="alert">
+            <AlertCircle className="h-4 w-4" aria-hidden="true" />
+            <AlertDescription>{loadError || "No results available. Please start a new test from the homepage."}</AlertDescription>
+          </Alert>
+          <Button onClick={() => navigate("/")} className="w-full md:w-auto min-h-[48px]">
+            Back to homepage
+          </Button>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       
       <main className="container mx-auto px-4 py-6 md:py-8 max-w-5xl" role="main">
+        <div className="mb-6 md:mb-8 text-center md:text-left">
+          <p className="text-sm md:text-base text-muted-foreground">
+            Analysis results for: <span className="font-semibold break-all">{website}</span>
+          </p>
+        </div>
         {/* Wrong Test Type Alert */}
         {showWrongTypeAlert && (
           <Alert className="mb-6 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800" role="alert">
@@ -403,15 +529,15 @@ export default function Results() {
         <div className="text-center mb-8 md:mb-12 animate-fade-in">
           <div className="inline-block w-48 h-48 md:w-64 md:h-64 mb-4 md:mb-6">
             <CircularProgressbar
-              value={MOCK_DATA.score}
-              text={`${MOCK_DATA.score}`}
+              value={resultData?.score ?? 0}
+              text={`${resultData?.score ?? 0}`}
               styles={buildStyles({
                 textSize: "28px",
                 pathColor: scoreColor,
                 textColor: scoreColor,
                 trailColor: "#e5e7eb",
               })}
-              aria-label={`FI Score: ${MOCK_DATA.score} out of 100`}
+              aria-label={`FI Score: ${resultData?.score ?? 0} out of 100`}
             />
           </div>
           <div className="space-y-2">
@@ -438,7 +564,7 @@ export default function Results() {
             <CardTitle className="text-lg md:text-xl">Category Breakdown</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 md:space-y-6">
-            {MOCK_DATA.categories.map((category, index) => {
+            {resultData?.categories.map((category, index) => {
               const color = category.percentage >= 70 ? "bg-green-500" : category.percentage >= 50 ? "bg-yellow-500" : "bg-red-500";
               return (
                 <div key={index} className="space-y-2">
@@ -471,7 +597,7 @@ export default function Results() {
             <CardTitle>Category Breakdown</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {MOCK_DATA.categories.map((category, index) => {
+            {resultData?.categories.map((category, index) => {
               const color = category.percentage >= 70 ? "bg-green-500" : category.percentage >= 50 ? "bg-yellow-500" : "bg-red-500";
               return (
                 <div key={index} className="space-y-2">
@@ -509,14 +635,14 @@ export default function Results() {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Your FI Score:</span>
-                <span className="text-2xl font-bold">{MOCK_DATA.score}</span>
+                <span className="text-2xl font-bold">{resultData?.score ?? 0}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Industry Average:</span>
                 <span className="text-2xl font-bold">62</span>
               </div>
               <div className="pt-4">
-                {MOCK_DATA.score > 62 ? (
+                {(resultData?.score ?? 0) > 62 ? (
                   <p className="text-green-600 dark:text-green-400 font-semibold">
                     You're scoring ABOVE average 🎯
                   </p>
@@ -540,7 +666,7 @@ export default function Results() {
           </CardHeader>
           <CardContent>
             <Accordion type="single" collapsible className="w-full">
-              {MOCK_DATA.recommendations.map((rec) => (
+              {resultData?.recommendations.map((rec) => (
                 <AccordionItem key={rec.id} value={rec.id}>
                   <AccordionTrigger>
                     <div className="flex items-start gap-3 text-left w-full">
