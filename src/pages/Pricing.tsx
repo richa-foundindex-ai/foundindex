@@ -1,165 +1,433 @@
+import { useState } from "react";
 import Header from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useNavigate } from "react-router-dom";
+import { Check } from "lucide-react";
 
 const Pricing = () => {
+  const navigate = useNavigate();
+  const [showPartnerModal, setShowPartnerModal] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    website: "",
+    why: "",
+  });
+
+  const handlePartnerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: Submit to backend
+    console.log("Beta Partner Application:", formData);
+    setShowPartnerModal(false);
+    // Reset form
+    setFormData({ name: "", email: "", website: "", why: "" });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <div className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
+        {/* Header */}
+        <div className="text-center mb-16">
           <Badge className="mb-4 text-base px-6 py-2 bg-primary text-primary-foreground">
             🚀 FREE BETA
           </Badge>
           <h1 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
-            Pricing
+            Beta Pricing
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            All features are currently free during our beta period. Join now and test unlimited pages!
+            Everything is free during our beta period
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          <Card className="border-2">
-            <CardHeader>
-              <CardTitle className="text-2xl">Homepage Audit</CardTitle>
-              <div className="mt-4">
-                <span className="text-4xl font-bold">$0</span>
-                <span className="text-muted-foreground ml-2 line-through">$97</span>
+        {/* Main Free Beta Card */}
+        <div className="max-w-2xl mx-auto mb-16">
+          <Card className="border-2 border-primary shadow-lg">
+            <CardHeader className="text-center pb-4">
+              <CardTitle className="text-3xl mb-4">Free Beta Access</CardTitle>
+              <div className="flex items-center justify-center gap-4">
+                <span className="text-5xl font-bold text-foreground">$0</span>
+                <span className="text-2xl text-muted-foreground line-through">
+                  $27-97
+                </span>
               </div>
+              <p className="text-lg text-muted-foreground mt-4">
+                All features unlocked for early testers
+              </p>
             </CardHeader>
-            <CardContent>
-              <ul className="space-y-3 mb-6">
-                <li className="flex items-start">
-                  <span className="text-success mr-2">✓</span>
-                  <span>Business clarity analysis</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-success mr-2">✓</span>
-                  <span>Positioning assessment</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-success mr-2">✓</span>
-                  <span>AI readiness score</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-success mr-2">✓</span>
-                  <span>Detailed recommendations</span>
-                </li>
-              </ul>
-              <Button className="w-full" variant="outline">
-                Get Started
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-primary relative">
-            <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-warning text-warning-foreground">
-              MOST POPULAR
-            </Badge>
-            <CardHeader>
-              <CardTitle className="text-2xl">Blog Post Audit</CardTitle>
-              <div className="mt-4">
-                <span className="text-4xl font-bold">$0</span>
-                <span className="text-muted-foreground ml-2 line-through">$27</span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3 mb-6">
-                <li className="flex items-start">
-                  <span className="text-success mr-2">✓</span>
-                  <span>AI readability analysis</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-success mr-2">✓</span>
-                  <span>Content structure review</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-success mr-2">✓</span>
-                  <span>Optimization tips</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-success mr-2">✓</span>
-                  <span>Keyword insights</span>
-                </li>
-              </ul>
-              <Button className="w-full">
-                Get Started
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2">
-            <CardHeader>
-              <CardTitle className="text-2xl">Unlimited Tests</CardTitle>
-              <div className="mt-4">
-                <span className="text-4xl font-bold">$0</span>
-                <span className="text-muted-foreground ml-2">/month</span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3 mb-6">
-                <li className="flex items-start">
-                  <span className="text-success mr-2">✓</span>
-                  <span>All audit types</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-success mr-2">✓</span>
-                  <span>Unlimited page tests</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-success mr-2">✓</span>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Unlimited FI Score tests</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Both homepage & blog audits</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>All recommendations unlocked</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Code examples & templates</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Unlimited retests</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
                   <span>Priority support</span>
-                </li>
-                <li className="flex items-start">
-                  <span className="text-success mr-2">✓</span>
-                  <span>Early access to features</span>
-                </li>
-              </ul>
-              <Button className="w-full" variant="outline">
-                Get Started
+                </div>
+              </div>
+
+              <Button
+                className="w-full text-lg py-6"
+                onClick={() => navigate("/")}
+              >
+                Start Free Test
               </Button>
+
+              <p className="text-sm text-muted-foreground text-center">
+                Beta ends: March 2025 | Early testers get lifetime 50% discount
+              </p>
             </CardContent>
           </Card>
         </div>
 
-        <div className="text-center mt-12">
-          <p className="text-muted-foreground">
-            Questions about pricing? <a href="/contact" className="text-link hover:text-link-hover">Contact us</a>
-          </p>
+        {/* Beta Partner Section */}
+        <div className="max-w-4xl mx-auto mb-16">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold mb-2 text-foreground">
+              💎 Become a Beta Partner
+            </h2>
+            <p className="text-lg text-muted-foreground">Limited to 25 people</p>
+          </div>
+
+          <Card className="border-2 border-accent shadow-xl bg-gradient-to-br from-background to-accent/5">
+            <CardHeader>
+              <CardTitle className="text-2xl">Beta Partner Benefits</CardTitle>
+              <p className="text-muted-foreground">
+                Everything in Free Beta, PLUS:
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>
+                    We optimize 1 page for FREE{" "}
+                    <span className="text-success font-semibold">
+                      ($197 value)
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Featured on our Beta Partners page</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>1-on-1 strategy session</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
+                  <span>Lifetime 50% discount locked in</span>
+                </div>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <p className="font-semibold mb-3 text-foreground">
+                  Requirements:
+                </p>
+                <div className="space-y-2 text-muted-foreground">
+                  <p>→ Provide detailed feedback</p>
+                  <p>→ Allow us to showcase before/after</p>
+                  <p>→ Actively test for 30 days</p>
+                </div>
+              </div>
+
+              <Button
+                className="w-full text-lg py-6"
+                variant="default"
+                onClick={() => setShowPartnerModal(true)}
+              >
+                Apply to be a Beta Partner
+              </Button>
+
+              <div className="text-center">
+                <Badge variant="secondary" className="text-base px-4 py-2">
+                  18 of 25 spots remaining
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Coming Soon Pricing */}
+        <div className="max-w-5xl mx-auto mb-16">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold mb-2 text-foreground">
+              Post-Beta Pricing
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              Expected launch: March 2025
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card className="opacity-75 relative overflow-hidden">
+              <Badge className="absolute top-4 right-4 bg-warning text-warning-foreground">
+                Beta testers save 50%
+              </Badge>
+              <CardHeader>
+                <CardTitle className="text-xl">Blog Post Audit</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold mb-4">$27</div>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>✓ Single blog post analysis</li>
+                  <li>✓ AI readability check</li>
+                  <li>✓ Content recommendations</li>
+                  <li>✓ Code examples</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="opacity-75 relative overflow-hidden">
+              <Badge className="absolute top-4 right-4 bg-warning text-warning-foreground">
+                Beta testers save 50%
+              </Badge>
+              <CardHeader>
+                <CardTitle className="text-xl">Homepage Audit</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold mb-4">$97</div>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>✓ Full homepage analysis</li>
+                  <li>✓ Business clarity check</li>
+                  <li>✓ Positioning assessment</li>
+                  <li>✓ Implementation guide</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="opacity-75 relative overflow-hidden">
+              <Badge className="absolute top-4 right-4 bg-warning text-warning-foreground">
+                Beta testers save 50%
+              </Badge>
+              <CardHeader>
+                <CardTitle className="text-xl">Done-For-You</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold mb-4">from $197</div>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>✓ We implement changes</li>
+                  <li>✓ Before/after comparison</li>
+                  <li>✓ Priority delivery</li>
+                  <li>✓ Guaranteed improvement</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* FAQ Section */}
+        <div className="max-w-3xl mx-auto">
+          <h2 className="text-3xl font-bold mb-8 text-center text-foreground">
+            Frequently Asked Questions
+          </h2>
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="item-1">
+              <AccordionTrigger className="text-left">
+                How long is beta free?
+              </AccordionTrigger>
+              <AccordionContent>
+                Until March 2025 or 1000 users, whichever comes first. We'll
+                notify all beta testers well in advance before any changes.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-2">
+              <AccordionTrigger className="text-left">
+                What happens after beta?
+              </AccordionTrigger>
+              <AccordionContent>
+                We'll notify you 2 weeks before beta ends. All beta testers
+                automatically get a lifetime 50% discount on any paid plan they
+                choose.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-3">
+              <AccordionTrigger className="text-left">
+                Can I test multiple URLs?
+              </AccordionTrigger>
+              <AccordionContent>
+                Yes! During beta, you can test unlimited URLs for both homepage
+                and blog post audits. There are no restrictions.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-4">
+              <AccordionTrigger className="text-left">
+                Will my data be deleted after beta?
+              </AccordionTrigger>
+              <AccordionContent>
+                No, you keep all your test history forever. Your account and all
+                test results will remain accessible even after beta ends.
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       </div>
 
+      {/* Footer */}
       <footer className="border-t border-border bg-muted py-8 mt-16">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
             <div>
               Created by <span className="font-medium">Richa Deo</span> |{" "}
-              <a href="https://richadeo.com" target="_blank" rel="noopener noreferrer" className="text-link hover:text-link-hover">
+              <a
+                href="https://richadeo.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-link hover:text-link-hover"
+              >
                 RichaDeo.com →
               </a>
             </div>
-            
+
             <div className="flex gap-6">
-              <a href="/privacy" className="hover:text-foreground transition-colors">
+              <a
+                href="/privacy"
+                className="hover:text-foreground transition-colors"
+              >
                 Privacy Policy
               </a>
-              <a href="/privacy" className="hover:text-foreground transition-colors">
+              <a
+                href="/privacy"
+                className="hover:text-foreground transition-colors"
+              >
                 Terms
               </a>
-              <a href="/contact" className="hover:text-foreground transition-colors">
+              <a
+                href="/contact"
+                className="hover:text-foreground transition-colors"
+              >
                 Contact
               </a>
             </div>
-            
-            <div>
-              © 2025 FoundIndex
-            </div>
+
+            <div>© 2025 FoundIndex</div>
           </div>
         </div>
       </footer>
+
+      {/* Beta Partner Application Modal */}
+      <Dialog open={showPartnerModal} onOpenChange={setShowPartnerModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Apply to be a Beta Partner</DialogTitle>
+            <DialogDescription>
+              Tell us about yourself and why you'd be a great beta partner.
+              We'll review applications within 48 hours.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handlePartnerSubmit} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Full Name *
+              </label>
+              <Input
+                required
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder="John Doe"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Email *</label>
+              <Input
+                required
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                placeholder="john@example.com"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Website URL *
+              </label>
+              <Input
+                required
+                type="url"
+                value={formData.website}
+                onChange={(e) =>
+                  setFormData({ ...formData, website: e.target.value })
+                }
+                placeholder="https://yoursite.com"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Why do you want to be a beta partner? *
+              </label>
+              <Textarea
+                required
+                value={formData.why}
+                onChange={(e) =>
+                  setFormData({ ...formData, why: e.target.value })
+                }
+                placeholder="Tell us about your goals and how you plan to use FoundIndex..."
+                rows={4}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowPartnerModal(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="flex-1">
+                Submit Application
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
