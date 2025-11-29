@@ -26,8 +26,8 @@ import { supabase } from "@/integrations/supabase/client";
 // HELPERS
 // =============================================================================
 
-const ensureArray = (value: any): string[] => {
-  if (Array.isArray(value)) return value;
+const ensureArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value as string[];
   if (typeof value === "string") return [value];
   return [];
 };
@@ -38,8 +38,8 @@ type CategorySummary = {
   score: number;
   max: number;
   percentage: number;
-  details?: any;
-  breakdown?: any;
+  details?: unknown;
+  breakdown?: { summary?: string; scores?: Array<{ category: string; found: boolean }> };
 };
 
 type Recommendation = {
@@ -61,6 +61,7 @@ type ResultData = {
   categories: CategorySummary[];
   recommendations: Recommendation[];
   criteriaCount: number;
+  industryAverage: number;
 };
 
 const getGradeInfo = (score: number) => {
@@ -152,23 +153,22 @@ const SpeedometerGauge = ({ score }: { score: number }) => {
     const centerY = height - 40;
     const radius = Math.min(width, height) - 60;
 
-    // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
-    // Draw background arc (gray)
+    // Background arc
     ctx.beginPath();
     ctx.arc(centerX, centerY, radius, Math.PI, 2 * Math.PI, false);
     ctx.lineWidth = 30;
     ctx.strokeStyle = "#e5e7eb";
     ctx.stroke();
 
-    // Draw colored segments
+    // Colored segments
     const segments = [
-      { start: 0, end: 0.4, color: "#ef4444" }, // Red: 0-40
-      { start: 0.4, end: 0.6, color: "#f59e0b" }, // Orange: 40-60
-      { start: 0.6, end: 0.7, color: "#eab308" }, // Yellow: 60-70
-      { start: 0.7, end: 0.8, color: "#84cc16" }, // Light green: 70-80
-      { start: 0.8, end: 1, color: "#10b981" }, // Green: 80-100
+      { start: 0, end: 0.4, color: "#ef4444" },
+      { start: 0.4, end: 0.6, color: "#f59e0b" },
+      { start: 0.6, end: 0.7, color: "#eab308" },
+      { start: 0.7, end: 0.8, color: "#84cc16" },
+      { start: 0.8, end: 1, color: "#10b981" },
     ];
 
     for (const segment of segments) {
@@ -181,7 +181,7 @@ const SpeedometerGauge = ({ score }: { score: number }) => {
       ctx.stroke();
     }
 
-    // Draw tick marks
+    // Tick marks
     for (let i = 0; i <= 10; i++) {
       const angle = Math.PI + (i / 10) * Math.PI;
       const innerRadius = radius - 20;
@@ -199,12 +199,10 @@ const SpeedometerGauge = ({ score }: { score: number }) => {
       ctx.strokeStyle = "#6b7280";
       ctx.stroke();
 
-      // Draw numbers at major ticks
       if (i % 2 === 0) {
         const textRadius = radius + 40;
         const textX = centerX + Math.cos(angle) * textRadius;
         const textY = centerY + Math.sin(angle) * textRadius;
-        // FIX: Use system-ui font for better cross-platform support
         ctx.font = "14px system-ui, -apple-system, sans-serif";
         ctx.fillStyle = "#6b7280";
         ctx.textAlign = "center";
@@ -213,7 +211,7 @@ const SpeedometerGauge = ({ score }: { score: number }) => {
       }
     }
 
-    // Draw needle
+    // Needle
     const needleAngle = Math.PI + (score / 100) * Math.PI;
     const needleLength = radius - 40;
 
@@ -221,7 +219,6 @@ const SpeedometerGauge = ({ score }: { score: number }) => {
     ctx.translate(centerX, centerY);
     ctx.rotate(needleAngle - Math.PI / 2);
 
-    // Needle body
     ctx.beginPath();
     ctx.moveTo(-4, 0);
     ctx.lineTo(0, -needleLength);
@@ -230,7 +227,6 @@ const SpeedometerGauge = ({ score }: { score: number }) => {
     ctx.fillStyle = "#1f2937";
     ctx.fill();
 
-    // Needle center circle
     ctx.beginPath();
     ctx.arc(0, 0, 12, 0, 2 * Math.PI);
     ctx.fillStyle = "#1f2937";
@@ -286,6 +282,7 @@ export default function Results() {
   const navigate = useNavigate();
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [resultData, setResultData] = useState<ResultData | null>(null);
   const [website, setWebsite] = useState<string>("");
@@ -297,7 +294,6 @@ export default function Results() {
 
   useEffect(() => {
     analytics.pageView("results");
-    if (url) setWebsite(url);
 
     if (!testId) {
       setLoadError("Missing test ID. Please start a new test from the homepage.");
@@ -318,15 +314,24 @@ export default function Results() {
           return;
         }
 
-        const categoriesSource = (data as any).categories || {};
-        const testType = (data as any).test_type || "homepage";
+        // FIXED: Use website from database, not URL param
+        const testedWebsite = (data as { website?: string }).website || url;
+        setWebsite(testedWebsite);
 
-        // Build categories array from whatever structure we have
+        const categoriesSource = ((data as { categories?: unknown }).categories || {}) as Record<string, unknown>;
+        const testType = ((data as { test_type?: string }).test_type || "homepage") as "homepage" | "blog";
+
         const categories: CategorySummary[] = [];
 
         for (const [key, value] of Object.entries(categoriesSource)) {
           if (value && typeof value === "object") {
-            const cat = value as any;
+            const cat = value as {
+              score?: number;
+              max?: number;
+              percentage?: number;
+              details?: unknown;
+              breakdown?: { summary?: string; scores?: Array<{ category: string; found: boolean }> };
+            };
             categories.push({
               name: getCategoryDisplayName(key),
               key,
@@ -339,7 +344,6 @@ export default function Results() {
           }
         }
 
-        // Sort: deterministic categories first, then AI categories
         const deterministicKeys = ["schemaMarkup", "semanticStructure", "technicalFoundation", "images"];
         categories.sort((a, b) => {
           const aIsDet = deterministicKeys.includes(a.key) ? 0 : 1;
@@ -347,12 +351,40 @@ export default function Results() {
           return aIsDet - bIsDet;
         });
 
-        const score = (data as any).score ?? 0;
+        const score = (data as { score?: number }).score ?? 0;
         const gradeMeta = getGradeInfo(score);
-        const recommendations = ((data as any).recommendations || []).map((rec: any, idx: number) => ({
-          ...rec,
-          id: rec.id || `rec-${idx}`,
-        })) as Recommendation[];
+        const recommendations = ((data as { recommendations?: unknown[] }).recommendations || []).map(
+          (rec: unknown, idx: number) => {
+            const recObj = rec as Record<string, unknown>;
+            return {
+              id: (recObj.id as string) || `rec-${idx}`,
+              priority: (recObj.priority as string) || "medium",
+              title: (recObj.title as string) || "Recommendation",
+              pointsLost: (recObj.pointsLost as number) || 0,
+              problem: (recObj.problem as string) || "",
+              howToFix: recObj.howToFix || [],
+              codeExample: (recObj.codeExample as string) || "",
+              expectedImprovement: (recObj.expectedImprovement as string) || "",
+            };
+          },
+        ) as Recommendation[];
+
+        // Calculate dynamic industry average
+        let industryAverage = 58;
+        try {
+          const { data: avgData } = await supabase
+            .from("test_history")
+            .select("score")
+            .eq("test_type", testType)
+            .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+          if (avgData && avgData.length > 5) {
+            const scores = avgData.map((d: { score: number }) => d.score);
+            industryAverage = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
+          }
+        } catch (e) {
+          console.warn("Could not calculate industry average:", e);
+        }
 
         if (!isCancelled) {
           setResultData({
@@ -363,8 +395,8 @@ export default function Results() {
             categories,
             recommendations,
             criteriaCount: testType === "homepage" ? 47 : 52,
+            industryAverage,
           });
-          setWebsite((data as any).website || url);
         }
       } catch (error) {
         console.error("[Results] Failed to load results", error);
@@ -395,7 +427,7 @@ export default function Results() {
       try {
         await navigator.share({ title: "My FoundIndex score", text: shareText, url: shareUrl });
       } catch {
-        // User cancelled or error
+        // User cancelled
       }
     } else {
       await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
@@ -440,17 +472,38 @@ Generated by FoundIndex.com
     URL.revokeObjectURL(downloadUrl);
   };
 
-  const handleFeedbackSubmit = () => {
+  const handleFeedbackSubmit = async () => {
+    if (!rating) {
+      alert("Please select a rating first.");
+      return;
+    }
+
     analytics.formSubmit("results_feedback");
-    console.log("Feedback submitted:", { rating, feedback });
+
+    // Save to feedback table if testId available
+    if (testId) {
+      try {
+        await supabase.from("feedback").insert({
+          test_id: testId,
+          website: website,
+          email: "anonymous@foundindex.local",
+          score: rating,
+          user_type: "beta_tester",
+          describe_to_colleague: feedback || "",
+          surprising_result: "",
+          preventing_improvements: "",
+        });
+      } catch (e) {
+        console.warn("Could not save feedback:", e);
+      }
+    }
+
+    setFeedbackSubmitted(true);
     alert("Thank you for your feedback!");
-    setRating(0);
-    setFeedback("");
   };
 
   const gradeInfo = getGradeInfo(resultData?.score ?? 0);
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -469,7 +522,6 @@ Generated by FoundIndex.com
     );
   }
 
-  // Error state
   if (loadError || !resultData) {
     return (
       <div className="min-h-screen bg-background">
@@ -519,7 +571,7 @@ Generated by FoundIndex.com
           </AlertDescription>
         </Alert>
 
-        {/* Speedometer gauge */}
+        {/* Speedometer */}
         <div className="text-center mb-8 md:mb-12">
           <SpeedometerGauge score={resultData.score} />
 
@@ -532,7 +584,6 @@ Generated by FoundIndex.com
             </p>
           </div>
 
-          {/* Share and download buttons */}
           <div className="flex justify-center gap-3 mt-6">
             <div className="relative">
               <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
@@ -584,13 +635,12 @@ Generated by FoundIndex.com
                     />
                   </div>
 
-                  {/* Schema breakdown details */}
                   {category.key === "schemaMarkup" && category.breakdown && (
                     <div className="mt-2 pl-4 text-xs text-muted-foreground">
                       <p className="mb-1">{category.breakdown.summary}</p>
                       {category.breakdown.scores && (
                         <div className="flex flex-wrap gap-2 mt-1">
-                          {category.breakdown.scores.slice(0, 4).map((s: any, i: number) => (
+                          {category.breakdown.scores.slice(0, 4).map((s, i) => (
                             <span
                               key={i}
                               className={`px-2 py-0.5 rounded ${s.found ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"}`}
@@ -608,10 +658,13 @@ Generated by FoundIndex.com
           </CardContent>
         </Card>
 
-        {/* Industry comparison */}
+        {/* Industry comparison - DYNAMIC */}
         <Card className="mb-16 border-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">📊 Industry comparison</CardTitle>
+            <CardDescription>
+              Based on {resultData.testType === "homepage" ? "homepage" : "blog"} tests from the past 30 days
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -621,16 +674,20 @@ Generated by FoundIndex.com
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Industry average:</span>
-                <span className="text-2xl font-bold">58</span>
+                <span className="text-2xl font-bold">{resultData.industryAverage}</span>
               </div>
               <div className="pt-4">
-                {resultData.score > 58 ? (
+                {resultData.score > resultData.industryAverage ? (
                   <p className="text-green-600 dark:text-green-400 font-semibold">
-                    You're {resultData.score - 58} points above average 🎯
+                    You're {resultData.score - resultData.industryAverage} points above average 🎯
+                  </p>
+                ) : resultData.score === resultData.industryAverage ? (
+                  <p className="text-yellow-600 dark:text-yellow-400 font-semibold">
+                    You're at the industry average. Room to improve!
                   </p>
                 ) : (
                   <p className="text-orange-600 dark:text-orange-400 font-semibold">
-                    You're {58 - resultData.score} points below average. Let's fix that.
+                    You're {resultData.industryAverage - resultData.score} points below average. Let's fix that.
                   </p>
                 )}
               </div>
@@ -709,29 +766,38 @@ Generated by FoundIndex.com
             <CardTitle>💬 Help us improve</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm mb-2">Rate this analysis:</p>
-              <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => setRating(star)}
-                    className="text-2xl hover:scale-110 transition-transform"
-                  >
-                    {star <= rating ? "⭐" : "☆"}
-                  </button>
-                ))}
+            {feedbackSubmitted ? (
+              <div className="text-center py-4">
+                <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
+                <p className="font-semibold">Thanks for your feedback!</p>
               </div>
-            </div>
-            <Textarea
-              placeholder="What would make this more valuable?"
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              rows={3}
-            />
-            <Button onClick={handleFeedbackSubmit} className="w-full">
-              Submit feedback
-            </Button>
+            ) : (
+              <>
+                <div>
+                  <p className="text-sm mb-2">Rate this analysis:</p>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() => setRating(star)}
+                        className="text-2xl hover:scale-110 transition-transform"
+                      >
+                        {star <= rating ? "⭐" : "☆"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <Textarea
+                  placeholder="What would make this more valuable?"
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  rows={3}
+                />
+                <Button onClick={handleFeedbackSubmit} className="w-full">
+                  Submit feedback
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
