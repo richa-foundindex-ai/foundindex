@@ -1,3 +1,4 @@
+// src/utils/urlValidation.ts
 // URL validation utilities for pre-flight checks
 
 export interface ValidationResult {
@@ -6,90 +7,96 @@ export interface ValidationResult {
   displayUrl?: string;
   error?: string;
   suggestion?: string;
-  errorType?: 'format' | 'spaces' | 'missing_tld' | 'invalid';
+  errorType?: "format" | "spaces" | "missing_tld" | "invalid";
 }
 
 /**
  * Client-side URL validation and normalization
- * Runs instantly before any API calls
+ * Runs instantly before any API calls.
+ *
+ * Should accept:
+ *   - "slack.com"
+ *   - "foundindex.com"
+ *   - "thehindu.com"
+ *   - "https://example.com"
+ *   - "http://example.org"
  */
 export function validateAndNormalizeUrl(input: string): ValidationResult {
+  // Empty input
   if (!input || input.trim().length === 0) {
     return {
       valid: false,
-      error: 'Please enter a website URL',
-      errorType: 'format'
+      error: "Please enter a website URL",
+      errorType: "format",
     };
   }
 
   // Clean up the input
   let url = input.trim();
-  
-  // Check for spaces in the URL (common typo)
-  if (url.includes(' ')) {
-    const suggestion = url.replace(/\s+/g, '');
+
+  // Remove any leading dots (..example.com → example.com)
+  url = url.replace(/^\.+/, "");
+
+  // Check for spaces
+  if (url.includes(" ")) {
+    const suggestion = url.replace(/\s+/g, "");
     return {
       valid: false,
-      error: 'Website URLs cannot contain spaces',
-      suggestion: suggestion,
-      errorType: 'spaces'
+      error: "Website URLs cannot contain spaces",
+      suggestion,
+      errorType: "spaces",
     };
   }
 
-  // Remove any leading dots (typo)
-  url = url.replace(/^\.+/, '');
-
-  // Add https:// if no protocol is present
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'https://' + url;
+  // Auto-add https:// if no protocol is present
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = "https://" + url;
   }
 
-  // Try to parse as URL
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname;
 
     // Must have at least one dot (domain.tld)
-    if (!hostname.includes('.')) {
+    if (!hostname.includes(".")) {
       return {
         valid: false,
-        error: 'Invalid domain format. Did you forget .com?',
-        suggestion: hostname + '.com',
-        errorType: 'missing_tld'
+        error: "Invalid domain format. Did you forget .com?",
+        suggestion: hostname + ".com",
+        errorType: "missing_tld",
       };
     }
 
-    // Check for common typos
-    if (hostname.includes('..')) {
+    // Basic "double dots" guard
+    if (hostname.includes("..")) {
       return {
         valid: false,
-        error: 'Invalid URL format - double dots detected',
-        suggestion: url.replace('..', '.'),
-        errorType: 'format'
+        error: "Invalid URL format - double dots detected",
+        suggestion: url.replace("..", "."),
+        errorType: "format",
       };
     }
 
-    // Return normalized URL (root domain only)
+    const normalizedUrl = `${urlObj.protocol}//${urlObj.hostname}/`;
+
     return {
       valid: true,
-      normalizedUrl: `${urlObj.protocol}//${urlObj.hostname}/`,
-      displayUrl: hostname
+      normalizedUrl,
+      displayUrl: hostname,
     };
-
-  } catch (e) {
-    // Couldn't parse - provide helpful suggestions
+  } catch {
+    const trimmed = input.trim();
     const suggestions: string[] = [];
-    
-    // Common fixes
-    if (!input.includes('.')) {
-      suggestions.push(input.trim() + '.com');
+
+    if (trimmed && !trimmed.includes(".")) {
+      suggestions.push(trimmed + ".com");
     }
-    
+
     return {
       valid: false,
-      error: 'Please enter a valid website URL (e.g., example.com)',
+      error: "Please enter a valid website URL (e.g., example.com)",
       suggestion: suggestions[0],
-      errorType: 'invalid'
+      errorType: "invalid",
     };
   }
 }
@@ -99,29 +106,29 @@ export function validateAndNormalizeUrl(input: string): ValidationResult {
  */
 export function getErrorMessage(result: ValidationResult): { title: string; description: string } {
   switch (result.errorType) {
-    case 'spaces':
+    case "spaces":
       return {
-        title: 'Spaces in URL',
-        description: result.suggestion 
+        title: "Spaces in URL",
+        description: result.suggestion
           ? `URLs cannot contain spaces. Did you mean "${result.suggestion}"?`
-          : 'Website URLs cannot contain spaces. Please remove any spaces and try again.'
+          : "Website URLs cannot contain spaces. Please remove any spaces and try again.",
       };
-    case 'missing_tld':
+    case "missing_tld":
       return {
-        title: 'Missing domain extension',
+        title: "Missing domain extension",
         description: result.suggestion
           ? `Did you mean "${result.suggestion}"?`
-          : 'Please include the domain extension (like .com, .org, etc.)'
+          : "Please include the domain extension (like .com, .org, etc.)",
       };
-    case 'format':
+    case "format":
       return {
-        title: 'Invalid URL format',
-        description: result.error || 'Please check the URL format and try again.'
+        title: "Invalid URL format",
+        description: result.error || "Please check the URL format and try again.",
       };
     default:
       return {
-        title: 'Invalid URL',
-        description: result.error || 'Please enter a valid website URL (e.g., example.com)'
+        title: "Invalid URL",
+        description: result.error || "Please enter a valid website URL (e.g., example.com)",
       };
   }
 }
