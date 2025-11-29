@@ -338,14 +338,7 @@ Return ONLY valid JSON in this exact format:
       return acc;
     }, {});
 
-    // Save to Supabase (submission log)
-    await supabaseAdmin.from("test_submissions").insert({
-      email: validatedEmail,
-      ip_address: clientIP,
-      test_id: testId,
-    });
-
-    // Save full analysis snapshot to test_history for later retrieval
+    // ✅ SAVE TO test_history TABLE (PRIMARY RESULTS STORAGE)
     try {
       await supabaseAdmin.from("test_history").insert({
         test_id: testId,
@@ -357,8 +350,18 @@ Return ONLY valid JSON in this exact format:
         categories: categoriesWithPercentages,
         recommendations: analysisResult.recommendations || [],
       });
+      console.log(`[${testId}] Saved to test_history`);
     } catch (historyError) {
-      console.error(`[${testId}] Failed to insert into test_history:`, historyError);
+      console.error(`[${testId}] CRITICAL: Failed to save to test_history:`, historyError);
+      // This is critical - if we can't save results, the results page won't work
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Failed to save test results. Please contact support.",
+          details: historyError instanceof Error ? historyError.message : "Database error",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const response = {
