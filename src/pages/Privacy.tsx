@@ -1,129 +1,122 @@
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import Header from "@/components/layout/Header";
-import { XCircle } from "lucide-react";
-import { analytics } from "@/utils/analytics";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
-const Privacy = () => {
-  const lastUpdated = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-
-  useEffect(() => {
-    analytics.pageView("privacy");
-  }, []);
-
+export default function Privacy() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="container mx-auto px-4 py-16 max-w-4xl">
-        <Card className="p-8 space-y-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Privacy Policy</h1>
-            <p className="text-sm text-muted-foreground">Last updated: {lastUpdated}</p>
-          </div>
+      <main className="container mx-auto px-4 py-12 max-w-3xl">
+        <h1 className="text-3xl font-bold mb-8">Privacy & terms</h1>
 
-          <div className="space-y-8">
-            {/* What We Collect */}
-            <section>
-              <h2 className="text-2xl font-bold mb-4">1. What We Collect</h2>
-              <ul className="space-y-2 ml-4 text-muted-foreground">
-                <li>• Website URLs you test</li>
-                <li>• Email addresses (if provided)</li>
-                <li>• Test results and scores</li>
-                <li>• Usage analytics</li>
-              </ul>
-            </section>
+        <div className="prose prose-gray dark:prose-invert max-w-none space-y-8">
+          {/* Privacy Policy */}
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Privacy policy</h2>
+            <p className="text-sm text-muted-foreground mb-6">Last updated: November 2025</p>
 
-            {/* How We Use Data */}
-            <section>
-              <h2 className="text-2xl font-bold mb-4">2. How We Use Data</h2>
-              <ul className="space-y-2 ml-4 text-muted-foreground">
-                <li>• Provide FI Score analysis</li>
-                <li>• Send test results</li>
-                <li>• Improve our algorithm</li>
-                <li>• Send product updates (opt-out available)</li>
-              </ul>
-            </section>
-
-            {/* What We Don't Do */}
-            <section>
-              <h2 className="text-2xl font-bold mb-4">3. What We Don't Do</h2>
-              <div className="space-y-2 ml-4">
-                <div className="flex items-start gap-2">
-                  <XCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Sell data to third parties</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <XCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Share your URLs publicly</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <XCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Use your content to train AI models</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <XCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
-                  <span className="text-muted-foreground">Send spam</span>
-                </div>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">1. What we collect</h3>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Website URLs you submit for analysis</li>
+                  <li>Email address (if provided)</li>
+                  <li>Test results and scores</li>
+                  <li>Feedback you submit</li>
+                </ul>
               </div>
-            </section>
 
-            {/* Data Retention */}
-            <section>
-              <h2 className="text-2xl font-bold mb-4">4. Data Retention</h2>
-              <ul className="space-y-2 ml-4 text-muted-foreground">
-                <li>• Test results: 12 months</li>
-                <li>• Email addresses: Until unsubscribe</li>
-              </ul>
-            </section>
+              <div>
+                <h3 className="text-lg font-semibold mb-2">2. How we use it</h3>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Generate your AI visibility analysis</li>
+                  <li>Calculate industry averages</li>
+                  <li>Improve our scoring algorithms</li>
+                  <li>Send you results and updates (if opted in)</li>
+                </ul>
+              </div>
 
-            {/* Your Rights */}
-            <section>
-              <h2 className="text-2xl font-bold mb-4">5. Your Rights</h2>
-              <ul className="space-y-2 ml-4 text-muted-foreground">
-                <li>• Request data deletion</li>
-                <li>• Export test history</li>
-                <li>• Unsubscribe anytime</li>
-              </ul>
-            </section>
+              <div>
+                <h3 className="text-lg font-semibold mb-2">3. What we don't do</h3>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Sell your data to third parties</li>
+                  <li>Share individual results publicly without permission</li>
+                  <li>Store passwords or sensitive credentials</li>
+                </ul>
+              </div>
 
-            {/* Cookies */}
-            <section>
-              <h2 className="text-2xl font-bold mb-4">6. Cookies</h2>
-              <ul className="space-y-2 ml-4 text-muted-foreground">
-                <li>• Analytics cookies (Google Analytics)</li>
-                <li>• Session cookies</li>
-                <li>• Can be disabled in browser</li>
-              </ul>
-            </section>
+              <div>
+                <h3 className="text-lg font-semibold mb-2">4. Cookies</h3>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Analytics cookies (Google Analytics)</li>
+                  <li>Session cookies for rate limiting</li>
+                  <li>Can be disabled in browser settings</li>
+                </ul>
+              </div>
+            </div>
+          </section>
 
-            {/* Contact */}
-            <section>
-              <h2 className="text-2xl font-bold mb-4">7. Contact</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                For privacy-related questions, email us at:{" "}
-                <a href="mailto:hello@foundindex.com" className="text-blue-600 hover:underline dark:text-blue-400">
-                  hello@foundindex.com
-                </a>
-              </p>
-            </section>
-          </div>
+          <hr className="my-8" />
 
-          <div className="pt-6 border-t">
-            <Button asChild>
-              <Link to="/">Return home</Link>
-            </Button>
-          </div>
-        </Card>
-      </div>
+          {/* Terms of Service */}
+          <section>
+            <h2 className="text-2xl font-bold mb-4">Terms of service</h2>
+
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-2">1. Service description</h3>
+                <p className="text-muted-foreground">
+                  FoundIndex provides AI visibility scoring for websites. We analyze publicly accessible web pages and
+                  provide recommendations to improve how AI search engines understand your content.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-2">2. Acceptable use</h3>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Only submit URLs you have permission to analyze</li>
+                  <li>Do not attempt to circumvent rate limits</li>
+                  <li>Do not use automated tools to submit bulk requests</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-2">3. Disclaimer</h3>
+                <p className="text-muted-foreground">
+                  Our scores and recommendations are advisory. We cannot guarantee improved rankings in any search
+                  engine. Results may vary based on many factors outside our control.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-2">4. Beta service</h3>
+                <p className="text-muted-foreground">
+                  FoundIndex is currently in beta. Features, pricing, and availability may change. We appreciate your
+                  feedback as we improve the service.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <hr className="my-8" />
+
+          {/* Contact */}
+          <section>
+            <h2 className="text-2xl font-bold mb-4">5. Contact</h2>
+            <p className="text-muted-foreground mb-4">For privacy-related questions or any other inquiries:</p>
+            <Link to="/contact">
+              <Button variant="outline">Contact us</Button>
+            </Link>
+          </section>
+        </div>
+
+        <div className="mt-12">
+          <Link to="/">
+            <Button>Return home</Button>
+          </Link>
+        </div>
+      </main>
     </div>
   );
-};
-
-export default Privacy;
+}
