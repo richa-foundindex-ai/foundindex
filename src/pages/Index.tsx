@@ -37,7 +37,6 @@ const Index = () => {
       return;
     }
 
-    // Validate URL
     const validation = validateAndNormalizeUrl(homepageUrl);
     if (!validation.valid) {
       const errorMsg = getErrorMessage(validation);
@@ -49,6 +48,28 @@ const Index = () => {
     }
 
     const websiteUrl = validation.normalizedUrl!;
+
+    // ✅ RATE LIMITING - Check if URL tested in last 7 days
+    const { data: recentTests } = await supabase
+      .from('test_history')
+      .select('test_id, score, created_at')
+      .eq('website', websiteUrl)
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (recentTests && recentTests.length > 0) {
+      const test = recentTests[0];
+      const daysAgo = Math.floor((Date.now() - new Date(test.created_at).getTime()) / (24 * 60 * 60 * 1000));
+      
+      toast({
+        title: "URL tested recently",
+        description: `You tested this URL ${daysAgo} day${daysAgo === 1 ? '' : 's'} ago. You can retest in ${7 - daysAgo} day${7 - daysAgo === 1 ? '' : 's'}. Made changes? Email hello@foundindex.com to retest early.`,
+      });
+      
+      navigate(`/results?testId=${test.test_id}&url=${encodeURIComponent(websiteUrl)}`);
+      return;
+    }
 
     analytics.buttonClick("Get FI Score - Homepage", "homepage audit");
     setIsLoadingHomepage(true);
@@ -103,7 +124,6 @@ const Index = () => {
       return;
     }
 
-    // Validate URL
     const validation = validateAndNormalizeUrl(blogUrl);
     if (!validation.valid) {
       const errorMsg = getErrorMessage(validation);
@@ -115,6 +135,28 @@ const Index = () => {
     }
 
     const websiteUrl = validation.normalizedUrl!;
+
+    // ✅ RATE LIMITING - Check if URL tested in last 7 days
+    const { data: recentTests } = await supabase
+      .from('test_history')
+      .select('test_id, score, created_at')
+      .eq('website', websiteUrl)
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (recentTests && recentTests.length > 0) {
+      const test = recentTests[0];
+      const daysAgo = Math.floor((Date.now() - new Date(test.created_at).getTime()) / (24 * 60 * 60 * 1000));
+      
+      toast({
+        title: "URL tested recently",
+        description: `You tested this URL ${daysAgo} day${daysAgo === 1 ? '' : 's'} ago. You can retest in ${7 - daysAgo} day${7 - daysAgo === 1 ? '' : 's'}. Made changes? Email hello@foundindex.com to retest early.`,
+      });
+      
+      navigate(`/results?testId=${test.test_id}&url=${encodeURIComponent(websiteUrl)}`);
+      return;
+    }
 
     analytics.buttonClick("Get FI Score - Blog", "blog audit");
     setIsLoadingBlog(true);
@@ -163,7 +205,6 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero Section */}
       <section className="container mx-auto px-4 py-12 md:py-24 text-center">
         <Badge className="mb-6 text-sm md:text-base px-4 md:px-6 py-2 bg-primary text-primary-foreground hover:bg-primary-hover">
           🚀 FREE BETA
@@ -182,10 +223,8 @@ const Index = () => {
         </p>
       </section>
 
-      {/* Two Testing Boxes */}
       <section className="container mx-auto px-4 pb-12 md:pb-16">
         <div className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
-          {/* Homepage Audit */}
           <Card className="relative bg-gradient-to-br from-blue-light to-background border-2 border-blue/20 hover:border-blue/40 transition-all duration-300">
             <CardContent className="p-8">
               <div className="text-6xl mb-4">🏠</div>
@@ -253,7 +292,6 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          {/* Blog Post Audit */}
           <Card className="relative bg-gradient-to-br from-purple-light to-background border-2 border-purple/20 hover:border-purple/40 transition-all duration-300">
             <Badge className="absolute top-4 right-4 bg-warning text-warning-foreground">MOST POPULAR</Badge>
 
@@ -325,7 +363,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* How It Works */}
       <section className="bg-muted py-16 md:py-24">
         <div className="container mx-auto px-4">
           <h2 className="text-2xl md:text-4xl font-bold text-center mb-8 md:mb-12 text-foreground">How It Works</h2>
@@ -358,7 +395,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Beta Benefits */}
       <section className="container mx-auto px-4 py-16 md:py-24">
         <h2 className="text-2xl md:text-4xl font-bold text-center mb-8 md:mb-12 text-foreground">
           🎉 Beta Tester Benefits
@@ -391,13 +427,12 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="border-t border-border bg-muted py-8">
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground text-center md:text-left">
             <div className="order-2 md:order-1">
               Created by <span className="font-medium">Richa Deo</span> |{" "}
-              <a
+              
                 href="https://richadeo.com"
                 target="_blank"
                 rel="noopener noreferrer"
