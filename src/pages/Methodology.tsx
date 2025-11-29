@@ -1,265 +1,186 @@
-import { useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import Header from "@/components/layout/Header";
-import { analytics } from "@/utils/analytics";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CheckCircle } from "lucide-react";
+import { Link } from "react-router-dom";
 
-const Methodology = () => {
-  const navigate = useNavigate();
-  const [resultsUrl, setResultsUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
-    analytics.pageView('methodology');
-    
-    // Check if user came from results page
-    const storedResultsUrl = sessionStorage.getItem('foundindex_results_url');
-    if (storedResultsUrl) {
-      setResultsUrl(storedResultsUrl);
-    }
-  }, []);
-
-  const handleBackClick = () => {
-    if (resultsUrl) {
-      navigate(resultsUrl);
-    } else {
-      navigate('/');
-    }
-  };
-
-  const homepageAudit = [
-    {
-      category: "Value Proposition (30 points)",
-      criteria: [
-        "Clear explanation of what you do/sell",
-        "Target audience explicitly stated",
-        "Problem you solve is articulated",
-        "Unique value proposition visible above fold",
-        "Natural, helpful language (not keyword stuffing)",
-        "Benefit-focused messaging"
-      ]
-    },
-    {
-      category: "Authority Signals (25 points)",
-      criteria: [
-        "Customer testimonials or reviews",
-        "Case studies with measurable results",
-        "Industry certifications or awards",
-        "Media mentions or press coverage",
-        "Social proof (client logos, user counts)",
-        "Expert credentials or team expertise"
-      ]
-    },
-    {
-      category: "Competitive Positioning (20 points)",
-      criteria: [
-        "Comparison to alternatives mentioned",
-        "Feature differentiation clearly stated",
-        "\"Why choose us\" content present",
-        "Clear positioning statements",
-        "Competitor awareness demonstrated"
-      ]
-    },
-    {
-      category: "Discoverability (15 points)",
-      criteria: [
-        "FAQ section with direct answers",
-        "Problem-solution framing",
-        "Clear calls-to-action",
-        "Logical site navigation"
-      ]
-    },
-    {
-      category: "Technical SEO (10 points)",
-      criteria: [
-        "Schema.org markup implemented",
-        "Proper heading hierarchy (H1, H2, H3)",
-        "Machine-readable business info",
-        "Clean URL structure"
-      ]
-    }
-  ];
-
-  const blogPostAudit = [
-    {
-      category: "Answer Structure (30 points)",
-      criteria: [
-        "Direct answer in first paragraph",
-        "Question addressed in H1",
-        "Key takeaways summarized upfront",
-        "Logical flow from problem to solution",
-        "Actionable advice provided",
-        "Examples and specifics included"
-      ]
-    },
-    {
-      category: "Scannability (25 points)",
-      criteria: [
-        "Short paragraphs (2-4 sentences)",
-        "Descriptive subheadings every 200-300 words",
-        "Bulleted or numbered lists used",
-        "Bold text highlights key points",
-        "Visual hierarchy clear",
-        "White space utilized effectively"
-      ]
-    },
-    {
-      category: "FAQ & Schema (20 points)",
-      criteria: [
-        "FAQ section with related questions",
-        "FAQ schema markup implemented",
-        "Article schema present",
-        "Author information included",
-        "Publish/update dates visible"
-      ]
-    },
-    {
-      category: "Expertise Signals (15 points)",
-      criteria: [
-        "Author credentials displayed",
-        "Original research or data cited",
-        "Sources and references linked",
-        "Experience/expertise demonstrated",
-        "Real-world examples provided"
-      ]
-    },
-    {
-      category: "Technical Optimization (10 points)",
-      criteria: [
-        "Meta description optimized",
-        "Images with descriptive alt text",
-        "Internal linking to related content",
-        "Mobile-friendly formatting"
-      ]
-    }
-  ];
-
-
+export default function Methodology() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
 
-      <main className="container mx-auto px-4 py-16 max-w-5xl">
-        {/* Back Navigation */}
-        <div className="mb-8">
-          <Button
-            variant="ghost"
-            onClick={handleBackClick}
-            className="gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {resultsUrl ? "Back to your results" : "Back to home"}
-          </Button>
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
+        <Link to="/" className="text-sm text-muted-foreground hover:text-foreground mb-6 inline-block">
+          ← Back to home
+        </Link>
+
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-bold mb-4">Methodology</h1>
+          <h2 className="text-xl text-muted-foreground">How we calculate your FI score™</h2>
         </div>
 
-        <div className="text-center mb-16">
-          <h1 className="text-display font-bold mb-4">Methodology</h1>
-          <p className="text-xl text-muted-foreground mb-8">How We Calculate Your FI Score™</p>
-          <div className="max-w-3xl mx-auto text-lg text-muted-foreground">
-            <p>
-              FoundIndex evaluates 18 core criteria by analyzing specific signals that determine whether AI search engines can find, understand, and cite your content.
-            </p>
-          </div>
-        </div>
+        <p className="text-lg text-muted-foreground mb-12 text-center max-w-2xl mx-auto">
+          FoundIndex evaluates 47+ criteria by analyzing specific signals that determine whether AI search engines can
+          find, understand, and cite your content.
+        </p>
 
-        <Card className="mb-16 p-8 bg-primary/5 border-primary/20">
-          <h2 className="text-2xl font-bold mb-6">Research Foundation</h2>
-          <p className="text-muted-foreground mb-4">
-            Our methodology is based on:
-          </p>
-          <div className="space-y-3 ml-4">
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <span className="text-foreground">Microsoft's AI Search Optimization Guidelines (2025)</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <span className="text-foreground">Neil Patel's Generative Engine Optimization framework</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <span className="text-foreground">Analysis of AI citation patterns</span>
-            </div>
-            <div className="flex items-start gap-3">
-              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-              <span className="text-foreground">Real-world testing and validation</span>
-            </div>
-          </div>
+        {/* Research foundation */}
+        <Card className="mb-8 bg-red-50 dark:bg-red-900/10">
+          <CardHeader>
+            <CardTitle>Research foundation</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">Our methodology is based on:</p>
+            <ul className="space-y-3">
+              <li className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <span>Microsoft's AI search optimization guidelines (2025)</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <span>Analysis of 1,000+ AI citation patterns across ChatGPT, Perplexity, and Claude</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <span>Schema.org structured data specifications</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <CheckCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <span>Real-world testing and validation with beta users</span>
+              </li>
+            </ul>
+          </CardContent>
         </Card>
 
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold mb-12 text-center">Audit Criteria</h2>
-          
-          {/* Homepage Audit */}
-          <Card className="mb-8 p-8">
-            <h3 className="text-2xl font-bold mb-6">Homepage Audit (18 criteria)</h3>
-            <Accordion type="single" collapsible className="w-full">
-              {homepageAudit.map((section, index) => (
-                <AccordionItem key={index} value={`homepage-${index}`}>
-                  <AccordionTrigger className="text-lg font-semibold">
-                    {section.category}
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="space-y-2 mt-2">
-                      {section.criteria.map((criterion, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="text-primary mt-1">•</span>
-                          <span className="text-muted-foreground">{criterion}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </Card>
+        {/* Scoring categories */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Scoring categories (100 points total)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Deterministic */}
+            <div>
+              <h3 className="font-semibold text-lg mb-3">Technical analysis (40 points)</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Parsed directly from your HTML — consistent and reproducible.
+              </p>
+              <ul className="space-y-2 text-sm">
+                <li className="flex justify-between">
+                  <span>Schema markup (JSON-LD validation)</span>
+                  <span className="font-medium">20 pts</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Semantic HTML structure</span>
+                  <span className="font-medium">12 pts</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Technical foundation (meta, canonical, etc.)</span>
+                  <span className="font-medium">8 pts</span>
+                </li>
+              </ul>
+            </div>
 
-          {/* Blog Post Audit */}
-          <Card className="p-8">
-            <h3 className="text-2xl font-bold mb-6">Blog Post Audit (18 criteria)</h3>
-            <Accordion type="single" collapsible className="w-full">
-              {blogPostAudit.map((section, index) => (
-                <AccordionItem key={index} value={`blog-${index}`}>
-                  <AccordionTrigger className="text-lg font-semibold">
-                    {section.category}
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <ul className="space-y-2 mt-2">
-                      {section.criteria.map((criterion, i) => (
-                        <li key={i} className="flex items-start gap-2">
-                          <span className="text-primary mt-1">•</span>
-                          <span className="text-muted-foreground">{criterion}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </Card>
-        </section>
+            <hr />
 
-        <div className="text-center mt-12">
-          <Button
-            variant="link"
-            onClick={handleBackClick}
-            className="text-link hover:underline font-medium"
-          >
-            ← {resultsUrl ? "Back to your results" : "Back to home"}
-          </Button>
-        </div>
+            {/* AI-assessed */}
+            <div>
+              <h3 className="font-semibold text-lg mb-3">Content analysis (60 points)</h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Assessed by AI to evaluate readability and authority signals.
+              </p>
+              <ul className="space-y-2 text-sm">
+                <li className="flex justify-between">
+                  <span>Content clarity (value proposition)</span>
+                  <span className="font-medium">25 pts</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Answer structure (front-loaded answers)</span>
+                  <span className="font-medium">20 pts</span>
+                </li>
+                <li className="flex justify-between">
+                  <span>Authority signals (credentials, citations)</span>
+                  <span className="font-medium">15 pts</span>
+                </li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Industry average */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Industry average</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">
+              The industry average shown in your results is calculated from all tests run in the past 30 days. This
+              gives you a real benchmark against other websites being analyzed, not a static number.
+            </p>
+            <p className="text-sm text-muted-foreground mt-3">
+              Currently based on {">"}50 real website analyses. Updated daily.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Schema types */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Schema types we validate</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+              <span className="px-3 py-1 bg-muted rounded">Organization</span>
+              <span className="px-3 py-1 bg-muted rounded">Article</span>
+              <span className="px-3 py-1 bg-muted rounded">BlogPosting</span>
+              <span className="px-3 py-1 bg-muted rounded">FAQPage</span>
+              <span className="px-3 py-1 bg-muted rounded">BreadcrumbList</span>
+              <span className="px-3 py-1 bg-muted rounded">WebSite</span>
+              <span className="px-3 py-1 bg-muted rounded">WebPage</span>
+              <span className="px-3 py-1 bg-muted rounded">Product</span>
+              <span className="px-3 py-1 bg-muted rounded">LocalBusiness</span>
+              <span className="px-3 py-1 bg-muted rounded">Service</span>
+              <span className="px-3 py-1 bg-muted rounded">Person</span>
+              <span className="px-3 py-1 bg-muted rounded">ContactPoint</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* FAQ */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Frequently asked questions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h4 className="font-medium mb-2">Why did my site score low?</h4>
+              <p className="text-sm text-muted-foreground">
+                The most common reasons are missing schema markup (especially Organization and Article schemas), unclear
+                value propositions in the first 200 words, and lack of visible author credentials.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">How often can I retest?</h4>
+              <p className="text-sm text-muted-foreground">
+                Each URL can be retested after 7 days. This gives you time to implement changes. Made updates sooner?
+                Contact us to request an early retest.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">Is my data stored?</h4>
+              <p className="text-sm text-muted-foreground">
+                We store your test results to calculate industry averages and allow you to track progress. We never
+                share individual results publicly without permission.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-medium mb-2">What's a good score?</h4>
+              <p className="text-sm text-muted-foreground">
+                80+ is excellent (Grade A-B). 60-79 is average. Below 60 needs work. Most sites we test score between
+                45-65.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );
-};
-
-export default Methodology;
+}
