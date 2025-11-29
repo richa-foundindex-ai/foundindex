@@ -43,7 +43,7 @@ interface SchemaParseResult {
 }
 
 // =============================================================================
-// SCHEMA.ORG PARSER (Deterministic - No AI)
+// SCHEMA.ORG PARSER
 // =============================================================================
 
 const SCHEMA_REQUIREMENTS: Record<string, { required: string[]; recommended: string[]; points: number }> = {
@@ -111,7 +111,6 @@ const SCHEMA_REQUIREMENTS: Record<string, { required: string[]; recommended: str
 
 function extractJsonLd(html: string): unknown[] {
   const jsonLdItems: unknown[] = [];
-  // FIX: Support both single and double quotes around application/ld+json
   const jsonLdRegex = /<script[^>]*type\s*=\s*['"]application\/ld\+json['"][^>]*>([\s\S]*?)<\/script>/gi;
 
   let match;
@@ -120,12 +119,14 @@ function extractJsonLd(html: string): unknown[] {
       const jsonContent = match[1].trim();
       const parsed = JSON.parse(jsonContent);
 
-      if (parsed["@graph"] && Array.isArray(parsed["@graph"])) {
-        jsonLdItems.push(...parsed["@graph"]);
-      } else if (Array.isArray(parsed)) {
-        jsonLdItems.push(...parsed);
-      } else {
-        jsonLdItems.push(parsed);
+      if (parsed && typeof parsed === "object") {
+        if (parsed["@graph"] && Array.isArray(parsed["@graph"])) {
+          jsonLdItems.push(...parsed["@graph"]);
+        } else if (Array.isArray(parsed)) {
+          jsonLdItems.push(...parsed);
+        } else {
+          jsonLdItems.push(parsed);
+        }
       }
     } catch {
       // Malformed JSON-LD, skip
@@ -202,13 +203,19 @@ function parseJsonLdItems(jsonLdItems: unknown[]): SchemaItem[] {
 
     // Process nested objects
     for (const value of Object.values(properties)) {
-      if (value && typeof value === "object" && !Array.isArray(value) && "@type" in (value as object)) {
-        processItem(value);
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        const valueObj = value as Record<string, unknown>;
+        if ("@type" in valueObj) {
+          processItem(value);
+        }
       }
       if (Array.isArray(value)) {
         for (const arrItem of value) {
-          if (arrItem && typeof arrItem === "object" && "@type" in arrItem) {
-            processItem(arrItem);
+          if (arrItem && typeof arrItem === "object") {
+            const arrItemObj = arrItem as Record<string, unknown>;
+            if ("@type" in arrItemObj) {
+              processItem(arrItem);
+            }
           }
         }
       }
@@ -249,7 +256,6 @@ function scoreSchemaType(type: string, items: SchemaItem[]): SchemaScore {
     };
   }
 
-  // Use the best item for scoring
   let bestItem = matchingItems[0];
   let bestFieldCount = 0;
 
@@ -264,7 +270,6 @@ function scoreSchemaType(type: string, items: SchemaItem[]): SchemaScore {
 
   const missingRequired = requirements.required.filter((f) => !(f in bestItem.properties));
 
-  // 60% required, 40% recommended
   const requiredScore =
     requirements.required.length > 0
       ? ((requirements.required.length - missingRequired.length) / requirements.required.length) * 0.6
@@ -307,7 +312,6 @@ function parseSchemaMarkup(html: string, pageType: "homepage" | "blog"): SchemaP
   const scores: SchemaScore[] = [];
 
   for (const schemaType of schemasToScore) {
-    // Skip Article if BlogPosting exists
     if (schemaType === "Article") {
       const hasBlogPosting = allSchemas.some((s) => s.type === "BlogPosting");
       if (hasBlogPosting) continue;
@@ -344,7 +348,7 @@ function parseSchemaMarkup(html: string, pageType: "homepage" | "blog"): SchemaP
 }
 
 // =============================================================================
-// SEMANTIC HTML ANALYZER (Deterministic)
+// SEMANTIC HTML ANALYZER
 // =============================================================================
 
 function analyzeSemanticHtml(html: string, pageType: "homepage" | "blog") {
@@ -392,7 +396,7 @@ function analyzeSemanticHtml(html: string, pageType: "homepage" | "blog") {
 }
 
 // =============================================================================
-// TECHNICAL FOUNDATION ANALYZER (Deterministic)
+// TECHNICAL FOUNDATION ANALYZER
 // =============================================================================
 
 function analyzeTechnical(url: string, html: string) {
@@ -431,7 +435,7 @@ function analyzeTechnical(url: string, html: string) {
 }
 
 // =============================================================================
-// IMAGE ANALYZER (Deterministic)
+// IMAGE ANALYZER
 // =============================================================================
 
 function analyzeImages(html: string, pageType: "homepage" | "blog") {
@@ -457,7 +461,6 @@ function analyzeImages(html: string, pageType: "homepage" | "blog") {
 
   let score = 0;
   if (totalImages === 0) {
-    // FIX: No images on blog is a content issue, less penalty for homepage
     score = pageType === "blog" ? 2 : 5;
   } else {
     const altRatio = withAltText / totalImages;
@@ -502,24 +505,31 @@ const validateWebsite = (website: string): string => {
   throw new Error('Please enter a valid website URL (like "example.com")');
 };
 
-const detectPageType = (url: string, html: string): "homepage" | "blog" => {
+// IMPROVED: Better page type detection that respects user selection
+const detectPageType = (url: string, html: string, requestedType: "homepage" | "blog"): "homepage" | "blog" => {
   const urlLower = url.toLowerCase();
-  const blogPatterns = ["/blog/", "/post/", "/article/", "/news/", "/insights/"];
+
+  // Strong blog indicators in URL
+  const blogPatterns = ["/blog/", "/post/", "/article/", "/news/", "/insights/", "/stories/", "/journal/"];
   const hasBlogUrl = blogPatterns.some((pattern) => urlLower.includes(pattern));
   const datePattern = /\/\d{4}\/\d{2}\//;
   const hasDateUrl = datePattern.test(urlLower);
-  // FIX: Add subdomain blog detection
-  const hasBlogSubdomain = urlLower.includes("blog.") && !urlLower.includes("blog.example");
+  const hasBlogSubdomain = /^https?:\/\/blog\./i.test(url);
 
+  // Strong blog indicators in HTML
   const hasBlogHTML =
-    html.includes("<article") ||
-    html.includes('class="post') ||
-    html.includes('class="article') ||
-    html.includes('itemtype="http://schema.org/BlogPosting"') ||
     html.includes('"@type":"BlogPosting"') ||
-    html.includes('"@type":"Article"');
+    html.includes('"@type":"Article"') ||
+    html.includes('"@type": "BlogPosting"') ||
+    html.includes('"@type": "Article"');
 
-  return hasBlogUrl || hasDateUrl || hasBlogSubdomain || hasBlogHTML ? "blog" : "homepage";
+  // If URL or HTML strongly indicates blog, return blog
+  if (hasBlogUrl || hasDateUrl || hasBlogSubdomain || hasBlogHTML) {
+    return "blog";
+  }
+
+  // Otherwise trust the user's selection
+  return requestedType;
 };
 
 const getGrade = (score: number): string => {
@@ -559,7 +569,8 @@ serve(async (req) => {
 
     const testId = crypto.randomUUID();
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    const modelName = Deno.env.get("OPENAI_MODEL_NAME") || "gpt-4o";
+    // Use gpt-4o-mini for cost savings (~15x cheaper than gpt-4o)
+    const modelName = Deno.env.get("OPENAI_MODEL_NAME") || "gpt-4o-mini";
 
     console.log(`[${testId}] Starting analysis for ${testType}: ${validatedWebsite}`);
 
@@ -644,7 +655,8 @@ serve(async (req) => {
       );
     }
 
-    const detectedType = detectPageType(validatedWebsite, websiteHtml);
+    // FIXED: Pass requestedType to detection function
+    const detectedType = detectPageType(validatedWebsite, websiteHtml, testType);
     console.log(`[${testId}] Detected type: ${detectedType}, Requested: ${testType}`);
 
     // ==========================================================================
@@ -656,7 +668,6 @@ serve(async (req) => {
     const technicalResult = analyzeTechnical(validatedWebsite, websiteHtml);
     const imageResult = analyzeImages(websiteHtml, testType);
 
-    // Normalize to weights
     const schemaWeight = testType === "homepage" ? 20 : 18;
     const semanticWeight = testType === "homepage" ? 12 : 14;
     const technicalWeight = 8;
@@ -669,7 +680,6 @@ serve(async (req) => {
     const imageScore = (imageResult.score / imageResult.maxScore) * imageWeight;
 
     const deterministicTotal = Math.round((schemaScore + semanticScore + technicalScore + imageScore) * 10) / 10;
-    // FIX: Correct max calculation including imageWeight
     const deterministicMax = schemaWeight + semanticWeight + technicalWeight + imageWeight;
 
     console.log(
@@ -677,7 +687,7 @@ serve(async (req) => {
     );
 
     // ==========================================================================
-    // AI ANALYSIS (60 points) - Content quality assessment
+    // AI ANALYSIS (60 points)
     // ==========================================================================
 
     const extractedContent = websiteHtml.substring(0, 50000);
@@ -745,7 +755,7 @@ Return ONLY valid JSON:
 
     console.log(`[${testId}] Calling OpenAI...`);
 
-    let aiAnalysisResult: any;
+    let aiAnalysisResult: Record<string, unknown> = { categories: {}, recommendations: [] };
 
     try {
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -792,14 +802,19 @@ Return ONLY valid JSON:
     // COMBINE SCORES
     // ==========================================================================
 
-    const aiCategories = aiAnalysisResult.categories || {};
-    const aiTotal = Object.values(aiCategories).reduce((sum: number, cat: any) => sum + (cat.score || 0), 0);
+    const aiCategories = (aiAnalysisResult.categories || {}) as Record<string, { score?: number; max?: number }>;
+    const aiTotal = Object.values(aiCategories).reduce((sum: number, cat) => {
+      if (cat && typeof cat === "object" && typeof cat.score === "number") {
+        return sum + cat.score;
+      }
+      return sum;
+    }, 0);
 
     const totalScore = Math.round(deterministicTotal + aiTotal);
     const grade = getGrade(totalScore);
 
-    // Build combined categories for display
-    const displayCategories: Record<string, any> = {
+    // Build combined categories for display - FIXED: No spread on unknown types
+    const displayCategories: Record<string, unknown> = {
       schemaMarkup: {
         score: Math.round(schemaScore * 10) / 10,
         max: schemaWeight,
@@ -829,12 +844,18 @@ Return ONLY valid JSON:
       };
     }
 
-    // Add AI categories
+    // Add AI categories - FIXED: Properly typed iteration
     for (const [key, value] of Object.entries(aiCategories)) {
-      displayCategories[key] = {
-        ...value,
-        percentage: Math.round(((value as any).score / (value as any).max) * 100),
-      };
+      if (value && typeof value === "object") {
+        const catValue = value as { score?: number; max?: number };
+        const catScore = catValue.score ?? 0;
+        const catMax = catValue.max ?? 1;
+        displayCategories[key] = {
+          score: catScore,
+          max: catMax,
+          percentage: Math.round((catScore / catMax) * 100),
+        };
+      }
     }
 
     // Generate schema recommendations
@@ -866,23 +887,50 @@ Return ONLY valid JSON:
         expectedImprovement: `+${Math.round((s.maxPoints - s.earnedPoints) * 10) / 10} points`,
       }));
 
-    const allRecommendations = [...schemaRecommendations, ...(aiAnalysisResult.recommendations || [])].map(
-      (rec, idx) => ({
-        ...rec,
-        id: rec.id || `rec-${idx}`,
-      }),
-    );
+    // Get AI recommendations safely
+    const aiRecommendations = Array.isArray(aiAnalysisResult.recommendations) ? aiAnalysisResult.recommendations : [];
 
-    // Sort by priority and points lost
+    const allRecommendations = [...schemaRecommendations, ...aiRecommendations].map((rec, idx) => {
+      const recObj = rec as Record<string, unknown>;
+      return {
+        id: (recObj.id as string) || `rec-${idx}`,
+        priority: (recObj.priority as string) || "medium",
+        title: (recObj.title as string) || "Recommendation",
+        pointsLost: (recObj.pointsLost as number) || 0,
+        problem: (recObj.problem as string) || "",
+        howToFix: recObj.howToFix || [],
+        codeExample: (recObj.codeExample as string) || "",
+        expectedImprovement: (recObj.expectedImprovement as string) || "",
+      };
+    });
+
+    // Sort by priority
     allRecommendations.sort((a, b) => {
-      const priorityOrder = { critical: 0, medium: 1, good: 2 };
-      const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 2;
-      const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 2;
+      const priorityOrder: Record<string, number> = { critical: 0, medium: 1, good: 2 };
+      const aPriority = priorityOrder[a.priority] ?? 2;
+      const bPriority = priorityOrder[b.priority] ?? 2;
       if (aPriority !== bPriority) return aPriority - bPriority;
       return (a.pointsLost || 0) - (b.pointsLost || 0);
     });
 
-    // Save to database
+    // Calculate dynamic industry average from database
+    let industryAverage = 58;
+    try {
+      const { data: avgData } = await supabaseAdmin
+        .from("test_history")
+        .select("score")
+        .eq("test_type", testType)
+        .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+      if (avgData && avgData.length > 5) {
+        const scores = avgData.map((d: { score: number }) => d.score);
+        industryAverage = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
+      }
+    } catch (e) {
+      console.warn(`[${testId}] Could not calculate industry average:`, e);
+    }
+
+    // Save to database - USING CORRECT TABLE NAME: test_history
     try {
       await supabaseAdmin.from("test_history").insert({
         test_id: testId,
@@ -916,7 +964,7 @@ Return ONLY valid JSON:
       requestedType: testType,
       categories: displayCategories,
       recommendations: allRecommendations,
-      industryAverage: 58,
+      industryAverage,
       criteriaCount: testType === "homepage" ? 47 : 52,
     };
 
