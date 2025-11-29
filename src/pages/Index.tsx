@@ -27,9 +27,7 @@ const Index = () => {
     analytics.pageView("homepage");
   }, []);
 
-  // Rate limit: 7 days per URL, 3 blog posts per week per session
   const checkRateLimits = async (url: string, testType: "homepage" | "blog") => {
-    // Check URL cooldown (7 days)
     const { data: recentUrlTests } = await supabase
       .from("test_history")
       .select("test_id, score, created_at")
@@ -41,15 +39,17 @@ const Index = () => {
     if (recentUrlTests && recentUrlTests.length > 0) {
       const test = recentUrlTests[0];
       const daysAgo = Math.floor((Date.now() - new Date(test.created_at).getTime()) / (24 * 60 * 60 * 1000));
+      const daysRemaining = 7 - daysAgo;
       return {
         blocked: true,
         reason: "url_cooldown",
         existingTestId: test.test_id,
-        message: `Tested ${daysAgo} day${daysAgo === 1 ? "" : "s"} ago. Retest available in ${7 - daysAgo} day${7 - daysAgo === 1 ? "" : "s"}.`,
+        daysAgo,
+        daysRemaining,
+        message: `This URL was tested ${daysAgo} day${daysAgo === 1 ? "" : "s"} ago. You can retest in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}.`,
       };
     }
 
-    // Check blog post weekly limit (3 per week) - uses localStorage for session tracking
     if (testType === "blog") {
       const weekStart = new Date();
       weekStart.setDate(weekStart.getDate() - weekStart.getDay());
@@ -62,7 +62,7 @@ const Index = () => {
         return {
           blocked: true,
           reason: "weekly_limit",
-          message: "You've reached the 3 blog post limit this week. Resets Sunday.",
+          message: "You've reached the 3 blog post limit this week. Limit resets on Sunday.",
         };
       }
     }
@@ -73,7 +73,7 @@ const Index = () => {
   const recordBlogTest = () => {
     const blogTests = JSON.parse(localStorage.getItem("fi_blog_tests") || "[]");
     blogTests.push(Date.now());
-    localStorage.setItem("fi_blog_tests", JSON.stringify(blogTests.slice(-10))); // Keep last 10
+    localStorage.setItem("fi_blog_tests", JSON.stringify(blogTests.slice(-10)));
   };
 
   const handleHomepageSubmit = async (e: React.FormEvent) => {
@@ -96,13 +96,23 @@ const Index = () => {
 
     const websiteUrl = validation.normalizedUrl!;
 
-    // Check rate limits
     const rateCheck = await checkRateLimits(websiteUrl, "homepage");
     if (rateCheck.blocked) {
       if (rateCheck.existingTestId) {
         toast({
           title: "URL tested recently",
-          description: `${rateCheck.message} Made changes? Email hello@foundindex.com to retest early.`,
+          description: (
+            <div>
+              <p>{rateCheck.message}</p>
+              <p className="mt-2 text-sm">
+                Made changes?{" "}
+                <a href="/contact" className="underline font-medium">
+                  Contact us
+                </a>{" "}
+                to request an early retest.
+              </p>
+            </div>
+          ),
         });
         navigate(`/results?testId=${rateCheck.existingTestId}&url=${encodeURIComponent(websiteUrl)}`);
       } else {
@@ -168,13 +178,23 @@ const Index = () => {
 
     const websiteUrl = validation.normalizedUrl!;
 
-    // Check rate limits
     const rateCheck = await checkRateLimits(websiteUrl, "blog");
     if (rateCheck.blocked) {
       if (rateCheck.existingTestId) {
         toast({
           title: "URL tested recently",
-          description: `${rateCheck.message} Made changes? Email hello@foundindex.com to retest early.`,
+          description: (
+            <div>
+              <p>{rateCheck.message}</p>
+              <p className="mt-2 text-sm">
+                Made changes?{" "}
+                <a href="/contact" className="underline font-medium">
+                  Contact us
+                </a>{" "}
+                to request an early retest.
+              </p>
+            </div>
+          ),
         });
         navigate(`/results?testId=${rateCheck.existingTestId}&url=${encodeURIComponent(websiteUrl)}`);
       } else {
@@ -225,7 +245,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      {/* Hero section - Agentic copy */}
+      {/* Hero section */}
       <section className="container mx-auto px-4 py-12 md:py-24 text-center">
         <Badge className="mb-6 text-sm md:text-base px-4 md:px-6 py-2 bg-primary text-primary-foreground hover:bg-primary-hover">
           🚀 Free beta — all features unlocked
@@ -241,7 +261,7 @@ const Index = () => {
         </p>
 
         <p className="text-sm text-muted-foreground px-4">
-          <span className="font-semibold">47+ criteria analyzed</span> · Built on Microsoft's AI optimization research
+          <span className="font-semibold">47+ criteria analyzed</span> · Based on AI search optimization research
         </p>
       </section>
 
@@ -249,7 +269,7 @@ const Index = () => {
       <section className="container mx-auto px-4 pb-12 md:pb-16">
         <div className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
           {/* Homepage card */}
-          <Card className="relative bg-gradient-to-br from-blue-light to-background border-2 border-blue/20 hover:border-blue/40 transition-all duration-300">
+          <Card className="relative bg-gradient-to-br from-blue-50 to-background dark:from-blue-950/20 border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 transition-all duration-300">
             <CardContent className="p-8">
               <div className="text-6xl mb-4">🏠</div>
               <h2 className="text-2xl font-bold mb-3 text-foreground">Homepage audit</h2>
@@ -266,7 +286,7 @@ const Index = () => {
                       setHomepageError(null);
                       setHomepageSuggestion(null);
                     }}
-                    className={`h-12 md:h-12 text-base min-h-[48px] ${homepageError ? "border-destructive" : ""}`}
+                    className={`h-12 text-base min-h-[48px] ${homepageError ? "border-destructive" : ""}`}
                     style={{ fontSize: "16px" }}
                     required
                     aria-label="Homepage URL"
@@ -295,9 +315,8 @@ const Index = () => {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-12 md:h-12 text-base bg-blue hover:bg-blue/90 text-white min-h-[48px]"
+                  className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700 text-white min-h-[48px]"
                   disabled={isLoadingHomepage}
-                  aria-label="Get FI score for homepage"
                 >
                   {isLoadingHomepage ? (
                     <>
@@ -317,8 +336,8 @@ const Index = () => {
           </Card>
 
           {/* Blog card */}
-          <Card className="relative bg-gradient-to-br from-purple-light to-background border-2 border-purple/20 hover:border-purple/40 transition-all duration-300">
-            <Badge className="absolute top-4 right-4 bg-warning text-warning-foreground">Most popular</Badge>
+          <Card className="relative bg-gradient-to-br from-purple-50 to-background dark:from-purple-950/20 border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 transition-all duration-300">
+            <Badge className="absolute top-4 right-4 bg-amber-500 text-white">Most popular</Badge>
 
             <CardContent className="p-8">
               <div className="text-6xl mb-4">📝</div>
@@ -336,7 +355,7 @@ const Index = () => {
                       setBlogError(null);
                       setBlogSuggestion(null);
                     }}
-                    className={`h-12 md:h-12 text-base min-h-[48px] ${blogError ? "border-destructive" : ""}`}
+                    className={`h-12 text-base min-h-[48px] ${blogError ? "border-destructive" : ""}`}
                     style={{ fontSize: "16px" }}
                     required
                     aria-label="Blog post URL"
@@ -365,9 +384,8 @@ const Index = () => {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-12 md:h-12 text-base bg-purple hover:bg-purple/90 text-white min-h-[48px]"
+                  className="w-full h-12 text-base bg-purple-600 hover:bg-purple-700 text-white min-h-[48px]"
                   disabled={isLoadingBlog}
-                  aria-label="Get FI score for blog post"
                 >
                   {isLoadingBlog ? (
                     <>
@@ -388,7 +406,7 @@ const Index = () => {
         </div>
       </section>
 
-      {/* What we analyze section */}
+      {/* What we analyze */}
       <section className="bg-muted py-16 md:py-24">
         <div className="container mx-auto px-4">
           <h2 className="text-2xl md:text-4xl font-bold text-center mb-4 text-foreground">
@@ -514,7 +532,7 @@ const Index = () => {
                 href="https://richadeo.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-link hover:text-link-hover"
+                className="font-medium text-primary hover:underline"
               >
                 Richa Deo
               </a>
@@ -527,7 +545,7 @@ const Index = () => {
               <a href="/privacy" className="hover:text-foreground transition-colors">
                 Terms
               </a>
-              <a href="mailto:hello@foundindex.com" className="hover:text-foreground transition-colors">
+              <a href="/contact" className="hover:text-foreground transition-colors">
                 Contact
               </a>
             </div>
