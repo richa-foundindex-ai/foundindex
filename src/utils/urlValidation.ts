@@ -15,11 +15,11 @@ export interface ValidationResult {
  * Runs instantly before any API calls.
  *
  * Should accept:
- *   - "slack.com"
- *   - "foundindex.com"
- *   - "thehindu.com"
- *   - "https://example.com"
- *   - "http://example.org"
+ *   - "slack.com" → https://slack.com
+ *   - "foundindex.com" → https://foundindex.com
+ *   - "thehindu.com" → https://thehindu.com
+ *   - "https://example.com" → https://example.com
+ *   - "http://example.org" → http://example.org
  */
 export function validateAndNormalizeUrl(input: string): ValidationResult {
   // Empty input
@@ -48,7 +48,7 @@ export function validateAndNormalizeUrl(input: string): ValidationResult {
     };
   }
 
-  // Auto-add https:// if no protocol is present
+  // ✅ AUTO-ADD https:// IF MISSING
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
     url = "https://" + url;
   }
