@@ -7,20 +7,20 @@ import { XCircle } from "lucide-react";
 import { analytics } from "@/utils/analytics";
 
 const Privacy = () => {
-  const lastUpdated = new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const lastUpdated = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
   useEffect(() => {
-    analytics.pageView('privacy');
+    analytics.pageView("privacy");
   }, []);
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <div className="container mx-auto px-4 py-16 max-w-4xl">
         <Card className="p-8 space-y-8">
           <div>
@@ -108,8 +108,8 @@ const Privacy = () => {
               <h2 className="text-2xl font-bold mb-4">7. Contact</h2>
               <p className="text-muted-foreground leading-relaxed">
                 For privacy-related questions, email us at:{" "}
-                <a href="mailto:privacy@foundindex.com" className="text-blue-600 hover:underline dark:text-blue-400">
-                  privacy@foundindex.com
+                <a href="mailto:hello@foundindex.com" className="text-blue-600 hover:underline dark:text-blue-400">
+                  hello@foundindex.com
                 </a>
               </p>
             </section>
