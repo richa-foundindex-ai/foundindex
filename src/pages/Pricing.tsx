@@ -1,156 +1,137 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Header from "@/components/layout/Header";
-import { analytics } from "@/utils/analytics";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useNavigate } from "react-router-dom";
-import { Check } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2, CheckCircle, Check } from "lucide-react";
 
-const Pricing = () => {
-  const navigate = useNavigate();
+export default function Pricing() {
   const { toast } = useToast();
-  const [showPartnerModal, setShowPartnerModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     website: "",
-    contentType: "",
-    whyApply: "",
-    allowCaseStudy: false,
-    commitmentConfirmed: false,
+    content_type: "",
+    why_apply: "",
+    allow_case_study: false,
+    commitment_confirmed: false,
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    analytics.pageView('pricing');
-  }, []);
-
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required";
-    }
-    
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email format";
-    }
-    
-    if (!formData.website.trim()) {
-      newErrors.website = "Website URL is required";
-    } else {
-      try {
-        new URL(formData.website);
-      } catch {
-        newErrors.website = "Invalid URL format";
-      }
-    }
-    
-    if (!formData.contentType) {
-      newErrors.contentType = "Please select a content type";
-    }
-    
-    if (!formData.commitmentConfirmed) {
-      newErrors.commitment = "You must confirm your commitment";
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
-  const handlePartnerSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+  const handleSelectChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      content_type: value,
+    }));
+  };
 
+  const handleCheckboxChange = (name: string, checked: boolean) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: checked,
+    }));
+  };
+
+  const validateUrl = (url: string): boolean => {
+    if (!url.trim()) return false;
+    // Basic URL validation
+    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/i;
+    return urlPattern.test(url.trim());
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('submit-beta-application', {
-        body: {
-          name: formData.name,
-          email: formData.email,
-          website: formData.website,
-          contentType: formData.contentType,
-          whyApply: formData.whyApply,
-          allowCaseStudy: formData.allowCaseStudy,
-          commitmentConfirmed: formData.commitmentConfirmed,
-        },
+      // Validate required fields
+      if (!formData.name.trim() || !formData.email.trim() || !formData.website.trim() || !formData.content_type) {
+        toast({
+          title: "Missing fields",
+          description: "Please fill in all required fields.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate URL
+      if (!validateUrl(formData.website)) {
+        toast({
+          title: "Invalid URL",
+          description: "Please enter a valid website URL.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Validate commitment checkbox
+      if (!formData.commitment_confirmed) {
+        toast({
+          title: "Commitment required",
+          description: "Please confirm you'll test actively for 30 days.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Normalize website URL
+      let normalizedUrl = formData.website.trim().toLowerCase();
+      if (!normalizedUrl.startsWith("http://") && !normalizedUrl.startsWith("https://")) {
+        normalizedUrl = "https://" + normalizedUrl;
+      }
+
+      // Insert into beta_applications table - matches schema exactly
+      const { error } = await supabase.from("beta_applications").insert({
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        website: normalizedUrl,
+        content_type: formData.content_type,
+        why_apply: formData.why_apply.trim() || null,
+        allow_case_study: formData.allow_case_study,
+        commitment_confirmed: formData.commitment_confirmed,
+        status: "pending",
       });
 
       if (error) throw error;
 
-      if (!data.success) {
-        throw new Error(data.error || 'Submission failed');
-      }
-
-      setShowSuccess(true);
-      
-      // Close modal after 3 seconds
-      setTimeout(() => {
-        setShowPartnerModal(false);
-        setShowSuccess(false);
-        // Reset form
-        setFormData({
-          name: "",
-          email: "",
-          website: "",
-          contentType: "",
-          whyApply: "",
-          allowCaseStudy: false,
-          commitmentConfirmed: false,
-        });
-        setErrors({});
-      }, 3000);
-
-    } catch (error: any) {
-      console.error('Error submitting application:', error);
-      
-      if (error.message?.includes('already exists')) {
-        toast({
-          title: "Application Already Submitted",
-          description: "You've already submitted an application with this email.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Submission Failed",
-          description: error.message || "Please try again later.",
-          variant: "destructive",
-        });
-      }
+      setIsSubmitted(true);
+      toast({
+        title: "Application submitted!",
+        description: "We'll review your application within 48 hours.",
+      });
+    } catch (error) {
+      console.error("Beta application error:", error);
+      toast({
+        title: "Failed to submit",
+        description: "Please try again or contact us directly.",
+        variant: "destructive",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -160,528 +141,254 @@ const Pricing = () => {
     <div className="min-h-screen bg-background">
       <Header />
 
-      <div className="container mx-auto px-4 py-16">
-        {/* Header */}
-        <div className="text-center mb-16">
-          <Badge className="mb-4 text-base px-6 py-2 bg-primary text-primary-foreground">
-            🚀 FREE BETA
-          </Badge>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-foreground">
-            Beta Pricing
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Everything is free during our beta period
+      <main className="container mx-auto px-4 py-12 max-w-5xl">
+        <div className="text-center mb-12">
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">Pricing</h1>
+          <p className="text-lg text-muted-foreground">Choose the plan that fits your needs</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          {/* Free beta */}
+          <Card className="border-2">
+            <CardHeader>
+              <CardTitle className="text-2xl">Free beta</CardTitle>
+              <CardDescription>Perfect for trying FoundIndex</CardDescription>
+              <div className="pt-4">
+                <span className="text-4xl font-bold">$0</span>
+                <span className="text-muted-foreground">/month</span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-3">
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>3 blog post tests per week</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>1 homepage test per week</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Full recommendations</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>7-day retest cooldown</span>
+                </li>
+              </ul>
+              <Button className="w-full" variant="outline" onClick={() => (window.location.href = "/")}>
+                Start free
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Beta partner */}
+          <Card className="border-2 border-primary relative">
+            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+              <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
+                Limited spots
+              </span>
+            </div>
+            <CardHeader>
+              <CardTitle className="text-2xl">Beta partner benefits</CardTitle>
+              <CardDescription>Everything in free beta, plus:</CardDescription>
+              <div className="pt-4">
+                <span className="text-4xl font-bold">Free</span>
+                <span className="text-muted-foreground"> (application required)</span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ul className="space-y-3">
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>We optimize 1 page for you</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Featured on our beta showcase</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>1-on-1 strategy session</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Lifetime 50% discount on paid plans</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-5 w-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <span>Priority support</span>
+                </li>
+              </ul>
+
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="w-full">Apply for beta partner</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Beta partner application</DialogTitle>
+                    <DialogDescription>Join 25 content leaders</DialogDescription>
+                  </DialogHeader>
+
+                  {isSubmitted ? (
+                    <div className="text-center py-8">
+                      <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                      <h3 className="text-xl font-bold mb-2">Application submitted!</h3>
+                      <p className="text-muted-foreground">
+                        We review applications within 48 hours. Check your email for next steps.
+                      </p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Name *</Label>
+                        <Input
+                          id="name"
+                          name="name"
+                          type="text"
+                          placeholder="Your name"
+                          value={formData.name}
+                          onChange={handleChange}
+                          required
+                          style={{ fontSize: "16px" }}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          placeholder="you@example.com"
+                          value={formData.email}
+                          onChange={handleChange}
+                          required
+                          style={{ fontSize: "16px" }}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="website">Website URL *</Label>
+                        <Input
+                          id="website"
+                          name="website"
+                          type="text"
+                          placeholder="yoursite.com"
+                          value={formData.website}
+                          onChange={handleChange}
+                          required
+                          style={{ fontSize: "16px" }}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="content_type">Content type *</Label>
+                        <Select value={formData.content_type} onValueChange={handleSelectChange}>
+                          <SelectTrigger style={{ fontSize: "16px" }}>
+                            <SelectValue placeholder="Select content type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="blog">Blog posts</SelectItem>
+                            <SelectItem value="product">Product pages</SelectItem>
+                            <SelectItem value="landing">Landing pages</SelectItem>
+                            <SelectItem value="documentation">Documentation</SelectItem>
+                            <SelectItem value="other">Other</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="why_apply">Why apply? (optional)</Label>
+                        <Textarea
+                          id="why_apply"
+                          name="why_apply"
+                          placeholder="Tell us about your content goals..."
+                          value={formData.why_apply}
+                          onChange={handleChange}
+                          rows={3}
+                          style={{ fontSize: "16px" }}
+                        />
+                      </div>
+
+                      <div className="space-y-3 pt-2">
+                        <div className="flex items-start space-x-3">
+                          <Checkbox
+                            id="allow_case_study"
+                            checked={formData.allow_case_study}
+                            onCheckedChange={(checked) => handleCheckboxChange("allow_case_study", checked as boolean)}
+                          />
+                          <Label htmlFor="allow_case_study" className="text-sm leading-snug cursor-pointer">
+                            I agree to let FoundIndex showcase my before/after results
+                          </Label>
+                        </div>
+
+                        <div className="flex items-start space-x-3">
+                          <Checkbox
+                            id="commitment_confirmed"
+                            checked={formData.commitment_confirmed}
+                            onCheckedChange={(checked) =>
+                              handleCheckboxChange("commitment_confirmed", checked as boolean)
+                            }
+                          />
+                          <Label htmlFor="commitment_confirmed" className="text-sm leading-snug cursor-pointer">
+                            I commit to testing actively for 30 days *
+                          </Label>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground text-center">
+                        We review applications within 48 hours
+                      </p>
+
+                      <div className="text-center">
+                        <span className="inline-block bg-muted text-muted-foreground text-xs px-3 py-1 rounded-full">
+                          18 of 25 spots remaining
+                        </span>
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <Button type="button" variant="outline" className="flex-1" onClick={() => setDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Submitting...
+                            </>
+                          ) : (
+                            "Submit application"
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  )}
+                </DialogContent>
+              </Dialog>
+
+              <div className="pt-4 border-t">
+                <h4 className="font-semibold mb-2">Requirements:</h4>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>→ Provide detailed feedback</li>
+                  <li>→ Allow us to showcase results</li>
+                  <li>→ Actively test for 30 days</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Post-beta pricing */}
+        <div className="mt-16 text-center">
+          <h2 className="text-2xl font-bold mb-4">Post-beta pricing</h2>
+          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+            After beta, pricing will start at $29/month for unlimited tests. Beta partners get 50% off for life.
           </p>
         </div>
-
-        {/* Main Free Beta Card */}
-        <div className="max-w-2xl mx-auto mb-24">
-          <Card className="border-2 border-primary shadow-lg">
-            <CardHeader className="text-center pb-4">
-              <CardTitle className="text-3xl mb-4">Free Beta Access</CardTitle>
-              <div className="flex items-center justify-center gap-4">
-                <span className="text-5xl font-bold text-foreground">$0</span>
-                <span className="text-2xl text-muted-foreground line-through">
-                  $27-97
-                </span>
-              </div>
-              <p className="text-lg text-muted-foreground mt-4">
-                All features unlocked for early testers
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                  <span>Unlimited FI Score tests</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                  <span>Both homepage & blog audits</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                  <span>All recommendations unlocked</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                  <span>Code examples & templates</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                  <span>Unlimited retests</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                  <span>Priority support</span>
-                </div>
-              </div>
-
-              <Button
-                className="w-full text-lg py-6"
-                onClick={() => navigate("/")}
-              >
-                Start Free Test
-              </Button>
-
-              <p className="text-sm text-muted-foreground text-center">
-                Beta ends: March 2025 | Early testers get lifetime 50% discount
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Beta Partner Section */}
-        <div className="max-w-4xl mx-auto mb-24">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-2 text-foreground">
-              💎 Become a Beta Partner
-            </h2>
-            <p className="text-lg text-muted-foreground">Limited to 25 people</p>
-          </div>
-
-          <Card className="border-2 border-accent shadow-xl bg-gradient-to-br from-background to-accent/5">
-            <CardHeader>
-              <CardTitle className="text-2xl">Beta Partner Benefits</CardTitle>
-              <p className="text-muted-foreground">
-                Everything in Free Beta, PLUS:
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-8">
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                  <span>
-                    We optimize 1 page for FREE{" "}
-                    <span className="text-success font-semibold">
-                      ($197 value)
-                    </span>
-                  </span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                  <span>Featured on our Beta Partners page</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                  <span>1-on-1 strategy session</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Check className="h-5 w-5 text-success mt-0.5 flex-shrink-0" />
-                  <span>Lifetime 50% discount locked in</span>
-                </div>
-              </div>
-
-              <div className="border-t border-border pt-4">
-                <p className="font-semibold mb-3 text-foreground">
-                  Requirements:
-                </p>
-                <div className="space-y-2 text-muted-foreground">
-                  <p>→ Provide detailed feedback</p>
-                  <p>→ Allow us to showcase before/after</p>
-                  <p>→ Actively test for 30 days</p>
-                </div>
-              </div>
-
-              <Button
-                className="w-full text-lg py-6"
-                variant="default"
-                onClick={() => {
-                  console.log("Beta Partner button clicked, opening modal");
-                  setShowPartnerModal(true);
-                }}
-              >
-                Apply to be a beta partner
-              </Button>
-
-              <div className="text-center">
-                <Badge variant="secondary" className="text-base px-4 py-2">
-                  18 of 25 spots remaining
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Coming Soon Pricing */}
-        <div className="max-w-5xl mx-auto mb-24">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-2 text-foreground">
-              Post-Beta Pricing
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Expected launch: March 2025
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card className="opacity-75 relative overflow-hidden">
-              <Badge className="absolute top-4 right-4 bg-warning text-warning-foreground">
-                Beta testers save 50%
-              </Badge>
-              <CardHeader>
-                <CardTitle className="text-xl">Blog Post Audit</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold mb-4">$27</div>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>✓ Single blog post analysis</li>
-                  <li>✓ AI readability check</li>
-                  <li>✓ Content recommendations</li>
-                  <li>✓ Code examples</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="opacity-75 relative overflow-hidden">
-              <Badge className="absolute top-4 right-4 bg-warning text-warning-foreground">
-                Beta testers save 50%
-              </Badge>
-              <CardHeader>
-                <CardTitle className="text-xl">Homepage Audit</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold mb-4">$97</div>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>✓ Full homepage analysis</li>
-                  <li>✓ Business clarity check</li>
-                  <li>✓ Positioning assessment</li>
-                  <li>✓ Implementation guide</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="opacity-75 relative overflow-hidden">
-              <Badge className="absolute top-4 right-4 bg-warning text-warning-foreground">
-                Beta testers save 50%
-              </Badge>
-              <CardHeader>
-                <CardTitle className="text-xl">Done-For-You</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-4xl font-bold mb-4">from $197</div>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li>✓ We implement changes</li>
-                  <li>✓ Before/after comparison</li>
-                  <li>✓ Priority delivery</li>
-                  <li>✓ Guaranteed improvement</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* FAQ Section */}
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8 text-center text-foreground">
-            Frequently Asked Questions
-          </h2>
-          <Accordion type="single" collapsible className="w-full">
-            <AccordionItem value="item-1">
-              <AccordionTrigger className="text-left">
-                How long is beta free?
-              </AccordionTrigger>
-              <AccordionContent>
-                Until February 2025 or 1000 users, whichever comes first. We'll
-                notify all beta testers well in advance before any changes.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-2">
-              <AccordionTrigger className="text-left">
-                What happens after beta?
-              </AccordionTrigger>
-              <AccordionContent>
-                We'll notify you 2 weeks before beta ends. All beta testers
-                automatically get a lifetime 50% discount on any paid plan they
-                choose.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-3">
-              <AccordionTrigger className="text-left">
-                Can I test multiple URLs?
-              </AccordionTrigger>
-              <AccordionContent>
-                Yes! Up to 10 tests per month during beta to manage costs. Your limit resets automatically 30 days after your first test.
-              </AccordionContent>
-            </AccordionItem>
-
-            <AccordionItem value="item-4">
-              <AccordionTrigger className="text-left">
-                Will my data be deleted after beta?
-              </AccordionTrigger>
-              <AccordionContent>
-                No, you keep all your test history forever. Your account and all
-                test results will remain accessible even after beta ends.
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="border-t border-border bg-muted py-8 mt-16">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-            <div>
-              Created by <span className="font-medium">Richa Deo</span> |{" "}
-              <a
-                href="https://richadeo.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-link hover:text-link-hover"
-              >
-                RichaDeo.com →
-              </a>
-            </div>
-
-            <div className="flex gap-6">
-              <a
-                href="/privacy"
-                className="hover:text-foreground transition-colors"
-              >
-                Privacy Policy
-              </a>
-              <a
-                href="/privacy"
-                className="hover:text-foreground transition-colors"
-              >
-                Terms
-              </a>
-              <a
-                href="/contact"
-                className="hover:text-foreground transition-colors"
-              >
-                Contact
-              </a>
-            </div>
-
-            <div>© 2025 FoundIndex</div>
-          </div>
-        </div>
-      </footer>
-
-      {/* Beta Partner Application Modal */}
-      <Dialog open={showPartnerModal} onOpenChange={setShowPartnerModal}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          {showSuccess ? (
-            <div className="py-8 text-center">
-              <div className="mb-4 text-6xl">✅</div>
-              <h3 className="text-2xl font-bold mb-2 text-foreground">
-                Application Received!
-              </h3>
-              <p className="text-muted-foreground">
-                We'll respond within 48 hours.
-              </p>
-            </div>
-          ) : (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-2xl">Beta Partner Application</DialogTitle>
-                <DialogDescription className="text-base">
-                  Join 25 content leaders
-                </DialogDescription>
-              </DialogHeader>
-
-              {/* What You Get Section */}
-              <div className="bg-muted/50 rounded-lg p-4 space-y-2 my-4">
-                <p className="font-semibold text-foreground mb-3">What You Get:</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                    <span>Free page optimization ($197 value)</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                    <span>Featured on our website</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                    <span>1-on-1 strategy session</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                    <span>Lifetime 50% discount</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Check className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                    <span>Priority support</span>
-                  </div>
-                </div>
-              </div>
-
-              <form onSubmit={handlePartnerSubmit} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Name *
-                  </label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => {
-                      setFormData({ ...formData, name: e.target.value });
-                      setErrors({ ...errors, name: "" });
-                    }}
-                    placeholder="John Doe"
-                    className={errors.name ? "border-destructive" : ""}
-                  />
-                  {errors.name && (
-                    <p className="text-sm text-destructive mt-1">{errors.name}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Email *</label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => {
-                      setFormData({ ...formData, email: e.target.value });
-                      setErrors({ ...errors, email: "" });
-                    }}
-                    placeholder="john@example.com"
-                    className={errors.email ? "border-destructive" : ""}
-                  />
-                  {errors.email && (
-                    <p className="text-sm text-destructive mt-1">{errors.email}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Website URL *
-                  </label>
-                  <Input
-                    type="url"
-                    value={formData.website}
-                    onChange={(e) => {
-                      setFormData({ ...formData, website: e.target.value });
-                      setErrors({ ...errors, website: "" });
-                    }}
-                    placeholder="https://yoursite.com"
-                    className={errors.website ? "border-destructive" : ""}
-                  />
-                  {errors.website && (
-                    <p className="text-sm text-destructive mt-1">{errors.website}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Content Type *
-                  </label>
-                  <Select
-                    value={formData.contentType}
-                    onValueChange={(value) => {
-                      setFormData({ ...formData, contentType: value });
-                      setErrors({ ...errors, contentType: "" });
-                    }}
-                  >
-                    <SelectTrigger className={errors.contentType ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select content type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="blog">Blog posts</SelectItem>
-                      <SelectItem value="product">Product pages</SelectItem>
-                      <SelectItem value="documentation">Documentation</SelectItem>
-                      <SelectItem value="marketing">Marketing content</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {errors.contentType && (
-                    <p className="text-sm text-destructive mt-1">{errors.contentType}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">
-                    Why apply? (optional)
-                  </label>
-                  <Textarea
-                    value={formData.whyApply}
-                    onChange={(e) =>
-                      setFormData({ ...formData, whyApply: e.target.value })
-                    }
-                    placeholder="Tell us about your goals and how you plan to use FoundIndex..."
-                    rows={3}
-                  />
-                </div>
-
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="caseStudy"
-                      checked={formData.allowCaseStudy}
-                      onCheckedChange={(checked) =>
-                        setFormData({ ...formData, allowCaseStudy: checked as boolean })
-                      }
-                    />
-                    <label
-                      htmlFor="caseStudy"
-                      className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      I agree to let FoundIndex showcase my before/after results
-                    </label>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="commitment"
-                      checked={formData.commitmentConfirmed}
-                      onCheckedChange={(checked) => {
-                        setFormData({ ...formData, commitmentConfirmed: checked as boolean });
-                        setErrors({ ...errors, commitment: "" });
-                      }}
-                    />
-                    <label
-                      htmlFor="commitment"
-                      className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                    >
-                      I commit to testing actively for 30 days *
-                    </label>
-                  </div>
-                  {errors.commitment && (
-                    <p className="text-sm text-destructive">{errors.commitment}</p>
-                  )}
-                </div>
-
-                <div className="border-t border-border pt-4 mt-4">
-                  <p className="text-sm text-muted-foreground text-center mb-2">
-                    We review applications within 48 hours
-                  </p>
-                  <div className="text-center">
-                    <Badge variant="secondary">18 of 25 spots remaining</Badge>
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setShowPartnerModal(false);
-                      setErrors({});
-                    }}
-                    className="flex-1"
-                    disabled={isSubmitting}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    className="flex-1"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Submitting..." : "Submit Application"}
-                  </Button>
-                </div>
-              </form>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      </main>
     </div>
   );
-};
-
-export default Pricing;
+}
