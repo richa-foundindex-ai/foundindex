@@ -33,28 +33,36 @@ const normalizeUrl = (url: string): string => {
 
 const validateWebsite = (website: string): string => {
   const trimmed = website.trim();
-  if (trimmed.length === 0) throw new Error("Please enter a website URL");
+  if (!trimmed) {
+    throw new Error("Please enter a website URL");
+  }
+
   const normalized = normalizeUrl(trimmed);
-  if (normalized.startsWith("https://") && normalized.includes(".")) return normalized;
+
+  // Allow both http and https as long as there is a dot in the domain
+  if (normalized.includes(".")) {
+    return normalized;
+  }
+
   throw new Error('Please enter a valid website URL (like "example.com")');
 };
 
 const detectPageType = (url: string, html: string): "homepage" | "blog" => {
   const urlLower = url.toLowerCase();
-  
+
   // Check URL patterns
-  const blogPatterns = ['/blog/', '/post/', '/article/', '/news/'];
-  const hasBlogUrl = blogPatterns.some(pattern => urlLower.includes(pattern));
-  
+  const blogPatterns = ["/blog/", "/post/", "/article/", "/news/"];
+  const hasBlogUrl = blogPatterns.some((pattern) => urlLower.includes(pattern));
+
   // Check HTML patterns
-  const hasBlogHTML = 
-    html.includes('<article') || 
+  const hasBlogHTML =
+    html.includes("<article") ||
     html.includes('class="post') ||
     html.includes('class="article') ||
     html.includes('id="post-') ||
     html.includes('itemtype="http://schema.org/BlogPosting"');
-  
-  return (hasBlogUrl || hasBlogHTML) ? "blog" : "homepage";
+
+  return hasBlogUrl || hasBlogHTML ? "blog" : "homepage";
 };
 
 const getGrade = (score: number): string => {
@@ -74,10 +82,10 @@ serve(async (req) => {
     const { email, website, testType }: TestSubmission = await req.json();
 
     if (!testType || !["homepage", "blog"].includes(testType)) {
-      return new Response(
-        JSON.stringify({ success: false, error: "testType must be 'homepage' or 'blog'" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: false, error: "testType must be 'homepage' or 'blog'" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const validatedEmail = validateEmail(email);
@@ -88,8 +96,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || 
-                     req.headers.get("x-real-ip") || "unknown";
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
     const testId = crypto.randomUUID();
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
     const modelName = Deno.env.get("OPENAI_MODEL_NAME") || "gpt-4-turbo-2024-04-09";
@@ -104,7 +111,7 @@ serve(async (req) => {
       const websiteResponse = await fetch(validatedWebsite, {
         headers: {
           "User-Agent": "Mozilla/5.0 (compatible; FoundIndex-Bot/1.0)",
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         },
         redirect: "follow",
       });
@@ -130,14 +137,14 @@ serve(async (req) => {
     }
 
     // Check for JS-rendered content
-    const spaMarkers = ['id="root"', 'id="app"', '__NEXT_DATA__', 'window.__NUXT__'];
-    const hasSPAMarker = spaMarkers.some(marker => websiteHtml.includes(marker));
+    const spaMarkers = ['id="root"', 'id="app"', "__NEXT_DATA__", "window.__NUXT__"];
+    const hasSPAMarker = spaMarkers.some((marker) => websiteHtml.includes(marker));
 
     let textContent = websiteHtml
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
       .trim();
 
     let isLikelyJSRendered = hasSPAMarker && textContent.length < 500;
@@ -146,7 +153,7 @@ serve(async (req) => {
       console.log(`[${testId}] JS-rendered detected, trying Jina.ai...`);
       try {
         const jinaResponse = await fetch(`https://r.jina.ai/${validatedWebsite}`, {
-          headers: { "Accept": "text/html" },
+          headers: { Accept: "text/html" },
           signal: AbortSignal.timeout(30000),
         });
 
@@ -181,9 +188,10 @@ serve(async (req) => {
 
     // Analyze with OpenAI
     const extractedContent = websiteHtml.substring(0, 50000);
-    
-    const analysisPrompt = testType === "homepage" 
-      ? `You are analyzing a business homepage for AI search engine visibility.
+
+    const analysisPrompt =
+      testType === "homepage"
+        ? `You are analyzing a business homepage for AI search engine visibility.
 
 Website URL: ${validatedWebsite}
 HTML Content: ${extractedContent}
@@ -226,7 +234,7 @@ Return ONLY valid JSON in this exact format:
     }
   ]
 }`
-      : `You are analyzing a blog post for AI search engine visibility.
+        : `You are analyzing a blog post for AI search engine visibility.
 
 Website URL: ${validatedWebsite}
 HTML Content: ${extractedContent}
@@ -300,35 +308,32 @@ Return ONLY valid JSON in this exact format:
         .replace(/```json\n?/g, "")
         .replace(/```\n?/g, "")
         .trim();
-      
+
       analysisResult = JSON.parse(content);
       console.log(`[${testId}] Analysis complete`);
     } catch (error) {
       console.error(`[${testId}] Analysis failed:`, error);
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: "AI analysis failed. Please try again.",
-          details: error instanceof Error ? error.message : "Unknown error"
+          details: error instanceof Error ? error.message : "Unknown error",
         }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
     // Calculate total score
     const categories = analysisResult.categories || {};
-    const totalScore = Object.values(categories).reduce(
-      (sum: number, cat: any) => sum + (cat.score || 0), 
-      0
-    );
-    
+    const totalScore = Object.values(categories).reduce((sum: number, cat: any) => sum + (cat.score || 0), 0);
+
     const grade = getGrade(totalScore);
-    
+
     // Add percentages to categories
     const categoriesWithPercentages = Object.entries(categories).reduce((acc: any, [key, value]: [string, any]) => {
       acc[key] = {
         ...value,
-        percentage: Math.round((value.score / value.max) * 100)
+        percentage: Math.round((value.score / value.max) * 100),
       };
       return acc;
     }, {});
@@ -365,15 +370,12 @@ Return ONLY valid JSON in this exact format:
       requestedType: testType,
       categories: categoriesWithPercentages,
       recommendations: analysisResult.recommendations || [],
-      industryAverage: 62
+      industryAverage: 62,
     };
 
     console.log(`[${testId}] SUCCESS - Score: ${totalScore}, Grade: ${grade}`);
 
-    return new Response(
-      JSON.stringify(response),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify(response), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
     console.error("Error:", error);
     return new Response(
