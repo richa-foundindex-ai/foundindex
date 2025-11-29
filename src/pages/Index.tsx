@@ -51,22 +51,22 @@ const Index = () => {
 
     // ✅ RATE LIMITING - Check if URL tested in last 7 days
     const { data: recentTests } = await supabase
-      .from('test_history')
-      .select('test_id, score, created_at')
-      .eq('website', websiteUrl)
-      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-      .order('created_at', { ascending: false })
+      .from("test_history")
+      .select("test_id, score, created_at")
+      .eq("website", websiteUrl)
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order("created_at", { ascending: false })
       .limit(1);
 
     if (recentTests && recentTests.length > 0) {
       const test = recentTests[0];
       const daysAgo = Math.floor((Date.now() - new Date(test.created_at).getTime()) / (24 * 60 * 60 * 1000));
-      
+
       toast({
         title: "URL tested recently",
-        description: `You tested this URL ${daysAgo} day${daysAgo === 1 ? '' : 's'} ago. You can retest in ${7 - daysAgo} day${7 - daysAgo === 1 ? '' : 's'}. Made changes? Email hello@foundindex.com to retest early.`,
+        description: `You tested this URL ${daysAgo} day${daysAgo === 1 ? "" : "s"} ago. You can retest in ${7 - daysAgo} day${7 - daysAgo === 1 ? "" : "s"}. Made changes? Email hello@foundindex.com to retest early.`,
       });
-      
+
       navigate(`/results?testId=${test.test_id}&url=${encodeURIComponent(websiteUrl)}`);
       return;
     }
@@ -138,22 +138,22 @@ const Index = () => {
 
     // ✅ RATE LIMITING - Check if URL tested in last 7 days
     const { data: recentTests } = await supabase
-      .from('test_history')
-      .select('test_id, score, created_at')
-      .eq('website', websiteUrl)
-      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-      .order('created_at', { ascending: false })
+      .from("test_history")
+      .select("test_id, score, created_at")
+      .eq("website", websiteUrl)
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order("created_at", { ascending: false })
       .limit(1);
 
     if (recentTests && recentTests.length > 0) {
       const test = recentTests[0];
       const daysAgo = Math.floor((Date.now() - new Date(test.created_at).getTime()) / (24 * 60 * 60 * 1000));
-      
+
       toast({
         title: "URL tested recently",
-        description: `You tested this URL ${daysAgo} day${daysAgo === 1 ? '' : 's'} ago. You can retest in ${7 - daysAgo} day${7 - daysAgo === 1 ? '' : 's'}. Made changes? Email hello@foundindex.com to retest early.`,
+        description: `You tested this URL ${daysAgo} day${daysAgo === 1 ? "" : "s"} ago. You can retest in ${7 - daysAgo} day${7 - daysAgo === 1 ? "" : "s"}. Made changes? Email hello@foundindex.com to retest early.`,
       });
-      
+
       navigate(`/results?testId=${test.test_id}&url=${encodeURIComponent(websiteUrl)}`);
       return;
     }
@@ -211,7 +211,7 @@ const Index = () => {
         </Badge>
 
         <h1 className="text-[2rem] md:text-6xl font-bold mb-6 text-foreground leading-tight px-2">
-          Will AI Search Engines Find Your Content?
+          Will AI search engines find your content?
         </h1>
 
         <p className="text-lg md:text-2xl text-muted-foreground mb-4 max-w-4xl mx-auto px-4">
@@ -228,7 +228,7 @@ const Index = () => {
           <Card className="relative bg-gradient-to-br from-blue-light to-background border-2 border-blue/20 hover:border-blue/40 transition-all duration-300">
             <CardContent className="p-8">
               <div className="text-6xl mb-4">🏠</div>
-              <h2 className="text-2xl font-bold mb-3 text-foreground">Homepage Audit</h2>
+              <h2 className="text-2xl font-bold mb-3 text-foreground">Homepage audit</h2>
               <p className="text-muted-foreground mb-6">Test business clarity and positioning</p>
 
               <form onSubmit={handleHomepageSubmit} className="space-y-4">
@@ -297,7 +297,7 @@ const Index = () => {
 
             <CardContent className="p-8">
               <div className="text-6xl mb-4">📝</div>
-              <h2 className="text-2xl font-bold mb-3 text-foreground">Blog Post Audit</h2>
+              <h2 className="text-2xl font-bold mb-3 text-foreground">Blog post audit</h2>
               <p className="text-muted-foreground mb-6">Test AI readability and structure</p>
 
               <form onSubmit={handleBlogSubmit} className="space-y-4">
@@ -365,12 +365,12 @@ const Index = () => {
 
       <section className="bg-muted py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-4xl font-bold text-center mb-8 md:mb-12 text-foreground">How It Works</h2>
+          <h2 className="text-2xl md:text-4xl font-bold text-center mb-8 md:mb-12 text-foreground">How it works</h2>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 max-w-5xl mx-auto">
             <div className="text-center">
               <div className="text-4xl md:text-5xl mb-3 md:mb-4">1️⃣</div>
-              <h3 className="text-base md:text-xl font-bold mb-1 md:mb-2 text-foreground">Enter Your URL</h3>
+              <h3 className="text-base md:text-xl font-bold mb-1 md:mb-2 text-foreground">Enter your URL</h3>
               <p className="text-sm md:text-base text-muted-foreground">Test any page instantly</p>
             </div>
 
@@ -382,13 +382,13 @@ const Index = () => {
 
             <div className="text-center">
               <div className="text-4xl md:text-5xl mb-3 md:mb-4">3️⃣</div>
-              <h3 className="text-base md:text-xl font-bold mb-1 md:mb-2 text-foreground">Review Recommendations</h3>
+              <h3 className="text-base md:text-xl font-bold mb-1 md:mb-2 text-foreground">Review recommendations</h3>
               <p className="text-sm md:text-base text-muted-foreground">Get specific fixes</p>
             </div>
 
             <div className="text-center">
               <div className="text-4xl md:text-5xl mb-3 md:mb-4">4️⃣</div>
-              <h3 className="text-base md:text-xl font-bold mb-1 md:mb-2 text-foreground">Track Improvements</h3>
+              <h3 className="text-base md:text-xl font-bold mb-1 md:mb-2 text-foreground">Track improvements</h3>
               <p className="text-sm md:text-base text-muted-foreground">Retest anytime</p>
             </div>
           </div>
@@ -397,14 +397,14 @@ const Index = () => {
 
       <section className="container mx-auto px-4 py-16 md:py-24">
         <h2 className="text-2xl md:text-4xl font-bold text-center mb-8 md:mb-12 text-foreground">
-          🎉 Beta Tester Benefits
+          🎉 Beta tester benefits
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 max-w-4xl mx-auto">
           <Card className="text-center">
             <CardContent className="p-8">
               <div className="text-5xl mb-4">✨</div>
-              <h3 className="text-xl font-bold mb-2 text-foreground">All Features Free</h3>
+              <h3 className="text-xl font-bold mb-2 text-foreground">All features free</h3>
               <p className="text-muted-foreground">Access every diagnostic tool at no cost</p>
             </CardContent>
           </Card>
@@ -412,7 +412,7 @@ const Index = () => {
           <Card className="text-center">
             <CardContent className="p-8">
               <div className="text-5xl mb-4">♾️</div>
-              <h3 className="text-xl font-bold mb-2 text-foreground">Unlimited Tests</h3>
+              <h3 className="text-xl font-bold mb-2 text-foreground">Unlimited tests</h3>
               <p className="text-muted-foreground">Test as many pages as you want</p>
             </CardContent>
           </Card>
@@ -420,7 +420,7 @@ const Index = () => {
           <Card className="text-center">
             <CardContent className="p-8">
               <div className="text-5xl mb-4">⚡</div>
-              <h3 className="text-xl font-bold mb-2 text-foreground">Priority Support</h3>
+              <h3 className="text-xl font-bold mb-2 text-foreground">Priority support</h3>
               <p className="text-muted-foreground">Get help when you need it most</p>
             </CardContent>
           </Card>
@@ -432,7 +432,7 @@ const Index = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground text-center md:text-left">
             <div className="order-2 md:order-1">
               Created by <span className="font-medium">Richa Deo</span> |{" "}
-              
+              <a
                 href="https://richadeo.com"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -444,7 +444,7 @@ const Index = () => {
 
             <div className="flex flex-wrap justify-center gap-4 md:gap-6 order-1 md:order-2">
               <a href="/privacy" className="hover:text-foreground transition-colors">
-                Privacy Policy
+                Privacy policy
               </a>
               <a href="/privacy" className="hover:text-foreground transition-colors">
                 Terms
