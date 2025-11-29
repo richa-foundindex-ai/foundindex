@@ -8,228 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, CheckCircle, AlertTriangle, XCircle, Copy, Check, Loader2 } from "lucide-react";
+import { AlertCircle, CheckCircle, AlertTriangle, XCircle, Copy, Check } from "lucide-react";
 import Header from "@/components/layout/Header";
 import { analytics } from "@/utils/analytics";
 import { supabase } from "@/integrations/supabase/client";
 
-// Mock data for development
-const MOCK_DATA = {
-  score: 68,
-  grade: "C",
-  gradeLabel: "Good",
-  categories: [
-    { name: "Answer Structure", score: 18, max: 30, percentage: 60 },
-    { name: "Scannability", score: 14, max: 25, percentage: 56 },
-    { name: "FAQ & Schema", score: 6, max: 20, percentage: 30 },
-    { name: "Expertise Signals", score: 12, max: 15, percentage: 80 },
-    { name: "Technical SEO", score: 8, max: 10, percentage: 80 },
-  ],
-  recommendations: [
-    {
-      id: "1",
-      priority: "critical",
-      title: "Missing direct answer at top",
-      pointsLost: -10,
-      problem: "AI search engines look for immediate, clear answers in the first 100 words. Your content doesn't provide this.",
-      howToFix: [
-        "Add a 2-3 sentence answer immediately after your H1",
-        "Use plain language, not marketing speak",
-        "Front-load the most important information",
-      ],
-      codeExample: `<article>
-  <h1>What is AI Visibility?</h1>
-  <p><strong>Direct Answer:</strong> AI visibility is how easily AI search engines like ChatGPT, Perplexity, and Google SGE can find, understand, and recommend your content to users.</p>
-  <!-- Rest of content -->
-</article>`,
-      expectedImprovement: "+8-10 points",
-    },
-    {
-      id: "2",
-      priority: "critical",
-      title: "No FAQ schema markup",
-      pointsLost: -8,
-      problem: "FAQ schema helps AI understand your Q&A structure and increases chances of being featured.",
-      howToFix: [
-        "Identify common questions in your content",
-        "Format them with clear Q&A structure",
-        "Add JSON-LD schema markup",
-      ],
-      codeExample: `<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [{
-    "@type": "Question",
-    "name": "What is AI visibility?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "AI visibility is how easily AI search engines can find and recommend your content."
-    }
-  }]
-}
-</script>`,
-      expectedImprovement: "+6-8 points",
-    },
-    {
-      id: "3",
-      priority: "critical",
-      title: "Poor heading hierarchy",
-      pointsLost: -7,
-      problem: "Your headings skip levels (H1 to H3) and don't clearly outline your content structure.",
-      howToFix: [
-        "Use only one H1 (page title)",
-        "Use H2 for main sections",
-        "Use H3 for subsections under H2",
-        "Never skip heading levels",
-      ],
-      codeExample: `<h1>Main Topic</h1>
-<h2>First Main Section</h2>
-<h3>Subsection</h3>
-<h3>Another Subsection</h3>
-<h2>Second Main Section</h2>`,
-      expectedImprovement: "+5-7 points",
-    },
-    {
-      id: "4",
-      priority: "medium",
-      title: "Long paragraphs hurt scannability",
-      pointsLost: -5,
-      problem: "Paragraphs over 4 lines are hard for AI to extract key points from.",
-      howToFix: [
-        "Break long paragraphs into 2-3 sentences each",
-        "Use bullet points for lists",
-        "Add clear topic sentences",
-      ],
-      codeExample: `<!-- Bad -->
-<p>This is a very long paragraph that goes on and on with multiple ideas and makes it hard for both humans and AI to scan and understand the key points...</p>
-
-<!-- Good -->
-<p>Keep paragraphs short and focused on one idea.</p>
-<p>Use bullet points when listing multiple items:</p>
-<ul>
-  <li>Point one</li>
-  <li>Point two</li>
-</ul>`,
-      expectedImprovement: "+4-5 points",
-    },
-    {
-      id: "5",
-      priority: "medium",
-      title: "Missing author/expert credentials",
-      pointsLost: -4,
-      problem: "AI gives more weight to content from verified experts.",
-      howToFix: [
-        "Add author bio with credentials",
-        "Include author schema markup",
-        "Link to author's LinkedIn or portfolio",
-      ],
-      codeExample: `<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Article",
-  "author": {
-    "@type": "Person",
-    "name": "Jane Smith",
-    "jobTitle": "Senior AI Researcher",
-    "url": "https://linkedin.com/in/janesmith"
-  }
-}
-</script>`,
-      expectedImprovement: "+3-4 points",
-    },
-    {
-      id: "6",
-      priority: "medium",
-      title: "No internal links to related content",
-      pointsLost: -3,
-      problem: "Internal links help AI understand content relationships and topic authority.",
-      howToFix: [
-        "Link to 2-3 related articles",
-        "Use descriptive anchor text",
-        "Link early in the content",
-      ],
-      codeExample: `<p>Learn more about <a href="/seo-basics">SEO fundamentals</a> and <a href="/content-strategy">content strategy</a>.</p>`,
-      expectedImprovement: "+2-3 points",
-    },
-    {
-      id: "7",
-      priority: "medium",
-      title: "Missing meta description",
-      pointsLost: -3,
-      problem: "Meta descriptions help AI understand page topic and context.",
-      howToFix: [
-        "Write a clear, concise summary (150-160 characters)",
-        "Include primary keyword naturally",
-        "Make it compelling and informative",
-      ],
-      codeExample: `<meta name="description" content="Learn how AI visibility impacts your content discovery. Get actionable strategies to rank in ChatGPT, Perplexity, and Google SGE.">`,
-      expectedImprovement: "+2-3 points",
-    },
-    {
-      id: "8",
-      priority: "medium",
-      title: "Weak call-to-action",
-      pointsLost: -2,
-      problem: "Your CTA is vague and doesn't guide users to next steps.",
-      howToFix: [
-        "Use specific, action-oriented language",
-        "Make it prominent and clear",
-        "Explain the benefit",
-      ],
-      codeExample: `<!-- Bad -->
-<button>Click here</button>
-
-<!-- Good -->
-<button>Get Your Free AI Visibility Score →</button>`,
-      expectedImprovement: "+1-2 points",
-    },
-    {
-      id: "9",
-      priority: "medium",
-      title: "No publication/update date",
-      pointsLost: -2,
-      problem: "AI favors fresh, recently updated content.",
-      howToFix: [
-        "Add visible publication date",
-        "Include last updated date",
-        "Add Article schema with datePublished",
-      ],
-      codeExample: `<time datetime="2025-01-15">Published January 15, 2025</time>
-<time datetime="2025-01-20">Last updated January 20, 2025</time>`,
-      expectedImprovement: "+1-2 points",
-    },
-    {
-      id: "10",
-      priority: "good",
-      title: "Good use of subheadings",
-      pointsLost: 0,
-      problem: "",
-      howToFix: ["Keep using descriptive H2 and H3 tags", "Continue making them scannable"],
-      codeExample: "",
-      expectedImprovement: "",
-    },
-    {
-      id: "11",
-      priority: "good",
-      title: "Page loads quickly",
-      pointsLost: 0,
-      problem: "",
-      howToFix: ["Maintain fast load times", "Continue optimizing images"],
-      codeExample: "",
-      expectedImprovement: "",
-    },
-    {
-      id: "12",
-      priority: "good",
-      title: "Mobile-responsive design",
-      pointsLost: 0,
-      problem: "",
-      howToFix: ["Keep responsive design", "Test on various devices regularly"],
-      codeExample: "",
-      expectedImprovement: "",
-    },
-  ],
+// ✅ SAFE ARRAY HELPER - Prevents crashes from string/array mismatch
+const ensureArray = (value: any): string[] => {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") return [value];
+  return [];
 };
 
 type CategorySummary = {
@@ -239,12 +27,23 @@ type CategorySummary = {
   percentage: number;
 };
 
+type Recommendation = {
+  id: string;
+  priority: string;
+  title: string;
+  pointsLost: number;
+  problem: string;
+  howToFix: string[] | string;
+  codeExample: string;
+  expectedImprovement: string;
+};
+
 type ResultData = {
   score: number;
   grade: string;
   gradeLabel: string;
   categories: CategorySummary[];
-  recommendations: typeof MOCK_DATA.recommendations;
+  recommendations: Recommendation[];
 };
 
 const getGradeInfo = (score: number) => {
@@ -256,9 +55,9 @@ const getGradeInfo = (score: number) => {
 };
 
 const getScoreColor = (score: number) => {
-  if (score >= 80) return "#10b981"; // green
-  if (score >= 60) return "#f59e0b"; // yellow
-  return "#ef4444"; // red
+  if (score >= 80) return "#10b981";
+  if (score >= 60) return "#f59e0b";
+  return "#ef4444";
 };
 
 const getPriorityIcon = (priority: string) => {
@@ -277,11 +76,23 @@ const getPriorityIcon = (priority: string) => {
 const getPriorityBadge = (priority: string) => {
   switch (priority) {
     case "critical":
-      return <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">❌ CRITICAL</span>;
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+          ❌ CRITICAL
+        </span>
+      );
     case "medium":
-      return <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">⚠️ MEDIUM</span>;
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
+          ⚠️ MEDIUM
+        </span>
+      );
     case "good":
-      return <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">✅ DOING WELL</span>;
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+          ✅ DOING WELL
+        </span>
+      );
     default:
       return null;
   }
@@ -298,12 +109,7 @@ const CodeBlock = ({ code }: { code: string }) => {
 
   return (
     <div className="relative mt-2">
-      <Button
-        size="sm"
-        variant="ghost"
-        className="absolute top-2 right-2 z-10"
-        onClick={handleCopy}
-      >
+      <Button size="sm" variant="ghost" className="absolute top-2 right-2 z-10" onClick={handleCopy}>
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
       </Button>
       <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
@@ -316,7 +122,6 @@ const CodeBlock = ({ code }: { code: string }) => {
 export default function Results() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [showWrongTypeAlert, setShowWrongTypeAlert] = useState(false);
   const [rating, setRating] = useState(0);
   const [feedback, setFeedback] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -325,16 +130,12 @@ export default function Results() {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const url = searchParams.get("url") || "";
-  const type = searchParams.get("type") || "homepage";
   const testId = searchParams.get("testId");
 
   useEffect(() => {
     analytics.pageView("results");
 
-    const initialWebsite = url || "";
-    if (initialWebsite) {
-      setWebsite(initialWebsite);
-    }
+    if (url) setWebsite(url);
 
     if (!testId) {
       setLoadError("Missing test ID. Please start a new test from the homepage.");
@@ -346,11 +147,7 @@ export default function Results() {
 
     const loadResults = async () => {
       try {
-        const { data, error } = await supabase
-          .from("test_history")
-          .select("*")
-          .eq("test_id", testId)
-          .maybeSingle();
+        const { data, error } = await supabase.from("test_history").select("*").eq("test_id", testId).maybeSingle();
 
         if (error) throw error;
 
@@ -395,7 +192,10 @@ export default function Results() {
 
         const score = (data as any).score ?? 0;
         const gradeMeta = getGradeInfo(score);
-        const recommendations = ((data as any).recommendations || []) as typeof MOCK_DATA.recommendations;
+        const recommendations = ((data as any).recommendations || []).map((rec: any, idx: number) => ({
+          ...rec,
+          id: rec.id || `rec-${idx}`,
+        })) as Recommendation[];
 
         if (!isCancelled) {
           setResultData({
@@ -405,9 +205,7 @@ export default function Results() {
             categories,
             recommendations,
           });
-          setWebsite((data as any).website || initialWebsite);
-
-          sessionStorage.setItem("foundindex_results_url", window.location.pathname + window.location.search);
+          setWebsite((data as any).website || url);
         }
       } catch (error) {
         console.error("[Results] Failed to load results", error);
@@ -428,23 +226,12 @@ export default function Results() {
     };
   }, [testId, url]);
 
-  const dismissAlert = () => {
-    setShowWrongTypeAlert(false);
-    localStorage.setItem("wrongTypeAlertDismissed", "true");
-  };
-
-  const switchTest = () => {
-    const newType = type === "homepage" ? "blog" : "homepage";
-    navigate(`/results?url=${encodeURIComponent(url)}&type=${newType}`);
-  };
-
   const handleRetest = () => {
-    navigate(`/?url=${encodeURIComponent(url)}&type=${type}`);
+    navigate("/");
   };
 
   const handleFeedbackSubmit = () => {
     analytics.formSubmit("results_feedback");
-    // In production, send to backend
     console.log("Feedback submitted:", { rating, feedback });
     alert("Thank you for your feedback!");
     setRating(0);
@@ -454,7 +241,6 @@ export default function Results() {
   const gradeInfo = getGradeInfo(resultData?.score ?? 0);
   const scoreColor = getScoreColor(resultData?.score ?? 0);
 
-  // Loading skeleton
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -478,9 +264,11 @@ export default function Results() {
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container mx-auto px-4 py-8 max-w-3xl">
-          <Alert className="mb-6" role="alert">
-            <AlertCircle className="h-4 w-4" aria-hidden="true" />
-            <AlertDescription>{loadError || "No results available. Please start a new test from the homepage."}</AlertDescription>
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {loadError || "No results available. Please start a new test from the homepage."}
+            </AlertDescription>
           </Alert>
           <Button onClick={() => navigate("/")} className="w-full md:w-auto min-h-[48px]">
             Back to homepage
@@ -493,51 +281,31 @@ export default function Results() {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
-      <main className="container mx-auto px-4 py-8 md:py-16 max-w-5xl leading-relaxed" role="main">
+
+      <main className="container mx-auto px-4 py-8 md:py-16 max-w-5xl">
         <div className="mb-6 md:mb-8 text-center md:text-left">
           <p className="text-sm md:text-base text-muted-foreground">
             Analysis results for: <span className="font-semibold break-all">{website}</span>
           </p>
         </div>
-        {/* Wrong Test Type Alert */}
-        {showWrongTypeAlert && (
-          <Alert className="mb-6 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800" role="alert">
-            <AlertCircle className="h-4 w-4 text-yellow-600" aria-hidden="true" />
-            <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <span className="text-sm">🔍 We detected this is a {type === "homepage" ? "BLOG POST" : "HOMEPAGE"}. For accurate analysis, use the {type === "homepage" ? "Blog Post" : "Homepage"} Audit box.</span>
-              <div className="flex gap-2 w-full sm:w-auto">
-                <Button size="sm" variant="outline" onClick={switchTest} className="flex-1 sm:flex-none">
-                  Switch Test
-                </Button>
-                <Button size="sm" variant="ghost" onClick={dismissAlert} className="flex-1 sm:flex-none">
-                  Dismiss
-                </Button>
-              </div>
-            </AlertDescription>
-          </Alert>
-        )}
 
-        {/* Beta Access Banner */}
-        <Alert className="mb-6 md:mb-8 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800" role="status">
+        <Alert className="mb-6 md:mb-8 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
           <AlertDescription className="text-sm md:text-base text-green-800 dark:text-green-300 font-medium">
             🎉 BETA ACCESS: All features unlocked during free beta
           </AlertDescription>
         </Alert>
 
-        {/* FI Score Display */}
-        <div className="text-center mb-8 md:mb-12 animate-fade-in">
+        <div className="text-center mb-8 md:mb-12">
           <div className="inline-block w-48 h-48 md:w-64 md:h-64 mb-4 md:mb-6">
             <CircularProgressbar
-              value={resultData?.score ?? 0}
-              text={`${resultData?.score ?? 0}`}
+              value={resultData.score}
+              text={`${resultData.score}`}
               styles={buildStyles({
                 textSize: "28px",
                 pathColor: scoreColor,
                 textColor: scoreColor,
                 trailColor: "#e5e7eb",
               })}
-              aria-label={`FI Score: ${resultData?.score ?? 0} out of 100`}
             />
           </div>
           <div className="space-y-2">
@@ -548,24 +316,14 @@ export default function Results() {
           </div>
         </div>
 
-        {/* Analysis Info */}
-        <div className="text-center mb-6 md:mb-8">
-          <p className="text-xs md:text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-            EVALUATED ACROSS 18 CORE CRITERIA
-          </p>
-          <p className="text-xs md:text-sm text-muted-foreground">
-            Analyzing structure, content, and technical SEO
-          </p>
-        </div>
-
-        {/* Category Breakdown */}
         <Card className="mb-8 md:mb-16">
           <CardHeader>
             <CardTitle className="text-lg md:text-xl">Category breakdown</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 md:space-y-8">
-            {resultData?.categories.map((category, index) => {
-              const color = category.percentage >= 70 ? "bg-green-500" : category.percentage >= 50 ? "bg-yellow-500" : "bg-red-500";
+            {resultData.categories.map((category, index) => {
+              const color =
+                category.percentage >= 70 ? "bg-green-500" : category.percentage >= 50 ? "bg-yellow-500" : "bg-red-500";
               return (
                 <div key={index} className="space-y-2">
                   <div className="flex items-center justify-between text-xs md:text-sm">
@@ -574,42 +332,7 @@ export default function Results() {
                       <span className="text-muted-foreground">
                         {category.score}/{category.max}
                       </span>
-                      <span className="font-semibold w-10 md:w-12 text-right">
-                        {category.percentage}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="relative h-2 bg-muted rounded-full overflow-hidden" role="progressbar" aria-valuenow={category.percentage} aria-valuemin={0} aria-valuemax={100}>
-                    <div
-                      className={`absolute top-0 left-0 h-full ${color} transition-all duration-500`}
-                      style={{ width: `${category.percentage}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-
-        {/* Industry Comparison */}
-        <Card className="mb-16 border-2">
-          <CardHeader>
-            <CardTitle>Category breakdown</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-8">
-            {resultData?.categories.map((category, index) => {
-              const color = category.percentage >= 70 ? "bg-green-500" : category.percentage >= 50 ? "bg-yellow-500" : "bg-red-500";
-              return (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{category.name}</span>
-                    <div className="flex items-center gap-4">
-                      <span className="text-muted-foreground">
-                        {category.score}/{category.max}
-                      </span>
-                      <span className="font-semibold w-12 text-right">
-                        {category.percentage}%
-                      </span>
+                      <span className="font-semibold w-10 md:w-12 text-right">{category.percentage}%</span>
                     </div>
                   </div>
                   <div className="relative h-2 bg-muted rounded-full overflow-hidden">
@@ -624,28 +347,23 @@ export default function Results() {
           </CardContent>
         </Card>
 
-        {/* Industry Comparison */}
         <Card className="mb-16 border-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              📊 Industry comparison
-            </CardTitle>
+            <CardTitle className="flex items-center gap-2">📊 Industry comparison</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Your FI Score:</span>
-                <span className="text-2xl font-bold">{resultData?.score ?? 0}</span>
+                <span className="text-2xl font-bold">{resultData.score}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-muted-foreground">Industry Average:</span>
                 <span className="text-2xl font-bold">62</span>
               </div>
               <div className="pt-4">
-                {(resultData?.score ?? 0) > 62 ? (
-                  <p className="text-green-600 dark:text-green-400 font-semibold">
-                    You're scoring ABOVE average 🎯
-                  </p>
+                {resultData.score > 62 ? (
+                  <p className="text-green-600 dark:text-green-400 font-semibold">You're scoring ABOVE average 🎯</p>
                 ) : (
                   <p className="text-orange-600 dark:text-orange-400 font-semibold">
                     You're scoring BELOW average. Let's improve!
@@ -656,17 +374,14 @@ export default function Results() {
           </CardContent>
         </Card>
 
-        {/* All Recommendations */}
         <Card className="mb-16">
           <CardHeader>
             <CardTitle>📋 All recommendations</CardTitle>
-            <CardDescription>
-              Beta perk: Full audit normally costs $27-97
-            </CardDescription>
+            <CardDescription>Beta perk: Full audit normally costs $27-97</CardDescription>
           </CardHeader>
           <CardContent>
             <Accordion type="single" collapsible className="w-full">
-              {resultData?.recommendations.map((rec) => (
+              {resultData.recommendations.map((rec) => (
                 <AccordionItem key={rec.id} value={rec.id}>
                   <AccordionTrigger>
                     <div className="flex items-start gap-3 text-left w-full">
@@ -676,9 +391,7 @@ export default function Results() {
                           {getPriorityBadge(rec.priority)}
                           <span className="font-semibold">{rec.title}</span>
                           {rec.pointsLost < 0 && (
-                            <span className="text-red-600 dark:text-red-400 text-sm">
-                              ({rec.pointsLost} pts)
-                            </span>
+                            <span className="text-red-600 dark:text-red-400 text-sm">({rec.pointsLost} pts)</span>
                           )}
                         </div>
                       </div>
@@ -692,11 +405,11 @@ export default function Results() {
                           <p className="text-sm text-muted-foreground">{rec.problem}</p>
                         </div>
                       )}
-                      {rec.howToFix.length > 0 && (
+                      {rec.howToFix && ensureArray(rec.howToFix).length > 0 && (
                         <div>
                           <h4 className="font-semibold mb-1">How to fix:</h4>
                           <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                            {rec.howToFix.map((step, i) => (
+                            {ensureArray(rec.howToFix).map((step, i) => (
                               <li key={i}>{step}</li>
                             ))}
                           </ul>
@@ -723,7 +436,6 @@ export default function Results() {
           </CardContent>
         </Card>
 
-        {/* Feedback Card */}
         <Card className="mb-8">
           <CardHeader>
             <CardTitle>💬 Help Us Improve</CardTitle>
@@ -743,24 +455,19 @@ export default function Results() {
                 ))}
               </div>
             </div>
-            <div>
-              <Textarea
-                placeholder="What would make this more valuable?"
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                rows={3}
-              />
-            </div>
+            <Textarea
+              placeholder="What would make this more valuable?"
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              rows={3}
+            />
             <Button onClick={handleFeedbackSubmit} className="w-full">
               Submit Feedback
             </Button>
-            <p className="text-xs text-muted-foreground text-center">
-              Your feedback helps us improve for launch
-            </p>
+            <p className="text-xs text-muted-foreground text-center">Your feedback helps us improve for launch</p>
           </CardContent>
         </Card>
 
-        {/* Retest CTA */}
         <Card className="mb-8 bg-primary/5 border-primary/20">
           <CardHeader>
             <CardTitle>🔄 IMPLEMENT & RETEST</CardTitle>
@@ -768,20 +475,7 @@ export default function Results() {
           <CardContent>
             <p className="mb-4">Make the changes above, then check your new score</p>
             <Button onClick={handleRetest} className="w-full min-h-[48px]" size="lg">
-              Retest This URL
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Service Upsell */}
-        <Card className="border-2 border-purple-200 bg-purple-50/50 dark:border-purple-800 dark:bg-purple-900/20">
-          <CardHeader>
-            <CardTitle>💼 Need help implementing?</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4">Limited beta slots: We'll optimize one page for FREE</p>
-            <Button variant="outline" className="w-full min-h-[48px]" size="lg">
-              Apply for Free Service
+              Test Another URL
             </Button>
           </CardContent>
         </Card>
