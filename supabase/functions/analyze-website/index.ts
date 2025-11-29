@@ -39,7 +39,6 @@ const validateWebsite = (website: string): string => {
 
   const normalized = normalizeUrl(trimmed);
 
-  // Allow both http and https as long as there is a dot in the domain
   if (normalized.includes(".")) {
     return normalized;
   }
@@ -49,19 +48,14 @@ const validateWebsite = (website: string): string => {
 
 const detectPageType = (url: string, html: string): "homepage" | "blog" => {
   const urlLower = url.toLowerCase();
-
-  // Check URL patterns
   const blogPatterns = ["/blog/", "/post/", "/article/", "/news/"];
   const hasBlogUrl = blogPatterns.some((pattern) => urlLower.includes(pattern));
-
-  // Check HTML patterns
   const hasBlogHTML =
     html.includes("<article") ||
     html.includes('class="post') ||
     html.includes('class="article') ||
     html.includes('id="post-') ||
     html.includes('itemtype="http://schema.org/BlogPosting"');
-
   return hasBlogUrl || hasBlogHTML ? "blog" : "homepage";
 };
 
@@ -129,7 +123,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Unable to access website. Please check the URL and try again.",
+          error: "Unable to access this website",
+          details: `We couldn't load content from ${validatedWebsite}. This could mean:\n\n• The site is blocking our bot\n• The URL is temporarily down\n• The site requires login\n\nTry a different page or contact hello@foundindex.com for help.`,
           testId,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -182,11 +177,9 @@ serve(async (req) => {
       );
     }
 
-    // Detect actual page type
     const detectedType = detectPageType(validatedWebsite, websiteHtml);
     console.log(`[${testId}] Detected type: ${detectedType}, Requested: ${testType}`);
 
-    // Analyze with OpenAI
     const extractedContent = websiteHtml.substring(0, 50000);
 
     const analysisPrompt =
@@ -205,13 +198,13 @@ Analyze this homepage across these 5 categories and provide detailed recommendat
 5. TECHNICAL SEO (max 10 points): Meta tags, headings, page structure
 
 For each issue found, provide:
-- Priority: "critical" (major blocker), "medium" (improvement needed), or "good" (doing well)
-- Title: Short, clear issue name
-- Points Lost: Numeric value
-- Problem: What's wrong
-- How to Fix: Specific actionable steps
-- Code Example: HTML/code snippet if applicable
-- Expected Improvement: Estimated point gain
+- priority: "critical" (major blocker), "medium" (improvement needed), or "good" (doing well)
+- title: Short, clear issue name
+- pointsLost: Negative numeric value (e.g., -10)
+- problem: What's wrong (string)
+- howToFix: Array of specific actionable steps (MUST BE AN ARRAY OF STRINGS)
+- codeExample: HTML/code snippet if applicable (string)
+- expectedImprovement: Estimated point gain (string)
 
 Return ONLY valid JSON in this exact format:
 {
@@ -226,9 +219,13 @@ Return ONLY valid JSON in this exact format:
     {
       "priority": "critical",
       "title": "Missing clear value proposition",
-      "pointsLost": 10,
+      "pointsLost": -10,
       "problem": "The homepage doesn't clearly state what the business does in the first paragraph.",
-      "howToFix": "Add a clear 1-2 sentence description at the top that explains what you do and who you serve.",
+      "howToFix": [
+        "Add a clear 1-2 sentence description at the top",
+        "Explain what you do and who you serve",
+        "Use simple language, not jargon"
+      ],
       "codeExample": "<h1>We help [audience] achieve [outcome] through [method]</h1>",
       "expectedImprovement": "+8-10 points"
     }
@@ -248,13 +245,13 @@ Analyze this blog post across these 5 categories and provide detailed recommenda
 5. TECHNICAL SEO (max 10 points): Title, meta, headings hierarchy
 
 For each issue found, provide:
-- Priority: "critical" (major blocker), "medium" (improvement needed), or "good" (doing well)
-- Title: Short, clear issue name
-- Points Lost: Numeric value
-- Problem: What's wrong
-- How to Fix: Specific actionable steps
-- Code Example: HTML/code snippet if applicable
-- Expected Improvement: Estimated point gain
+- priority: "critical" (major blocker), "medium" (improvement needed), or "good" (doing well)
+- title: Short, clear issue name
+- pointsLost: Negative numeric value (e.g., -12)
+- problem: What's wrong (string)
+- howToFix: Array of specific actionable steps (MUST BE AN ARRAY OF STRINGS)
+- codeExample: HTML/code snippet if applicable (string)
+- expectedImprovement: Estimated point gain (string)
 
 Return ONLY valid JSON in this exact format:
 {
@@ -269,9 +266,13 @@ Return ONLY valid JSON in this exact format:
     {
       "priority": "critical",
       "title": "Answer appears too late",
-      "pointsLost": 12,
+      "pointsLost": -12,
       "problem": "The direct answer to the title question doesn't appear until paragraph 4.",
-      "howToFix": "Add a 2-3 sentence direct answer immediately after the introduction.",
+      "howToFix": [
+        "Add a 2-3 sentence direct answer immediately after the introduction",
+        "Use clear, simple language",
+        "Front-load the most important information"
+      ],
       "codeExample": "<p class='direct-answer'>To [achieve goal], you need to [action]. This works because [reason].</p>",
       "expectedImprovement": "+10-12 points"
     }
@@ -323,13 +324,10 @@ Return ONLY valid JSON in this exact format:
       );
     }
 
-    // Calculate total score
     const categories = analysisResult.categories || {};
     const totalScore = Object.values(categories).reduce((sum: number, cat: any) => sum + (cat.score || 0), 0);
-
     const grade = getGrade(totalScore);
 
-    // Add percentages to categories
     const categoriesWithPercentages = Object.entries(categories).reduce((acc: any, [key, value]: [string, any]) => {
       acc[key] = {
         ...value,
@@ -338,7 +336,6 @@ Return ONLY valid JSON in this exact format:
       return acc;
     }, {});
 
-    // ✅ SAVE TO test_history TABLE (PRIMARY RESULTS STORAGE)
     try {
       await supabaseAdmin.from("test_history").insert({
         test_id: testId,
@@ -353,7 +350,6 @@ Return ONLY valid JSON in this exact format:
       console.log(`[${testId}] Saved to test_history`);
     } catch (historyError) {
       console.error(`[${testId}] CRITICAL: Failed to save to test_history:`, historyError);
-      // This is critical - if we can't save results, the results page won't work
       return new Response(
         JSON.stringify({
           success: false,
@@ -364,7 +360,7 @@ Return ONLY valid JSON in this exact format:
       );
     }
 
-    const response = {
+    const responseData = {
       success: true,
       testId,
       score: totalScore,
@@ -378,7 +374,9 @@ Return ONLY valid JSON in this exact format:
 
     console.log(`[${testId}] SUCCESS - Score: ${totalScore}, Grade: ${grade}`);
 
-    return new Response(JSON.stringify(response), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify(responseData), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Error:", error);
     return new Response(
