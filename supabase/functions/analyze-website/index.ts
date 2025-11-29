@@ -7,11 +7,474 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// =============================================================================
+// TYPES
+// =============================================================================
+
 interface TestSubmission {
   website: string;
   testType: "homepage" | "blog";
   email?: string;
 }
+
+interface SchemaItem {
+  type: string;
+  properties: Record<string, unknown>;
+  isValid: boolean;
+  errors: string[];
+}
+
+interface SchemaScore {
+  category: string;
+  maxPoints: number;
+  earnedPoints: number;
+  found: boolean;
+  details: string;
+  missingFields: string[];
+}
+
+interface SchemaParseResult {
+  totalScore: number;
+  maxScore: number;
+  percentage: number;
+  schemas: SchemaItem[];
+  scores: SchemaScore[];
+  summary: string;
+}
+
+// =============================================================================
+// SCHEMA.ORG PARSER (Deterministic - No AI)
+// =============================================================================
+
+const SCHEMA_REQUIREMENTS: Record<string, { required: string[]; recommended: string[]; points: number }> = {
+  Organization: {
+    required: ["name", "url"],
+    recommended: ["logo", "description", "sameAs", "contactPoint", "address"],
+    points: 8,
+  },
+  Article: {
+    required: ["headline", "author", "datePublished"],
+    recommended: ["dateModified", "image", "publisher", "description", "mainEntityOfPage"],
+    points: 8,
+  },
+  BlogPosting: {
+    required: ["headline", "author", "datePublished"],
+    recommended: ["dateModified", "image", "publisher", "description", "mainEntityOfPage", "wordCount"],
+    points: 8,
+  },
+  FAQPage: {
+    required: ["mainEntity"],
+    recommended: [],
+    points: 4,
+  },
+  BreadcrumbList: {
+    required: ["itemListElement"],
+    recommended: [],
+    points: 3,
+  },
+  ContactPoint: {
+    required: ["contactType"],
+    recommended: ["telephone", "email", "areaServed"],
+    points: 3,
+  },
+  WebSite: {
+    required: ["name", "url"],
+    recommended: ["potentialAction", "description"],
+    points: 2,
+  },
+  WebPage: {
+    required: ["name"],
+    recommended: ["description", "url", "breadcrumb"],
+    points: 1,
+  },
+  Product: {
+    required: ["name", "description"],
+    recommended: ["brand", "offers", "image", "sku"],
+    points: 6,
+  },
+  LocalBusiness: {
+    required: ["name", "address"],
+    recommended: ["telephone", "openingHours", "geo", "priceRange"],
+    points: 7,
+  },
+  Service: {
+    required: ["name", "description"],
+    recommended: ["provider", "areaServed", "serviceType"],
+    points: 6,
+  },
+  Person: {
+    required: ["name"],
+    recommended: ["url", "image", "jobTitle", "sameAs"],
+    points: 4,
+  },
+};
+
+function extractJsonLd(html: string): unknown[] {
+  const jsonLdItems: unknown[] = [];
+  // FIX: Support both single and double quotes around application/ld+json
+  const jsonLdRegex = /<script[^>]*type\s*=\s*['"]application\/ld\+json['"][^>]*>([\s\S]*?)<\/script>/gi;
+
+  let match;
+  while ((match = jsonLdRegex.exec(html)) !== null) {
+    try {
+      const jsonContent = match[1].trim();
+      const parsed = JSON.parse(jsonContent);
+
+      if (parsed["@graph"] && Array.isArray(parsed["@graph"])) {
+        jsonLdItems.push(...parsed["@graph"]);
+      } else if (Array.isArray(parsed)) {
+        jsonLdItems.push(...parsed);
+      } else {
+        jsonLdItems.push(parsed);
+      }
+    } catch {
+      // Malformed JSON-LD, skip
+    }
+  }
+
+  return jsonLdItems;
+}
+
+function getSchemaType(item: unknown): string | null {
+  if (!item || typeof item !== "object") return null;
+
+  const obj = item as Record<string, unknown>;
+  const typeValue = obj["@type"];
+
+  if (typeof typeValue === "string") {
+    const match = typeValue.match(/(?:schema\.org\/)?(\w+)$/);
+    return match ? match[1] : typeValue;
+  }
+
+  if (Array.isArray(typeValue) && typeValue.length > 0) {
+    const first = typeValue[0];
+    if (typeof first === "string") {
+      const match = first.match(/(?:schema\.org\/)?(\w+)$/);
+      return match ? match[1] : first;
+    }
+  }
+
+  return null;
+}
+
+function getProperties(item: unknown): Record<string, unknown> {
+  if (!item || typeof item !== "object") return {};
+
+  const obj = item as Record<string, unknown>;
+  const properties: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(obj)) {
+    if (!key.startsWith("@")) {
+      properties[key] = value;
+    }
+  }
+
+  return properties;
+}
+
+function parseJsonLdItems(jsonLdItems: unknown[]): SchemaItem[] {
+  const schemaItems: SchemaItem[] = [];
+  const visited = new Set<unknown>();
+
+  const processItem = (item: unknown) => {
+    if (visited.has(item)) return;
+    visited.add(item);
+
+    const type = getSchemaType(item);
+    if (!type) return;
+
+    const properties = getProperties(item);
+    const requirements = SCHEMA_REQUIREMENTS[type];
+
+    let isValid = true;
+    const errors: string[] = [];
+
+    if (requirements) {
+      for (const field of requirements.required) {
+        if (!(field in properties) || properties[field] === null || properties[field] === undefined) {
+          errors.push(`Missing required field: ${field}`);
+          isValid = false;
+        }
+      }
+    }
+
+    schemaItems.push({ type, properties, isValid, errors });
+
+    // Process nested objects
+    for (const value of Object.values(properties)) {
+      if (value && typeof value === "object" && !Array.isArray(value) && "@type" in (value as object)) {
+        processItem(value);
+      }
+      if (Array.isArray(value)) {
+        for (const arrItem of value) {
+          if (arrItem && typeof arrItem === "object" && "@type" in arrItem) {
+            processItem(arrItem);
+          }
+        }
+      }
+    }
+  };
+
+  for (const item of jsonLdItems) {
+    processItem(item);
+  }
+
+  return schemaItems;
+}
+
+function scoreSchemaType(type: string, items: SchemaItem[]): SchemaScore {
+  const requirements = SCHEMA_REQUIREMENTS[type];
+
+  if (!requirements) {
+    return {
+      category: type,
+      maxPoints: 0,
+      earnedPoints: 0,
+      found: false,
+      details: `Unknown schema type: ${type}`,
+      missingFields: [],
+    };
+  }
+
+  const matchingItems = items.filter((item) => item.type === type);
+
+  if (matchingItems.length === 0) {
+    return {
+      category: type,
+      maxPoints: requirements.points,
+      earnedPoints: 0,
+      found: false,
+      details: `No ${type} schema found`,
+      missingFields: requirements.required,
+    };
+  }
+
+  // Use the best item for scoring
+  let bestItem = matchingItems[0];
+  let bestFieldCount = 0;
+
+  for (const item of matchingItems) {
+    const allFields = [...requirements.required, ...requirements.recommended];
+    const presentCount = allFields.filter((f) => f in item.properties).length;
+    if (presentCount > bestFieldCount) {
+      bestFieldCount = presentCount;
+      bestItem = item;
+    }
+  }
+
+  const missingRequired = requirements.required.filter((f) => !(f in bestItem.properties));
+
+  // 60% required, 40% recommended
+  const requiredScore =
+    requirements.required.length > 0
+      ? ((requirements.required.length - missingRequired.length) / requirements.required.length) * 0.6
+      : 0.6;
+
+  const presentRecommended = requirements.recommended.filter((f) => f in bestItem.properties).length;
+  const recommendedScore =
+    requirements.recommended.length > 0 ? (presentRecommended / requirements.recommended.length) * 0.4 : 0.4;
+
+  const totalPercentage = requiredScore + recommendedScore;
+  const earnedPoints = Math.round(requirements.points * totalPercentage * 10) / 10;
+
+  let details = `Found ${matchingItems.length} ${type} schema(s). `;
+  if (missingRequired.length > 0) {
+    details += `Missing: ${missingRequired.join(", ")}. `;
+  }
+  if (presentRecommended > 0) {
+    details += `Has ${presentRecommended}/${requirements.recommended.length} recommended fields.`;
+  }
+
+  return {
+    category: type,
+    maxPoints: requirements.points,
+    earnedPoints,
+    found: true,
+    details,
+    missingFields: missingRequired,
+  };
+}
+
+function parseSchemaMarkup(html: string, pageType: "homepage" | "blog"): SchemaParseResult {
+  const jsonLdItems = extractJsonLd(html);
+  const allSchemas = parseJsonLdItems(jsonLdItems);
+
+  const schemasToScore =
+    pageType === "homepage"
+      ? ["Organization", "WebSite", "WebPage", "FAQPage", "BreadcrumbList", "ContactPoint", "LocalBusiness", "Product"]
+      : ["Article", "BlogPosting", "FAQPage", "BreadcrumbList", "WebPage"];
+
+  const scores: SchemaScore[] = [];
+
+  for (const schemaType of schemasToScore) {
+    // Skip Article if BlogPosting exists
+    if (schemaType === "Article") {
+      const hasBlogPosting = allSchemas.some((s) => s.type === "BlogPosting");
+      if (hasBlogPosting) continue;
+    }
+
+    scores.push(scoreSchemaType(schemaType, allSchemas));
+  }
+
+  const totalScore = scores.reduce((sum, s) => sum + s.earnedPoints, 0);
+  const maxScore = scores.reduce((sum, s) => sum + s.maxPoints, 0);
+  const percentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
+
+  const foundCount = scores.filter((s) => s.found).length;
+
+  let summary = "";
+  if (allSchemas.length === 0) {
+    summary = "No schema.org markup detected. AI systems cannot parse your content structure.";
+  } else if (percentage >= 80) {
+    summary = `Strong schema implementation. ${foundCount}/${scores.length} key schemas at ${percentage}% completeness.`;
+  } else if (percentage >= 50) {
+    summary = `Partial schema coverage. ${foundCount}/${scores.length} schemas found. Add missing types.`;
+  } else {
+    summary = `Weak schema markup. Only ${foundCount}/${scores.length} schemas at ${percentage}% completeness.`;
+  }
+
+  return {
+    totalScore: Math.round(totalScore * 10) / 10,
+    maxScore,
+    percentage,
+    schemas: allSchemas,
+    scores,
+    summary,
+  };
+}
+
+// =============================================================================
+// SEMANTIC HTML ANALYZER (Deterministic)
+// =============================================================================
+
+function analyzeSemanticHtml(html: string, pageType: "homepage" | "blog") {
+  const checks = {
+    hasArticleTag: /<article[\s>]/i.test(html),
+    hasSectionTags: /<section[\s>]/i.test(html),
+    hasNavTag: /<nav[\s>]/i.test(html),
+    hasAsideTag: /<aside[\s>]/i.test(html),
+    hasFigureTags: /<figure[\s>]/i.test(html),
+    hasHeaderFooter: /<header[\s>]/i.test(html) && /<footer[\s>]/i.test(html),
+    hasMain: /<main[\s>]/i.test(html),
+  };
+
+  const weights =
+    pageType === "homepage"
+      ? {
+          hasArticleTag: 2,
+          hasSectionTags: 3,
+          hasNavTag: 3,
+          hasAsideTag: 1,
+          hasFigureTags: 2,
+          hasHeaderFooter: 3,
+          hasMain: 3,
+        }
+      : {
+          hasArticleTag: 4,
+          hasSectionTags: 3,
+          hasNavTag: 2,
+          hasAsideTag: 2,
+          hasFigureTags: 3,
+          hasHeaderFooter: 2,
+          hasMain: 2,
+        };
+
+  const maxScore = pageType === "homepage" ? 17 : 18;
+  let score = 0;
+
+  for (const [key, passed] of Object.entries(checks)) {
+    if (passed) {
+      score += weights[key as keyof typeof weights] || 0;
+    }
+  }
+
+  return { score: Math.min(score, maxScore), maxScore, details: checks };
+}
+
+// =============================================================================
+// TECHNICAL FOUNDATION ANALYZER (Deterministic)
+// =============================================================================
+
+function analyzeTechnical(url: string, html: string) {
+  const checks = {
+    hasViewportMeta: /<meta[^>]*name\s*=\s*["']viewport["'][^>]*>/i.test(html),
+    isHttps: url.startsWith("https://"),
+    hasCanonical: /<link[^>]*rel\s*=\s*["']canonical["'][^>]*>/i.test(html),
+    hasLangAttribute: /<html[^>]*lang\s*=/i.test(html),
+    hasCharset: /<meta[^>]*charset/i.test(html),
+    hasTitle: /<title[^>]*>[^<]+<\/title>/i.test(html),
+    hasMetaDescription: /<meta[^>]*name\s*=\s*["']description["'][^>]*content\s*=\s*["'][^"']+["']/i.test(html),
+    hasH1: /<h1[\s>]/i.test(html),
+  };
+
+  const weights = {
+    hasViewportMeta: 1,
+    isHttps: 2,
+    hasCanonical: 2,
+    hasLangAttribute: 1,
+    hasCharset: 1,
+    hasTitle: 2,
+    hasMetaDescription: 2,
+    hasH1: 2,
+  };
+
+  const maxScore = 13;
+  let score = 0;
+
+  for (const [key, passed] of Object.entries(checks)) {
+    if (passed) {
+      score += weights[key as keyof typeof weights] || 0;
+    }
+  }
+
+  return { score: Math.min(score, maxScore), maxScore, details: checks };
+}
+
+// =============================================================================
+// IMAGE ANALYZER (Deterministic)
+// =============================================================================
+
+function analyzeImages(html: string, pageType: "homepage" | "blog") {
+  const imgRegex = /<img[^>]*>/gi;
+  const imgTags = html.match(imgRegex) || [];
+
+  let withAltText = 0;
+  let withDescriptiveAlt = 0;
+
+  for (const img of imgTags) {
+    const altMatch = img.match(/alt\s*=\s*["']([^"']*)["']/i);
+    if (altMatch) {
+      withAltText++;
+      const altText = altMatch[1].trim();
+      if (altText.length > 10 && !altText.match(/^(image|photo|picture|img|icon|logo|banner|header)$/i)) {
+        withDescriptiveAlt++;
+      }
+    }
+  }
+
+  const totalImages = imgTags.length;
+  const maxScore = 10;
+
+  let score = 0;
+  if (totalImages === 0) {
+    // FIX: No images on blog is a content issue, less penalty for homepage
+    score = pageType === "blog" ? 2 : 5;
+  } else {
+    const altRatio = withAltText / totalImages;
+    const descriptiveRatio = withDescriptiveAlt / totalImages;
+    score = Math.round((altRatio * 0.5 + descriptiveRatio * 0.5) * maxScore * 10) / 10;
+  }
+
+  return {
+    score: Math.min(score, maxScore),
+    maxScore,
+    details: { totalImages, withAltText, withDescriptiveAlt },
+  };
+}
+
+// =============================================================================
+// HELPERS
+// =============================================================================
 
 const validateEmail = (email: string | undefined): string => {
   if (!email) return `anonymous-${Date.now()}@foundindex.local`;
@@ -33,30 +496,30 @@ const normalizeUrl = (url: string): string => {
 
 const validateWebsite = (website: string): string => {
   const trimmed = website.trim();
-  if (!trimmed) {
-    throw new Error("Please enter a website URL");
-  }
-
+  if (!trimmed) throw new Error("Please enter a website URL");
   const normalized = normalizeUrl(trimmed);
-
-  if (normalized.includes(".")) {
-    return normalized;
-  }
-
+  if (normalized.includes(".")) return normalized;
   throw new Error('Please enter a valid website URL (like "example.com")');
 };
 
 const detectPageType = (url: string, html: string): "homepage" | "blog" => {
   const urlLower = url.toLowerCase();
-  const blogPatterns = ["/blog/", "/post/", "/article/", "/news/"];
+  const blogPatterns = ["/blog/", "/post/", "/article/", "/news/", "/insights/"];
   const hasBlogUrl = blogPatterns.some((pattern) => urlLower.includes(pattern));
+  const datePattern = /\/\d{4}\/\d{2}\//;
+  const hasDateUrl = datePattern.test(urlLower);
+  // FIX: Add subdomain blog detection
+  const hasBlogSubdomain = urlLower.includes("blog.") && !urlLower.includes("blog.example");
+
   const hasBlogHTML =
     html.includes("<article") ||
     html.includes('class="post') ||
     html.includes('class="article') ||
-    html.includes('id="post-') ||
-    html.includes('itemtype="http://schema.org/BlogPosting"');
-  return hasBlogUrl || hasBlogHTML ? "blog" : "homepage";
+    html.includes('itemtype="http://schema.org/BlogPosting"') ||
+    html.includes('"@type":"BlogPosting"') ||
+    html.includes('"@type":"Article"');
+
+  return hasBlogUrl || hasDateUrl || hasBlogSubdomain || hasBlogHTML ? "blog" : "homepage";
 };
 
 const getGrade = (score: number): string => {
@@ -66,6 +529,10 @@ const getGrade = (score: number): string => {
   if (score >= 60) return "D";
   return "F";
 };
+
+// =============================================================================
+// MAIN HANDLER
+// =============================================================================
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -90,10 +557,9 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
     const testId = crypto.randomUUID();
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    const modelName = Deno.env.get("OPENAI_MODEL_NAME") || "gpt-4-turbo-2024-04-09";
+    const modelName = Deno.env.get("OPENAI_MODEL_NAME") || "gpt-4o";
 
     console.log(`[${testId}] Starting analysis for ${testType}: ${validatedWebsite}`);
 
@@ -124,14 +590,14 @@ serve(async (req) => {
         JSON.stringify({
           success: false,
           error: "Unable to access this website",
-          details: `We couldn't load content from ${validatedWebsite}. This could mean:\n\n• The site is blocking our bot\n• The URL is temporarily down\n• The site requires login\n\nTry a different page or contact hello@foundindex.com for help.`,
+          details: `Could not load content from ${validatedWebsite}. The site may be blocking bots, temporarily down, or require login.`,
           testId,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    // Check for JS-rendered content
+    // Handle JS-rendered content
     const spaMarkers = ['id="root"', 'id="app"', "__NEXT_DATA__", "window.__NUXT__"];
     const hasSPAMarker = spaMarkers.some((marker) => websiteHtml.includes(marker));
 
@@ -170,7 +636,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Unable to analyze JavaScript-rendered website. Please ensure your content is server-rendered.",
+          error:
+            "Unable to analyze JavaScript-rendered website. Ensure your content is server-rendered for AI visibility.",
           testId,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -180,108 +647,105 @@ serve(async (req) => {
     const detectedType = detectPageType(validatedWebsite, websiteHtml);
     console.log(`[${testId}] Detected type: ${detectedType}, Requested: ${testType}`);
 
+    // ==========================================================================
+    // DETERMINISTIC SCORING (40 points)
+    // ==========================================================================
+
+    const schemaResult = parseSchemaMarkup(websiteHtml, testType);
+    const semanticResult = analyzeSemanticHtml(websiteHtml, testType);
+    const technicalResult = analyzeTechnical(validatedWebsite, websiteHtml);
+    const imageResult = analyzeImages(websiteHtml, testType);
+
+    // Normalize to weights
+    const schemaWeight = testType === "homepage" ? 20 : 18;
+    const semanticWeight = testType === "homepage" ? 12 : 14;
+    const technicalWeight = 8;
+    const imageWeight = testType === "homepage" ? 0 : 8;
+
+    const schemaScore =
+      schemaResult.maxScore > 0 ? (schemaResult.totalScore / schemaResult.maxScore) * schemaWeight : 0;
+    const semanticScore = (semanticResult.score / semanticResult.maxScore) * semanticWeight;
+    const technicalScore = (technicalResult.score / technicalResult.maxScore) * technicalWeight;
+    const imageScore = (imageResult.score / imageResult.maxScore) * imageWeight;
+
+    const deterministicTotal = Math.round((schemaScore + semanticScore + technicalScore + imageScore) * 10) / 10;
+    // FIX: Correct max calculation including imageWeight
+    const deterministicMax = schemaWeight + semanticWeight + technicalWeight + imageWeight;
+
+    console.log(
+      `[${testId}] Deterministic scores: schema=${schemaScore.toFixed(1)}, semantic=${semanticScore.toFixed(1)}, technical=${technicalScore.toFixed(1)}, images=${imageScore.toFixed(1)}, total=${deterministicTotal}/${deterministicMax}`,
+    );
+
+    // ==========================================================================
+    // AI ANALYSIS (60 points) - Content quality assessment
+    // ==========================================================================
+
     const extractedContent = websiteHtml.substring(0, 50000);
 
     const analysisPrompt =
       testType === "homepage"
-        ? `You are analyzing a business homepage for AI search engine visibility.
+        ? `Analyze this business homepage for AI search visibility.
 
-Website URL: ${validatedWebsite}
-HTML Content: ${extractedContent}
+URL: ${validatedWebsite}
+HTML: ${extractedContent}
 
-Analyze this homepage across these 5 categories and provide detailed recommendations:
+Score these 3 categories (60 points total):
 
-1. ANSWER STRUCTURE (max 30 points): How clearly does the homepage answer "what is this business?"
-2. SCANNABILITY (max 25 points): How easy is it to quickly understand key information?
-3. FAQ & SCHEMA (max 20 points): Are there FAQs and structured data for AI parsing?
-4. EXPERTISE SIGNALS (max 15 points): Does it demonstrate authority and credibility?
-5. TECHNICAL SEO (max 10 points): Meta tags, headings, page structure
+1. CONTENT CLARITY (max 25 points): Does the page clearly answer "what is this business, who is it for, what problem does it solve?"
+2. ANSWER STRUCTURE (max 20 points): Are key answers front-loaded? Can AI extract the core value proposition in the first 200 words?
+3. AUTHORITY SIGNALS (max 15 points): Credentials, testimonials, data, specific claims with evidence?
 
-For each issue found, provide:
-- priority: "critical" (major blocker), "medium" (improvement needed), or "good" (doing well)
-- title: Short, clear issue name
-- pointsLost: Negative numeric value (e.g., -10)
-- problem: What's wrong (string)
-- howToFix: Array of specific actionable steps (MUST BE AN ARRAY OF STRINGS)
-- codeExample: HTML/code snippet if applicable (string)
-- expectedImprovement: Estimated point gain (string)
+For each issue, provide:
+- priority: "critical" | "medium" | "good"
+- title: Short issue name (sentence case, not title case)
+- pointsLost: Negative number
+- problem: What's wrong
+- howToFix: Array of specific steps
+- codeExample: HTML snippet if applicable
+- expectedImprovement: Point gain estimate
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON:
 {
   "categories": {
-    "answerStructure": { "score": 18, "max": 30 },
-    "scannability": { "score": 14, "max": 25 },
-    "faqSchema": { "score": 6, "max": 20 },
-    "expertiseSignals": { "score": 12, "max": 15 },
-    "technicalSEO": { "score": 8, "max": 10 }
+    "contentClarity": { "score": 18, "max": 25 },
+    "answerStructure": { "score": 14, "max": 20 },
+    "authoritySignals": { "score": 10, "max": 15 }
   },
-  "recommendations": [
-    {
-      "priority": "critical",
-      "title": "Missing clear value proposition",
-      "pointsLost": -10,
-      "problem": "The homepage doesn't clearly state what the business does in the first paragraph.",
-      "howToFix": [
-        "Add a clear 1-2 sentence description at the top",
-        "Explain what you do and who you serve",
-        "Use simple language, not jargon"
-      ],
-      "codeExample": "<h1>We help [audience] achieve [outcome] through [method]</h1>",
-      "expectedImprovement": "+8-10 points"
-    }
-  ]
+  "recommendations": [...]
 }`
-        : `You are analyzing a blog post for AI search engine visibility.
+        : `Analyze this blog post for AI search visibility.
 
-Website URL: ${validatedWebsite}
-HTML Content: ${extractedContent}
+URL: ${validatedWebsite}
+HTML: ${extractedContent}
 
-Analyze this blog post across these 5 categories and provide detailed recommendations:
+Score these 3 categories (60 points total):
 
-1. ANSWER STRUCTURE (max 30 points): Does it answer the main question directly and early?
-2. SCANNABILITY (max 25 points): Subheadings, bullet points, clear sections?
-3. FAQ & SCHEMA (max 20 points): FAQ section and structured data?
-4. EXPERTISE SIGNALS (max 15 points): Author credentials, sources, data?
-5. TECHNICAL SEO (max 10 points): Title, meta, headings hierarchy
+1. ANSWER STRUCTURE (max 25 points): Does it answer the title question directly in the first 150 words? AI needs upfront answers.
+2. SCANNABILITY (max 20 points): Clear subheadings every 300 words? Bullet points for lists? Short paragraphs?
+3. EXPERTISE SIGNALS (max 15 points): Author credentials visible? Citations? Specific data? Original insights?
 
-For each issue found, provide:
-- priority: "critical" (major blocker), "medium" (improvement needed), or "good" (doing well)
-- title: Short, clear issue name
-- pointsLost: Negative numeric value (e.g., -12)
-- problem: What's wrong (string)
-- howToFix: Array of specific actionable steps (MUST BE AN ARRAY OF STRINGS)
-- codeExample: HTML/code snippet if applicable (string)
-- expectedImprovement: Estimated point gain (string)
+For each issue, provide:
+- priority: "critical" | "medium" | "good"
+- title: Short issue name (sentence case, not title case)
+- pointsLost: Negative number
+- problem: What's wrong
+- howToFix: Array of specific steps
+- codeExample: HTML snippet if applicable
+- expectedImprovement: Point gain estimate
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON:
 {
   "categories": {
-    "answerStructure": { "score": 18, "max": 30 },
-    "scannability": { "score": 14, "max": 25 },
-    "faqSchema": { "score": 6, "max": 20 },
-    "expertiseSignals": { "score": 12, "max": 15 },
-    "technicalSEO": { "score": 8, "max": 10 }
+    "answerStructure": { "score": 18, "max": 25 },
+    "scannability": { "score": 14, "max": 20 },
+    "expertiseSignals": { "score": 10, "max": 15 }
   },
-  "recommendations": [
-    {
-      "priority": "critical",
-      "title": "Answer appears too late",
-      "pointsLost": -12,
-      "problem": "The direct answer to the title question doesn't appear until paragraph 4.",
-      "howToFix": [
-        "Add a 2-3 sentence direct answer immediately after the introduction",
-        "Use clear, simple language",
-        "Front-load the most important information"
-      ],
-      "codeExample": "<p class='direct-answer'>To [achieve goal], you need to [action]. This works because [reason].</p>",
-      "expectedImprovement": "+10-12 points"
-    }
-  ]
+  "recommendations": [...]
 }`;
 
-    console.log(`[${testId}] Calling OpenAI for ${testType} analysis...`);
+    console.log(`[${testId}] Calling OpenAI...`);
 
-    let analysisResult: any;
+    let aiAnalysisResult: any;
 
     try {
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -300,7 +764,7 @@ Return ONLY valid JSON in this exact format:
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`[${testId}] OpenAI API error:`, response.status, errorText);
+        console.error(`[${testId}] OpenAI error:`, response.status, errorText);
         throw new Error(`OpenAI API error: ${response.status}`);
       }
 
@@ -310,10 +774,10 @@ Return ONLY valid JSON in this exact format:
         .replace(/```\n?/g, "")
         .trim();
 
-      analysisResult = JSON.parse(content);
-      console.log(`[${testId}] Analysis complete`);
+      aiAnalysisResult = JSON.parse(content);
+      console.log(`[${testId}] AI analysis complete`);
     } catch (error) {
-      console.error(`[${testId}] Analysis failed:`, error);
+      console.error(`[${testId}] AI analysis failed:`, error);
       return new Response(
         JSON.stringify({
           success: false,
@@ -324,18 +788,101 @@ Return ONLY valid JSON in this exact format:
       );
     }
 
-    const categories = analysisResult.categories || {};
-    const totalScore = Object.values(categories).reduce((sum: number, cat: any) => sum + (cat.score || 0), 0);
+    // ==========================================================================
+    // COMBINE SCORES
+    // ==========================================================================
+
+    const aiCategories = aiAnalysisResult.categories || {};
+    const aiTotal = Object.values(aiCategories).reduce((sum: number, cat: any) => sum + (cat.score || 0), 0);
+
+    const totalScore = Math.round(deterministicTotal + aiTotal);
     const grade = getGrade(totalScore);
 
-    const categoriesWithPercentages = Object.entries(categories).reduce((acc: any, [key, value]: [string, any]) => {
-      acc[key] = {
-        ...value,
-        percentage: Math.round((value.score / value.max) * 100),
-      };
-      return acc;
-    }, {});
+    // Build combined categories for display
+    const displayCategories: Record<string, any> = {
+      schemaMarkup: {
+        score: Math.round(schemaScore * 10) / 10,
+        max: schemaWeight,
+        percentage: schemaWeight > 0 ? Math.round((schemaScore / schemaWeight) * 100) : 0,
+        breakdown: schemaResult,
+      },
+      semanticStructure: {
+        score: Math.round(semanticScore * 10) / 10,
+        max: semanticWeight,
+        percentage: Math.round((semanticScore / semanticWeight) * 100),
+        details: semanticResult.details,
+      },
+      technicalFoundation: {
+        score: Math.round(technicalScore * 10) / 10,
+        max: technicalWeight,
+        percentage: Math.round((technicalScore / technicalWeight) * 100),
+        details: technicalResult.details,
+      },
+    };
 
+    if (testType === "blog") {
+      displayCategories.images = {
+        score: Math.round(imageScore * 10) / 10,
+        max: imageWeight,
+        percentage: imageWeight > 0 ? Math.round((imageScore / imageWeight) * 100) : 0,
+        details: imageResult.details,
+      };
+    }
+
+    // Add AI categories
+    for (const [key, value] of Object.entries(aiCategories)) {
+      displayCategories[key] = {
+        ...value,
+        percentage: Math.round(((value as any).score / (value as any).max) * 100),
+      };
+    }
+
+    // Generate schema recommendations
+    const schemaRecommendations = schemaResult.scores
+      .filter((s) => !s.found || s.missingFields.length > 0)
+      .slice(0, 3)
+      .map((s, idx) => ({
+        id: `schema-${idx}`,
+        priority: s.found ? "medium" : "critical",
+        title: s.found ? `Complete your ${s.category} schema` : `Add ${s.category} schema markup`,
+        pointsLost: -Math.round((s.maxPoints - s.earnedPoints) * 10) / 10,
+        problem: s.details,
+        howToFix: s.found
+          ? [`Add missing fields: ${s.missingFields.join(", ")}`]
+          : [
+              `Add ${s.category} schema to your page`,
+              `Use JSON-LD format in a script tag`,
+              `Include required fields: ${s.missingFields.join(", ")}`,
+            ],
+        codeExample: !s.found
+          ? `<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "${s.category}",
+  ${s.missingFields.map((f) => `"${f}": "..."`).join(",\n  ")}
+}
+</script>`
+          : "",
+        expectedImprovement: `+${Math.round((s.maxPoints - s.earnedPoints) * 10) / 10} points`,
+      }));
+
+    const allRecommendations = [...schemaRecommendations, ...(aiAnalysisResult.recommendations || [])].map(
+      (rec, idx) => ({
+        ...rec,
+        id: rec.id || `rec-${idx}`,
+      }),
+    );
+
+    // Sort by priority and points lost
+    allRecommendations.sort((a, b) => {
+      const priorityOrder = { critical: 0, medium: 1, good: 2 };
+      const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] ?? 2;
+      const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] ?? 2;
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      return (a.pointsLost || 0) - (b.pointsLost || 0);
+    });
+
+    // Save to database
     try {
       await supabaseAdmin.from("test_history").insert({
         test_id: testId,
@@ -344,16 +891,16 @@ Return ONLY valid JSON in this exact format:
         detected_type: detectedType,
         score: totalScore,
         grade,
-        categories: categoriesWithPercentages,
-        recommendations: analysisResult.recommendations || [],
+        categories: displayCategories,
+        recommendations: allRecommendations,
       });
-      console.log(`[${testId}] Saved to test_history`);
+      console.log(`[${testId}] Saved to database`);
     } catch (historyError) {
-      console.error(`[${testId}] CRITICAL: Failed to save to test_history:`, historyError);
+      console.error(`[${testId}] Database save failed:`, historyError);
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Failed to save test results. Please contact support.",
+          error: "Failed to save results. Please contact support.",
           details: historyError instanceof Error ? historyError.message : "Database error",
         }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -367,9 +914,10 @@ Return ONLY valid JSON in this exact format:
       grade,
       detectedType,
       requestedType: testType,
-      categories: categoriesWithPercentages,
-      recommendations: analysisResult.recommendations || [],
-      industryAverage: 62,
+      categories: displayCategories,
+      recommendations: allRecommendations,
+      industryAverage: 58,
+      criteriaCount: testType === "homepage" ? 47 : 52,
     };
 
     console.log(`[${testId}] SUCCESS - Score: ${totalScore}, Grade: ${grade}`);
