@@ -13,9 +13,7 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
           <p className="text-sm text-muted-foreground">
             Built by Richa Deo — UX researcher focused on how AI interprets information
           </p>
-          <p className="text-sm text-muted-foreground">
-            Privacy-first • We don't store your website content
-          </p>
+          <p className="text-sm text-muted-foreground">Privacy-first • We don't store your website content</p>
           <p className="text-sm text-muted-foreground">Powered by OpenAI</p>
           <div className="flex justify-center gap-4 pt-2 flex-wrap">
             <Link to="/methodology" className="text-link hover:underline text-sm">
@@ -24,14 +22,14 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
             <Link to="/privacy" className="text-link hover:underline text-sm">
               Privacy
             </Link>
-            <Link to="/contact" className="text-link hover:underline text-sm">
+            <a href="mailto:hello@foundindex.com" className="text-link hover:underline text-sm">
               Contact
-            </Link>
+            </a>
             {onOpenFeedback && (
-              <button 
-                onClick={onOpenFeedback} 
+              <button
+                onClick={onOpenFeedback}
                 className="text-sm bg-transparent border-0 p-0 cursor-pointer"
-                style={{ color: 'hsl(217 91% 60%)' }}
+                style={{ color: "hsl(217 91% 60%)" }}
               >
                 Give Feedback
               </button>
