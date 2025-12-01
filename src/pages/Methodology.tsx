@@ -237,19 +237,6 @@ export default function Methodology() {
           </CardContent>
         </Card>
 
-        {/* Closing Quote */}
-        <Card className="mb-8 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10 border-purple-200">
-          <CardContent className="py-8 px-6">
-            <blockquote className="text-center">
-              <p className="text-xl font-medium mb-4 italic">
-                "We show you WHERE to add expertise signals. What you put there is your competitive advantage."
-              </p>
-              <p className="text-lg text-muted-foreground italic">
-                AI finds the gaps. You fill them with what only humans can create.
-              </p>
-            </blockquote>
-          </CardContent>
-        </Card>
       </main>
     </div>
   );
