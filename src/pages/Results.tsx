@@ -1,414 +1,207 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
   AlertCircle,
-  CheckCircle,
-  AlertTriangle,
-  XCircle,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Copy,
-  Check,
-  Share2,
   Download,
-  Home,
-  FileText,
+  Share2,
   Lock,
-  Loader2,
+  Unlock,
+  Star,
   Sparkles,
-  ExternalLink,
+  FileText,
+  Loader2,
+  ArrowLeft,
+  MessageSquare,
+  TrendingUp,
 } from "lucide-react";
-import Header from "@/components/layout/Header";
-import { analytics } from "@/utils/analytics";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 // =============================================================================
-// TYPES & HELPERS
+// TYPES
 // =============================================================================
 
-const ensureArray = (value: unknown): string[] => {
-  if (Array.isArray(value)) return value as string[];
-  if (typeof value === "string") return [value];
-  return [];
-};
-
-type CategorySummary = {
-  name: string;
-  key: string;
+interface Category {
   score: number;
   max: number;
   percentage: number;
+  breakdown?: unknown;
   details?: unknown;
-  breakdown?: { summary?: string; scores?: Array<{ category: string; found: boolean }> };
-};
+}
 
-type Recommendation = {
+interface Recommendation {
   id: string;
-  priority: string;
+  priority: "critical" | "medium" | "good";
   title: string;
   pointsLost: number;
   problem: string;
-  howToFix: string[] | string;
-  codeExample: string;
+  howToFix: string[];
+  codeExample?: string;
   expectedImprovement: string;
-};
+}
 
-type ResultData = {
+interface ResultData {
+  testId: string;
   score: number;
   grade: string;
-  gradeLabel: string;
-  testType: "homepage" | "blog";
-  categories: CategorySummary[];
+  detectedType: string;
+  requestedType: string;
+  categories: Record<string, Category>;
   recommendations: Recommendation[];
-  criteriaCount: number;
   industryAverage: number;
+  criteriaCount: number;
+}
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+// Show 2 recommendations with problem visible, solution blurred
+const FREE_WITH_PROBLEM = 2;
+
+// Category display names
+const CATEGORY_NAMES: Record<string, string> = {
+  schemaMarkup: "Schema Markup",
+  semanticStructure: "Semantic Structure",
+  technicalFoundation: "Technical Foundation",
+  images: "Image Optimization",
+  contentClarity: "Content Clarity",
+  answerStructure: "Answer Structure",
+  authoritySignals: "Authority Signals",
+  scannability: "Scannability",
+  expertiseSignals: "Expertise Signals",
+  faqSchema: "FAQ Schema",
+  technicalSEO: "Technical SEO",
 };
 
-const getGradeInfo = (score: number) => {
-  if (score >= 90) return { grade: "A", label: "Elite", color: "text-green-600" };
-  if (score >= 80) return { grade: "B", label: "Strong", color: "text-green-500" };
-  if (score >= 70) return { grade: "C", label: "Average", color: "text-yellow-500" };
-  if (score >= 60) return { grade: "D", label: "Weak", color: "text-orange-500" };
-  return { grade: "F", label: "Critical", color: "text-red-600" };
+// Grade labels
+const GRADE_LABELS: Record<string, string> = {
+  A: "Excellent",
+  B: "Strong",
+  C: "Average",
+  D: "Needs Work",
+  F: "Critical",
 };
 
-const getScoreColor = (score: number) => {
-  if (score >= 80) return "#10b981";
-  if (score >= 60) return "#f59e0b";
-  return "#ef4444";
+// Grade colors
+const GRADE_COLORS: Record<string, string> = {
+  A: "text-green-600",
+  B: "text-green-500",
+  C: "text-yellow-500",
+  D: "text-orange-500",
+  F: "text-red-500",
 };
 
-const getCategoryDisplayName = (key: string): string => {
-  const names: Record<string, string> = {
-    schemaMarkup: "Schema markup",
-    semanticStructure: "Semantic structure",
-    technicalFoundation: "Technical foundation",
-    images: "Image optimization",
-    contentClarity: "Content clarity",
-    answerStructure: "Answer structure",
-    authoritySignals: "Authority signals",
-    scannability: "Scannability",
-    expertiseSignals: "Expertise signals",
-  };
-  return names[key] || key;
+// Priority colors
+const PRIORITY_COLORS: Record<string, string> = {
+  critical: "bg-red-100 text-red-700 border-red-200",
+  medium: "bg-yellow-100 text-yellow-700 border-yellow-200",
+  good: "bg-green-100 text-green-700 border-green-200",
 };
 
-const getPriorityIcon = (priority: string) => {
-  switch (priority) {
-    case "critical":
-      return <XCircle className="h-5 w-5 text-red-600 flex-shrink-0" />;
-    case "medium":
-      return <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0" />;
-    case "good":
-      return <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />;
-    default:
-      return <AlertCircle className="h-5 w-5 flex-shrink-0" />;
-  }
-};
-
-const getPriorityBadge = (priority: string) => {
-  const styles: Record<string, string> = {
-    critical: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    medium: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-    good: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-  };
-  const labels: Record<string, string> = { critical: "Critical", medium: "Medium", good: "Good" };
-  return (
-    <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded ${styles[priority] || ""}`}>
-      {labels[priority] || priority}
-    </span>
-  );
+const PRIORITY_ICONS: Record<string, React.ReactNode> = {
+  critical: <AlertCircle className="h-4 w-4" />,
+  medium: <TrendingUp className="h-4 w-4" />,
+  good: <CheckCircle2 className="h-4 w-4" />,
 };
 
 // =============================================================================
-// SPEEDOMETER GAUGE
+// HELPER COMPONENTS
 // =============================================================================
 
+// Speedometer gauge component
 const SpeedometerGauge = ({ score }: { score: number }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const width = canvas.width,
-      height = canvas.height;
-    const centerX = width / 2,
-      centerY = height - 40;
-    const radius = Math.min(width, height) - 60;
-
-    ctx.clearRect(0, 0, width, height);
-
-    // Background
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, Math.PI, 2 * Math.PI, false);
-    ctx.lineWidth = 30;
-    ctx.strokeStyle = "#e5e7eb";
-    ctx.stroke();
-
-    // Colored segments
-    const segments = [
-      { start: 0, end: 0.4, color: "#ef4444" },
-      { start: 0.4, end: 0.6, color: "#f59e0b" },
-      { start: 0.6, end: 0.7, color: "#eab308" },
-      { start: 0.7, end: 0.8, color: "#84cc16" },
-      { start: 0.8, end: 1, color: "#10b981" },
-    ];
-
-    for (const seg of segments) {
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, Math.PI + seg.start * Math.PI, Math.PI + seg.end * Math.PI, false);
-      ctx.lineWidth = 30;
-      ctx.strokeStyle = seg.color;
-      ctx.stroke();
-    }
-
-    // Ticks
-    for (let i = 0; i <= 10; i++) {
-      const angle = Math.PI + (i / 10) * Math.PI;
-      const x1 = centerX + Math.cos(angle) * (radius - 20);
-      const y1 = centerY + Math.sin(angle) * (radius - 20);
-      const x2 = centerX + Math.cos(angle) * (radius + 20);
-      const y2 = centerY + Math.sin(angle) * (radius + 20);
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.lineWidth = i % 5 === 0 ? 3 : 1;
-      ctx.strokeStyle = "#6b7280";
-      ctx.stroke();
-
-      if (i % 2 === 0) {
-        const tx = centerX + Math.cos(angle) * (radius + 40);
-        const ty = centerY + Math.sin(angle) * (radius + 40);
-        ctx.font = "14px system-ui, -apple-system, sans-serif";
-        ctx.fillStyle = "#6b7280";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText((i * 10).toString(), tx, ty);
-      }
-    }
-
-    // Needle
-    const needleAngle = Math.PI + (score / 100) * Math.PI;
-    ctx.save();
-    ctx.translate(centerX, centerY);
-    ctx.rotate(needleAngle - Math.PI / 2);
-    ctx.beginPath();
-    ctx.moveTo(-4, 0);
-    ctx.lineTo(0, -(radius - 40));
-    ctx.lineTo(4, 0);
-    ctx.closePath();
-    ctx.fillStyle = "#1f2937";
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(0, 0, 12, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.restore();
-  }, [score]);
+  const rotation = -90 + (score / 100) * 180;
 
   return (
-    <div className="relative">
-      <canvas ref={canvasRef} width={400} height={250} className="mx-auto max-w-full" />
+    <div className="relative w-64 h-40 mx-auto">
+      <svg viewBox="0 0 200 120" className="w-full h-full">
+        {/* Background arc */}
+        <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e5e7eb" strokeWidth="12" strokeLinecap="round" />
+        {/* Red zone (0-40) */}
+        <path d="M 20 100 A 80 80 0 0 1 52 38" fill="none" stroke="#ef4444" strokeWidth="12" strokeLinecap="round" />
+        {/* Orange zone (40-60) */}
+        <path d="M 52 38 A 80 80 0 0 1 100 20" fill="none" stroke="#f97316" strokeWidth="12" strokeLinecap="round" />
+        {/* Yellow zone (60-80) */}
+        <path d="M 100 20 A 80 80 0 0 1 148 38" fill="none" stroke="#eab308" strokeWidth="12" strokeLinecap="round" />
+        {/* Green zone (80-100) */}
+        <path d="M 148 38 A 80 80 0 0 1 180 100" fill="none" stroke="#22c55e" strokeWidth="12" strokeLinecap="round" />
+        {/* Needle */}
+        <g transform={`rotate(${rotation}, 100, 100)`}>
+          <line x1="100" y1="100" x2="100" y2="35" stroke="#1f2937" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="100" cy="100" r="8" fill="#1f2937" />
+        </g>
+        {/* Score labels */}
+        <text x="25" y="115" fontSize="12" fill="#6b7280">
+          20
+        </text>
+        <text x="165" y="115" fontSize="12" fill="#6b7280">
+          80
+        </text>
+      </svg>
+      {/* Center score display */}
       <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center">
-        <div className="text-5xl font-bold" style={{ color: getScoreColor(score) }}>
-          {score}
-        </div>
-        <div className="text-sm text-muted-foreground">out of 100</div>
+        <div className="text-5xl font-bold text-gray-900">{score}</div>
+        <div className="text-sm text-gray-500">out of 100</div>
       </div>
     </div>
   );
 };
 
 // =============================================================================
-// CODE BLOCK
+// UNLOCK EMAIL DIALOG
 // =============================================================================
 
-const CodeBlock = ({ code }: { code: string }) => {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-  return (
-    <div className="relative mt-2">
-      <Button size="sm" variant="ghost" className="absolute top-2 right-2 z-10" onClick={handleCopy}>
-        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-      </Button>
-      <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-        <code>{code}</code>
-      </pre>
-    </div>
-  );
-};
-
-// =============================================================================
-// FREE RECOMMENDATION (shows problem only, solution blurred)
-// =============================================================================
-
-const FreeRecommendation = ({ rec, onUnlock }: { rec: Recommendation; onUnlock: () => void }) => {
-  return (
-    <div className="border rounded-lg p-4 mb-3">
-      <div className="flex items-start gap-3">
-        {getPriorityIcon(rec.priority)}
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap mb-2">
-            {getPriorityBadge(rec.priority)}
-            <span className="font-semibold">{rec.title}</span>
-            {rec.pointsLost < 0 && <span className="text-red-600 text-sm">({rec.pointsLost} pts)</span>}
-          </div>
-
-          {/* Problem - FREE */}
-          {rec.problem && (
-            <div className="mb-3">
-              <p className="text-sm font-medium text-muted-foreground">Problem:</p>
-              <p className="text-sm">{rec.problem}</p>
-            </div>
-          )}
-
-          {/* Solution - BLURRED */}
-          <div className="relative">
-            <div className="filter blur-sm pointer-events-none select-none bg-muted/50 p-3 rounded">
-              <p className="text-sm font-medium">How to fix:</p>
-              <p className="text-sm text-muted-foreground">Step-by-step instructions to fix this issue...</p>
-              <p className="text-sm font-medium mt-2">Code example:</p>
-              <p className="text-sm text-muted-foreground font-mono">{'<script type="application/ld+json">...'}</p>
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Button onClick={onUnlock} size="sm" variant="secondary" className="gap-2">
-                <Lock className="h-4 w-4" />
-                Unlock solution
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// =============================================================================
-// LOCKED RECOMMENDATION (fully blurred)
-// =============================================================================
-
-const LockedRecommendation = ({ rec, onUnlock }: { rec: Recommendation; onUnlock: () => void }) => (
-  <div className="relative border rounded-lg p-4 mb-3">
-    <div className="filter blur-sm pointer-events-none select-none">
-      <div className="flex items-start gap-3">
-        {getPriorityIcon(rec.priority)}
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            {getPriorityBadge(rec.priority)}
-            <span className="font-semibold">{rec.title}</span>
-          </div>
-          <p className="text-sm text-muted-foreground mt-2">Problem description and solution steps...</p>
-        </div>
-      </div>
-    </div>
-    <div className="absolute inset-0 flex items-center justify-center bg-background/60 rounded-lg">
-      <Button onClick={onUnlock} variant="outline" className="gap-2">
-        <Lock className="h-4 w-4" />
-        Unlock with email
-      </Button>
-    </div>
-  </div>
-);
-
-// =============================================================================
-// UNLOCKED RECOMMENDATION (full details)
-// =============================================================================
-
-const UnlockedRecommendation = ({ rec }: { rec: Recommendation }) => (
-  <AccordionItem value={rec.id}>
-    <AccordionTrigger>
-      <div className="flex items-start gap-3 text-left w-full">
-        {getPriorityIcon(rec.priority)}
-        <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            {getPriorityBadge(rec.priority)}
-            <span className="font-semibold">{rec.title}</span>
-            {rec.pointsLost < 0 && <span className="text-red-600 text-sm">({rec.pointsLost} pts)</span>}
-          </div>
-        </div>
-      </div>
-    </AccordionTrigger>
-    <AccordionContent>
-      <div className="pl-8 space-y-4 pt-2">
-        {rec.problem && (
-          <div>
-            <h4 className="font-semibold mb-1">Problem:</h4>
-            <p className="text-sm text-muted-foreground">{rec.problem}</p>
-          </div>
-        )}
-        {ensureArray(rec.howToFix).length > 0 && (
-          <div>
-            <h4 className="font-semibold mb-1">How to fix:</h4>
-            <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-              {ensureArray(rec.howToFix).map((step, i) => (
-                <li key={i}>{step}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {rec.codeExample && (
-          <div>
-            <h4 className="font-semibold mb-1">Code example:</h4>
-            <CodeBlock code={rec.codeExample} />
-          </div>
-        )}
-        {rec.expectedImprovement && (
-          <p className="text-sm font-semibold text-green-600">Expected: {rec.expectedImprovement}</p>
-        )}
-      </div>
-    </AccordionContent>
-  </AccordionItem>
-);
-
-// =============================================================================
-// EMAIL UNLOCK DIALOG
-// =============================================================================
-
-const EmailUnlockDialog = ({
-  open,
-  onOpenChange,
-  onUnlock,
-  website,
-  testId,
-}: {
+interface UnlockDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUnlock: () => void;
   website: string;
-  testId: string | null;
-}) => {
+  testId: string;
+}
+
+const UnlockEmailDialog = ({ open, onOpenChange, onUnlock, website, testId }: UnlockDialogProps) => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Pre-fill email if previously unlocked
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("fi_unlocked_email");
+    if (savedEmail) {
+      setEmail(savedEmail);
+    }
+  }, []);
+
+  const handleSubmit = async () => {
     setError("");
 
     if (!email.trim()) {
-      setError("Please enter your email");
+      setError("Please enter your email address");
       return;
     }
 
-    // Basic email validation
+    // Strict email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      setError("Please enter a valid email");
+      setError("Please enter a valid email address (e.g., you@example.com)");
       return;
     }
 
@@ -425,17 +218,25 @@ const EmailUnlockDialog = ({
 
       if (insertError) {
         console.error("Supabase insert error:", insertError);
-        throw insertError;
+        // Don't throw - still unlock for user but log the error
       }
 
       // Store in localStorage
       localStorage.setItem("fi_unlocked_email", email.trim().toLowerCase());
 
+      toast({
+        title: "Results unlocked!",
+        description: "You now have access to all recommendations and code examples.",
+      });
+
       onUnlock();
       onOpenChange(false);
     } catch (err) {
-      console.error("Email submit error:", err);
-      setError("Failed to save. Please try again.");
+      console.error("Unlock error:", err);
+      // Still unlock even if save fails
+      localStorage.setItem("fi_unlocked_email", email.trim().toLowerCase());
+      onUnlock();
+      onOpenChange(false);
     } finally {
       setIsSubmitting(false);
     }
@@ -443,74 +244,90 @@ const EmailUnlockDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>🔓 Unlock all recommendations</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            <Unlock className="h-5 w-5 text-primary" />
+            Unlock all recommendations
+          </DialogTitle>
           <DialogDescription>Get step-by-step fixes and code examples for all issues.</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
+
+        <div className="space-y-4">
+          <div>
             <Label htmlFor="unlock-email">Email address</Label>
             <Input
               id="unlock-email"
               type="email"
-              placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              style={{ fontSize: "16px" }}
-              className="h-12"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError("");
+              }}
+              placeholder="you@example.com"
+              className={error ? "border-red-500" : ""}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
             />
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
           </div>
 
-          <div className="bg-muted p-3 rounded-lg text-sm">
+          <div className="bg-muted/50 p-3 rounded-lg text-sm">
             <p className="font-medium mb-2">You'll get:</p>
-            <ul className="text-muted-foreground space-y-1">
-              <li>✓ All recommendations unlocked</li>
-              <li>✓ Copy-paste code examples</li>
-              <li>✓ Priority-sorted action list</li>
-              <li>✓ Downloadable report</li>
+            <ul className="space-y-1 text-muted-foreground">
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                All recommendations unlocked
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                Copy-paste code examples
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                Priority-sorted action list
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+                Downloadable report
+              </li>
             </ul>
           </div>
 
           <p className="text-xs text-muted-foreground">No spam. We only email about your results.</p>
 
-          <Button type="submit" className="w-full h-12" disabled={isSubmitting}>
+          <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Unlocking...
               </>
             ) : (
               "Unlock all recommendations"
             )}
           </Button>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
 
 // =============================================================================
-// TESTIMONIAL FEEDBACK DIALOG (with name, permission, backlink)
+// FEEDBACK DIALOG (with testimonial option)
 // =============================================================================
 
-const TestimonialFeedbackDialog = ({
-  open,
-  onOpenChange,
-  website,
-  testId,
-  score,
-}: {
+interface FeedbackDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  testId: string;
   website: string;
-  testId: string | null;
   score: number;
-}) => {
+}
+
+const FeedbackDialog = ({ open, onOpenChange, testId, website, score }: FeedbackDialogProps) => {
+  const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     email: localStorage.getItem("fi_unlocked_email") || "",
@@ -520,57 +337,68 @@ const TestimonialFeedbackDialog = ({
     wouldRecommend: "",
     improvements: "",
     canUseName: false,
-    canUseAsTestimonial: false,
-    websiteForBacklink: "",
+    canFeatureTestimonial: false,
+    backlinkUrl: "",
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
+    if (!formData.email.trim()) {
+      toast({ title: "Email required", description: "Please enter your email", variant: "destructive" });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const { error } = await supabase.from("feedback").insert({
-        test_id: testId || "unknown",
+        test_id: testId,
         website: website,
-        email: formData.email || "anonymous@foundindex.local",
+        email: formData.email.trim().toLowerCase(),
         score: score,
         user_type: formData.userType,
-        describe_to_colleague: `Name: ${formData.name} | Most useful: ${formData.mostUseful} | Would recommend: ${formData.wouldRecommend} | Can use name: ${formData.canUseName} | Can use as testimonial: ${formData.canUseAsTestimonial} | Backlink site: ${formData.websiteForBacklink}`,
         surprising_result: formData.surprisingResult,
-        preventing_improvements: formData.improvements,
+        most_useful: formData.mostUseful,
+        would_recommend: formData.wouldRecommend,
+        improvements: formData.improvements,
+        can_use_name: formData.canUseName,
+        can_feature_testimonial: formData.canFeatureTestimonial,
+        backlink_url: formData.backlinkUrl,
+        name: formData.name,
       });
 
       if (error) {
-        console.error("Feedback insert error:", error);
-        throw error;
+        console.error("Feedback save error:", error);
       }
 
-      setIsSubmitted(true);
+      setSubmitted(true);
+      toast({
+        title: "Thank you!",
+        description: formData.canFeatureTestimonial
+          ? "We'll be in touch about featuring your testimonial and adding your backlink."
+          : "Your feedback helps us improve FoundIndex.",
+      });
+
+      setTimeout(() => {
+        onOpenChange(false);
+        setSubmitted(false);
+      }, 2000);
     } catch (err) {
       console.error("Feedback error:", err);
-      alert("Failed to submit. Please try again.");
+      toast({ title: "Error", description: "Could not save feedback. Please try again.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (isSubmitted) {
+  if (submitted) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md text-center">
-          <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-          <DialogTitle>Thank you!</DialogTitle>
-          <DialogDescription>
-            Your feedback helps us improve FoundIndex.
-            {formData.canUseAsTestimonial && formData.websiteForBacklink && (
-              <span className="block mt-2 text-green-600">
-                We'll add your testimonial with a backlink to your site!
-              </span>
-            )}
-          </DialogDescription>
-          <Button onClick={() => onOpenChange(false)} className="mt-4">
-            Close
-          </Button>
+        <DialogContent>
+          <div className="text-center py-8">
+            <CheckCircle2 className="h-12 w-12 text-green-500 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold">Thank you!</h3>
+            <p className="text-muted-foreground">Your feedback has been submitted.</p>
+          </div>
         </DialogContent>
       </Dialog>
     );
@@ -578,372 +406,446 @@ const TestimonialFeedbackDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>💬 Share your feedback</DialogTitle>
-          <DialogDescription>Help us improve — get featured with a backlink to your site!</DialogDescription>
+          <DialogTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Share your feedback
+          </DialogTitle>
+          <DialogDescription>Help us improve FoundIndex. Your feedback is valuable!</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name & Email */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="fb-name">Your name</Label>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="fb-name">Name (optional)</Label>
               <Input
                 id="fb-name"
-                placeholder="Jane Smith"
                 value={formData.name}
-                onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
-                style={{ fontSize: "16px" }}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Your name"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="fb-email">Email</Label>
+            <div>
+              <Label htmlFor="fb-email">Email *</Label>
               <Input
                 id="fb-email"
                 type="email"
-                placeholder="you@example.com"
                 value={formData.email}
-                onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
-                style={{ fontSize: "16px" }}
+                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                placeholder="you@example.com"
               />
             </div>
           </div>
 
-          {/* User Type - Updated categories */}
-          <div className="space-y-2">
+          <div>
             <Label>What best describes you?</Label>
-            <RadioGroup value={formData.userType} onValueChange={(v) => setFormData((p) => ({ ...p, userType: v }))}>
+            <RadioGroup
+              value={formData.userType}
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, userType: value }))}
+              className="grid grid-cols-2 gap-2 mt-2"
+            >
               {[
                 { value: "blogger", label: "Blogger" },
-                { value: "saas_founder", label: "SaaS / Startup founder" },
+                { value: "saas_founder", label: "SaaS/Startup founder" },
                 { value: "seo_professional", label: "SEO professional" },
                 { value: "content_agency", label: "Content agency" },
-                { value: "consultant", label: "Consultant / Freelancer" },
-              ].map((opt) => (
-                <div key={opt.value} className="flex items-center space-x-2">
-                  <RadioGroupItem value={opt.value} id={opt.value} />
-                  <Label htmlFor={opt.value} className="font-normal cursor-pointer">
-                    {opt.label}
+                { value: "consultant", label: "Consultant/Freelancer" },
+                { value: "other", label: "Other" },
+              ].map((option) => (
+                <div key={option.value} className="flex items-center space-x-2">
+                  <RadioGroupItem value={option.value} id={option.value} />
+                  <Label htmlFor={option.value} className="text-sm font-normal cursor-pointer">
+                    {option.label}
                   </Label>
                 </div>
               ))}
             </RadioGroup>
           </div>
 
-          {/* Questions */}
-          <div className="space-y-2">
-            <Label htmlFor="surprising">What surprised you most about your results?</Label>
+          <div>
+            <Label htmlFor="fb-surprising">Was anything surprising about your score?</Label>
             <Textarea
-              id="surprising"
-              placeholder="I didn't realize..."
+              id="fb-surprising"
               value={formData.surprisingResult}
-              onChange={(e) => setFormData((p) => ({ ...p, surprisingResult: e.target.value }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, surprisingResult: e.target.value }))}
+              placeholder="Tell us what surprised you..."
               rows={2}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="useful">What did you find most useful?</Label>
+          <div>
+            <Label htmlFor="fb-useful">What was most useful?</Label>
             <Textarea
-              id="useful"
-              placeholder="The code examples..."
+              id="fb-useful"
               value={formData.mostUseful}
-              onChange={(e) => setFormData((p) => ({ ...p, mostUseful: e.target.value }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, mostUseful: e.target.value }))}
+              placeholder="Which recommendations helped most..."
               rows={2}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="recommend">Would you recommend FoundIndex? Why?</Label>
-            <Textarea
-              id="recommend"
-              placeholder="Yes, because..."
+          <div>
+            <Label>Would you recommend FoundIndex?</Label>
+            <RadioGroup
               value={formData.wouldRecommend}
-              onChange={(e) => setFormData((p) => ({ ...p, wouldRecommend: e.target.value }))}
-              rows={2}
-            />
+              onValueChange={(value) => setFormData((prev) => ({ ...prev, wouldRecommend: value }))}
+              className="flex gap-4 mt-2"
+            >
+              {["Definitely", "Probably", "Not sure", "No"].map((option) => (
+                <div key={option} className="flex items-center space-x-2">
+                  <RadioGroupItem value={option.toLowerCase()} id={`rec-${option}`} />
+                  <Label htmlFor={`rec-${option}`} className="text-sm font-normal cursor-pointer">
+                    {option}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="improve">What would make this more valuable?</Label>
+          <div>
+            <Label htmlFor="fb-improvements">What would make this more useful?</Label>
             <Textarea
-              id="improve"
-              placeholder="It would be great if..."
+              id="fb-improvements"
               value={formData.improvements}
-              onChange={(e) => setFormData((p) => ({ ...p, improvements: e.target.value }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, improvements: e.target.value }))}
+              placeholder="Features, improvements, or suggestions..."
               rows={2}
             />
           </div>
 
-          {/* Testimonial permissions */}
-          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg space-y-3">
-            <p className="text-sm font-medium text-green-800 dark:text-green-300">
-              🎁 Get a backlink! If we feature your testimonial, we'll link to your site.
-            </p>
+          <div className="border-t pt-4 space-y-3">
+            <p className="text-sm font-medium">Testimonial permissions</p>
 
-            <div className="flex items-start space-x-3">
+            <div className="flex items-start space-x-2">
               <Checkbox
-                id="use-name"
+                id="can-use-name"
                 checked={formData.canUseName}
-                onCheckedChange={(checked) => setFormData((p) => ({ ...p, canUseName: checked as boolean }))}
+                onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, canUseName: checked as boolean }))}
               />
-              <Label htmlFor="use-name" className="text-sm cursor-pointer">
+              <Label htmlFor="can-use-name" className="text-sm font-normal cursor-pointer">
                 You can use my name with my feedback
               </Label>
             </div>
 
-            <div className="flex items-start space-x-3">
+            <div className="flex items-start space-x-2">
               <Checkbox
-                id="use-testimonial"
-                checked={formData.canUseAsTestimonial}
-                onCheckedChange={(checked) => setFormData((p) => ({ ...p, canUseAsTestimonial: checked as boolean }))}
+                id="can-feature"
+                checked={formData.canFeatureTestimonial}
+                onCheckedChange={(checked) =>
+                  setFormData((prev) => ({ ...prev, canFeatureTestimonial: checked as boolean }))
+                }
               />
-              <Label htmlFor="use-testimonial" className="text-sm cursor-pointer">
+              <Label htmlFor="can-feature" className="text-sm font-normal cursor-pointer">
                 You can feature my feedback as a testimonial on your site
               </Label>
             </div>
 
-            {formData.canUseAsTestimonial && (
-              <div className="space-y-2 pt-2">
-                <Label htmlFor="backlink" className="text-sm">
-                  Your website (for backlink)
+            {formData.canFeatureTestimonial && (
+              <div className="ml-6">
+                <Label htmlFor="backlink-url" className="text-sm">
+                  Your website (we'll add a backlink as thanks!)
                 </Label>
                 <Input
-                  id="backlink"
-                  placeholder="https://yoursite.com"
-                  value={formData.websiteForBacklink}
-                  onChange={(e) => setFormData((p) => ({ ...p, websiteForBacklink: e.target.value }))}
-                  style={{ fontSize: "16px" }}
+                  id="backlink-url"
+                  value={formData.backlinkUrl}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, backlinkUrl: e.target.value }))}
+                  placeholder="https://yourwebsite.com"
+                  className="mt-1"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Featured testimonials get a dofollow backlink from our site.
+                </p>
               </div>
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting}>
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Submitting...
               </>
             ) : (
               "Submit feedback"
             )}
           </Button>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
 
 // =============================================================================
-// AI REWRITE TEASER
+// RECOMMENDATION COMPONENTS
 // =============================================================================
 
-const AIRewriteTeaser = ({ onContactClick }: { onContactClick: () => void }) => (
-  <Card className="mb-8 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border-purple-200 dark:border-purple-800">
-    <CardHeader>
-      <CardTitle className="flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-purple-600" />
-        Coming soon: AI rewrite
-      </CardTitle>
-      <CardDescription>Don't just know what's wrong — get it fixed automatically</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p className="text-sm text-muted-foreground mb-4">
-        Our AI will rewrite your content to be AI-search optimized. Get ready-to-use HTML or plain text.
-      </p>
-      <Button variant="outline" onClick={onContactClick} className="gap-2">
-        <ExternalLink className="h-4 w-4" />
-        Get notified when it launches
+// FREE: Shows problem, blurs solution
+const FreeRecommendation = ({ rec, onUnlock }: { rec: Recommendation; onUnlock: () => void }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <Card
+      className="border-l-4"
+      style={{
+        borderLeftColor: rec.priority === "critical" ? "#ef4444" : rec.priority === "medium" ? "#f59e0b" : "#22c55e",
+      }}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-start gap-3 flex-1">
+            <div className={`p-1.5 rounded ${PRIORITY_COLORS[rec.priority]}`}>{PRIORITY_ICONS[rec.priority]}</div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className={PRIORITY_COLORS[rec.priority]}>
+                  {rec.priority}
+                </Badge>
+                <h4 className="font-medium">{rec.title}</h4>
+              </div>
+              <p className="text-sm text-muted-foreground">{rec.problem}</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
+            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </div>
+
+        {isExpanded && (
+          <div className="mt-4 pt-4 border-t">
+            {/* Solution is blurred */}
+            <div className="relative">
+              <div className="filter blur-sm pointer-events-none select-none bg-muted/50 p-4 rounded">
+                <p className="font-medium mb-2">How to fix:</p>
+                <ul className="list-disc list-inside text-sm space-y-1">
+                  <li>Step 1: Implementation details hidden...</li>
+                  <li>Step 2: Code example locked...</li>
+                  <li>Step 3: Expected improvement hidden...</li>
+                </ul>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Button onClick={onUnlock} variant="secondary" className="gap-2">
+                  <Lock className="h-4 w-4" />
+                  Unlock solution
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// LOCKED: Fully blurred
+const LockedRecommendation = ({ rec, onUnlock }: { rec: Recommendation; onUnlock: () => void }) => (
+  <Card className="relative overflow-hidden">
+    <div className="filter blur-sm pointer-events-none select-none p-4">
+      <div className="flex items-start gap-3">
+        <div className="p-1.5 rounded bg-gray-100">
+          <AlertCircle className="h-4 w-4 text-gray-400" />
+        </div>
+        <div>
+          <Badge variant="outline" className="mb-1">
+            Priority issue
+          </Badge>
+          <h4 className="font-medium">Recommendation title hidden</h4>
+          <p className="text-sm text-muted-foreground">Problem description locked...</p>
+        </div>
+      </div>
+    </div>
+    <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+      <Button onClick={onUnlock} variant="outline" className="gap-2">
+        <Lock className="h-4 w-4" />
+        Unlock with email
       </Button>
-    </CardContent>
+    </div>
   </Card>
 );
 
+// UNLOCKED: Full details with accordion
+const UnlockedRecommendation = ({ rec }: { rec: Recommendation }) => {
+  const [copied, setCopied] = useState(false);
+
+  const copyCode = () => {
+    if (rec.codeExample) {
+      navigator.clipboard.writeText(rec.codeExample);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  return (
+    <Accordion type="single" collapsible className="w-full">
+      <AccordionItem value={rec.id} className="border rounded-lg">
+        <AccordionTrigger className="px-4 hover:no-underline">
+          <div className="flex items-center gap-3 text-left">
+            <div className={`p-1.5 rounded ${PRIORITY_COLORS[rec.priority]}`}>{PRIORITY_ICONS[rec.priority]}</div>
+            <div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className={PRIORITY_COLORS[rec.priority]}>
+                  {rec.priority}
+                </Badge>
+                <span className="font-medium">{rec.title}</span>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">{rec.problem}</p>
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent className="px-4 pb-4">
+          <div className="space-y-4">
+            <div>
+              <h5 className="font-medium mb-2">How to fix:</h5>
+              <ul className="list-disc list-inside text-sm space-y-1">
+                {rec.howToFix.map((step, i) => (
+                  <li key={i}>{step}</li>
+                ))}
+              </ul>
+            </div>
+
+            {rec.codeExample && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h5 className="font-medium">Code example:</h5>
+                  <Button variant="ghost" size="sm" onClick={copyCode}>
+                    <Copy className="h-4 w-4 mr-1" />
+                    {copied ? "Copied!" : "Copy"}
+                  </Button>
+                </div>
+                <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
+                  <code>{rec.codeExample}</code>
+                </pre>
+              </div>
+            )}
+
+            {rec.expectedImprovement && (
+              <p className="text-sm text-green-600 font-medium">Expected: {rec.expectedImprovement}</p>
+            )}
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  );
+};
+
 // =============================================================================
-// MAIN COMPONENT
+// MAIN RESULTS PAGE
 // =============================================================================
 
-export default function Results() {
+const Results = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  const testId = searchParams.get("testId");
+  const urlParam = searchParams.get("url");
+
   const [resultData, setResultData] = useState<ResultData | null>(null);
-  const [website, setWebsite] = useState<string>("");
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [shareTooltip, setShareTooltip] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
 
-  const url = searchParams.get("url") || "";
-  const testId = searchParams.get("testId");
-
-  // Show 2 recommendations with problem visible (solution blurred)
-  const FREE_WITH_PROBLEM = 2;
-
+  // Check if already unlocked
   useEffect(() => {
-    analytics.pageView("results");
-
-    // Check if already unlocked
-    if (localStorage.getItem("fi_unlocked_email")) {
+    const savedEmail = localStorage.getItem("fi_unlocked_email");
+    if (savedEmail) {
       setIsUnlocked(true);
     }
+  }, []);
 
-    if (!testId) {
-      setLoadError("Missing test ID. Please start a new test.");
-      setIsLoading(false);
-      return;
-    }
+  // Fetch results
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!testId) {
+        setError("No test ID provided");
+        setIsLoading(false);
+        return;
+      }
 
-    let isCancelled = false;
+      console.log("[Results] Loading test:", testId);
 
-    const loadResults = async () => {
       try {
-        console.log("[Results] Loading test:", testId);
+        // First try to get from URL params (fresh result)
+        const urlData = searchParams.get("data");
+        if (urlData) {
+          try {
+            const parsed = JSON.parse(decodeURIComponent(urlData));
+            setResultData(parsed);
+            setIsLoading(false);
+            return;
+          } catch {
+            // Continue to fetch from DB
+          }
+        }
 
-        const { data, error } = await supabase.from("test_history").select("*").eq("test_id", testId).maybeSingle();
+        // Fetch from Supabase
+        const { data, error: fetchError } = await supabase
+          .from("test_history")
+          .select("*")
+          .eq("test_id", testId)
+          .single();
 
-        if (error) {
-          console.error("[Results] Supabase error:", error);
-          throw error;
+        if (fetchError) {
+          console.error("[Results] Supabase error:", fetchError);
+          throw fetchError;
         }
 
         if (!data) {
           console.log("[Results] No data found for test:", testId);
-          setLoadError("No results found. Please run a new analysis.");
-          return;
+          throw new Error("Test not found");
         }
 
         console.log("[Results] Data loaded:", data);
 
-        const testedWebsite = (data as { website?: string }).website || url;
-        setWebsite(testedWebsite);
-
-        const categoriesSource = ((data as { categories?: unknown }).categories || {}) as Record<string, unknown>;
-        const testType = ((data as { test_type?: string }).test_type || "homepage") as "homepage" | "blog";
-
-        const categories: CategorySummary[] = [];
-        for (const [key, value] of Object.entries(categoriesSource)) {
-          if (value && typeof value === "object") {
-            const cat = value as {
-              score?: number;
-              max?: number;
-              percentage?: number;
-              details?: unknown;
-              breakdown?: { summary?: string; scores?: Array<{ category: string; found: boolean }> };
-            };
-            categories.push({
-              name: getCategoryDisplayName(key),
-              key,
-              score: cat.score ?? 0,
-              max: cat.max ?? 0,
-              percentage: cat.percentage ?? Math.round(((cat.score || 0) / (cat.max || 1)) * 100),
-              details: cat.details,
-              breakdown: cat.breakdown,
-            });
-          }
-        }
-
-        // Sort categories
-        const deterministicKeys = ["schemaMarkup", "semanticStructure", "technicalFoundation", "images"];
-        categories.sort((a, b) => {
-          return (deterministicKeys.includes(a.key) ? 0 : 1) - (deterministicKeys.includes(b.key) ? 0 : 1);
+        setResultData({
+          testId: data.test_id,
+          score: data.score,
+          grade: data.grade,
+          detectedType: data.detected_type,
+          requestedType: data.test_type,
+          categories: data.categories as Record<string, Category>,
+          recommendations: data.recommendations as Recommendation[],
+          industryAverage: 58,
+          criteriaCount: data.test_type === "homepage" ? 47 : 52,
         });
-
-        const score = (data as { score?: number }).score ?? 0;
-        const gradeMeta = getGradeInfo(score);
-
-        const recommendations = ((data as { recommendations?: unknown[] }).recommendations || []).map(
-          (rec: unknown, idx: number) => {
-            const r = rec as Record<string, unknown>;
-            return {
-              id: (r.id as string) || `rec-${idx}`,
-              priority: (r.priority as string) || "medium",
-              title: (r.title as string) || "Recommendation",
-              pointsLost: (r.pointsLost as number) || 0,
-              problem: (r.problem as string) || "",
-              howToFix: r.howToFix || [],
-              codeExample: (r.codeExample as string) || "",
-              expectedImprovement: (r.expectedImprovement as string) || "",
-            };
-          },
-        ) as Recommendation[];
-
-        // Calculate industry average
-        let industryAverage = 58;
-        try {
-          const { data: avgData } = await supabase
-            .from("test_history")
-            .select("score")
-            .eq("test_type", testType)
-            .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-
-          if (avgData && avgData.length > 5) {
-            industryAverage = Math.round(
-              avgData.map((d: { score: number }) => d.score).reduce((a, b) => a + b, 0) / avgData.length,
-            );
-          }
-        } catch (e) {
-          console.warn("[Results] Could not calc industry avg:", e);
-        }
-
-        if (!isCancelled) {
-          setResultData({
-            score,
-            grade: gradeMeta.grade,
-            gradeLabel: gradeMeta.label,
-            testType,
-            categories,
-            recommendations,
-            criteriaCount: testType === "homepage" ? 47 : 52,
-            industryAverage,
-          });
-        }
-      } catch (error) {
-        console.error("[Results] Failed to load:", error);
-        if (!isCancelled) {
-          setLoadError("Unable to load results. Please try again.");
-        }
+      } catch (err) {
+        console.error("[Results] Error:", err);
+        setError("Could not load results. Please try testing again.");
       } finally {
-        if (!isCancelled) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
 
-    loadResults();
-    return () => {
-      isCancelled = true;
-    };
-  }, [testId, url]);
+    fetchResults();
+  }, [testId, searchParams]);
 
-  // Share handler
+  // Share functionality
   const handleShare = async () => {
-    const shareUrl = window.location.href;
     const shareText = `My website scored ${resultData?.score}/100 on FoundIndex AI visibility test! Check yours:`;
+    const shareUrl = window.location.href;
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "My FoundIndex Score",
+          title: "FoundIndex Score",
           text: shareText,
           url: shareUrl,
         });
-        return;
-      } catch (e) {
-        // User cancelled or not supported
+      } catch {
+        // User cancelled or error
       }
+    } else {
+      navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+      setCopiedShare(true);
+      toast({ title: "Copied to clipboard!" });
+      setTimeout(() => setCopiedShare(false), 2000);
     }
-
-    // Fallback: copy to clipboard
-    await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-    setShareTooltip(true);
-    setTimeout(() => setShareTooltip(false), 2000);
   };
 
-  // Download handler
+  // Download report
   const handleDownload = () => {
     if (!isUnlocked) {
       setShowUnlockDialog(true);
@@ -954,241 +856,175 @@ export default function Results() {
 
     const report = `
 FOUNDINDEX AI VISIBILITY REPORT
-${"=".repeat(50)}
-
-Website: ${website}
-Test Type: ${resultData.testType === "homepage" ? "Homepage" : "Blog Post"}
+================================
+Website: ${urlParam || "Unknown"}
 Score: ${resultData.score}/100
-Grade: ${resultData.grade} (${resultData.gradeLabel})
-Industry Average: ${resultData.industryAverage}
+Grade: ${resultData.grade}
+Test Type: ${resultData.requestedType}
+Date: ${new Date().toLocaleDateString()}
 
-${"=".repeat(50)}
 CATEGORY BREAKDOWN
-${"=".repeat(50)}
+------------------
+${Object.entries(resultData.categories)
+  .map(([key, cat]) => `${CATEGORY_NAMES[key] || key}: ${cat.score}/${cat.max} (${cat.percentage}%)`)
+  .join("\n")}
 
-${resultData.categories.map((c) => `${c.name}: ${c.score}/${c.max} (${c.percentage}%)`).join("\n")}
-
-${"=".repeat(50)}
-ALL RECOMMENDATIONS
-${"=".repeat(50)}
-
+RECOMMENDATIONS
+---------------
 ${resultData.recommendations
   .map(
-    (r, i) => `
-${i + 1}. [${r.priority.toUpperCase()}] ${r.title}
-   Points lost: ${r.pointsLost}
-   
-   Problem:
-   ${r.problem}
-   
-   How to fix:
-   ${ensureArray(r.howToFix)
-     .map((s) => `   • ${s}`)
-     .join("\n")}
-   
-   ${r.codeExample ? `Code example:\n   ${r.codeExample.split("\n").join("\n   ")}` : ""}
-   
-   Expected improvement: ${r.expectedImprovement}
+    (rec, i) => `
+${i + 1}. [${rec.priority.toUpperCase()}] ${rec.title}
+   Problem: ${rec.problem}
+   Fix: ${rec.howToFix.join("; ")}
+   ${rec.codeExample ? `Code: ${rec.codeExample}` : ""}
+   Expected: ${rec.expectedImprovement}
 `,
   )
-  .join("\n---\n")}
+  .join("\n")}
 
-${"=".repeat(50)}
-Generated by FoundIndex.com on ${new Date().toLocaleDateString()}
+Generated by FoundIndex.com
     `.trim();
 
     const blob = new Blob([report], { type: "text/plain" });
-    const downloadUrl = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = `foundindex-report-${website.replace(/[^a-z0-9]/gi, "-")}-${new Date().toISOString().split("T")[0]}.txt`;
-    document.body.appendChild(a);
+    a.href = url;
+    a.download = `foundindex-report-${new Date().toISOString().split("T")[0]}.txt`;
     a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(downloadUrl);
+    URL.revokeObjectURL(url);
   };
-
-  const gradeInfo = getGradeInfo(resultData?.score ?? 0);
 
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="container mx-auto px-4 py-8 max-w-5xl">
-          <Skeleton className="h-20 w-full mb-4" />
-          <Skeleton className="h-64 w-96 mx-auto mb-4" />
-          <Skeleton className="h-32 w-full mb-4" />
-          <Skeleton className="h-96 w-full" />
-        </main>
+        <div className="container mx-auto px-4 py-16 text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
+          <p className="mt-4 text-muted-foreground">Loading your results...</p>
+        </div>
       </div>
     );
   }
 
   // Error state
-  if (loadError || !resultData) {
+  if (error || !resultData) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="container mx-auto px-4 py-8 max-w-3xl">
-          <Alert className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{loadError || "No results available."}</AlertDescription>
-          </Alert>
-          <Button onClick={() => navigate("/")} className="w-full md:w-auto">
-            Back to homepage
+        <div className="container mx-auto px-4 py-16 text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
+          <h1 className="text-2xl font-bold mt-4">Results Not Found</h1>
+          <p className="text-muted-foreground mt-2">{error}</p>
+          <Button onClick={() => navigate("/")} className="mt-6">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Test another website
           </Button>
-        </main>
+        </div>
       </div>
     );
   }
 
-  // Split recommendations
+  // Get recommendations by type
   const freeRecs = resultData.recommendations.slice(0, FREE_WITH_PROBLEM);
   const lockedRecs = resultData.recommendations.slice(FREE_WITH_PROBLEM);
 
+  const website = urlParam ? decodeURIComponent(urlParam) : "your website";
+  const isHomepage = resultData.requestedType === "homepage";
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 md:py-16 max-w-5xl">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <span
-              className={`inline-flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-full ${
-                resultData.testType === "homepage"
-                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                  : "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
-              }`}
-            >
-              {resultData.testType === "homepage" ? <Home className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-              {resultData.testType === "homepage" ? "Homepage analysis" : "Blog post analysis"}
-            </span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Results for: <span className="font-semibold break-all">{website}</span>
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Back button */}
+        <Button variant="ghost" onClick={() => navigate("/")} className="mb-6">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Test another URL
+        </Button>
+
+        {/* Test type badge */}
+        <div className="flex items-center gap-2 mb-2">
+          <Badge variant="outline" className="gap-1">
+            <FileText className="h-3 w-3" />
+            {isHomepage ? "Homepage analysis" : "Blog post analysis"}
+          </Badge>
+        </div>
+
+        {/* URL */}
+        <p className="text-muted-foreground mb-6">Results for: {website}</p>
+
+        {/* Beta banner */}
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-8">
+          <p className="text-green-800 flex items-center gap-2">
+            🎉 <span className="font-medium">Beta access: All features unlocked free</span>
           </p>
         </div>
 
-        {/* Beta banner */}
-        <Alert className="mb-6 bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
-          <AlertDescription className="text-green-800 dark:text-green-300 font-medium">
-            🎉 Beta access: All features unlocked free
-          </AlertDescription>
-        </Alert>
-
-        {/* Speedometer */}
-        <div className="text-center mb-12">
-          <SpeedometerGauge score={resultData.score} />
-          <div className="mt-4">
-            <div className={`text-2xl md:text-3xl font-bold ${gradeInfo.color}`}>
-              Grade: {gradeInfo.grade} ({gradeInfo.label})
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Analyzed {resultData.criteriaCount} criteria across {resultData.categories.length} categories
-            </p>
-          </div>
-
-          {/* Share & Download */}
-          <div className="flex justify-center gap-3 mt-6">
-            <div className="relative">
-              <Button variant="outline" size="sm" onClick={handleShare} className="gap-2">
-                <Share2 className="h-4 w-4" />
-                Share
-              </Button>
-              {shareTooltip && (
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 text-xs bg-foreground text-background rounded whitespace-nowrap">
-                  Copied to clipboard!
-                </div>
-              )}
-            </div>
-            <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
-              <Download className="h-4 w-4" />
-              {isUnlocked ? "Download report" : "Download (unlock first)"}
-            </Button>
-          </div>
-        </div>
-
-        {/* Categories */}
+        {/* Score card */}
         <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Category breakdown</CardTitle>
-            <CardDescription>
-              {resultData.testType === "homepage"
-                ? "How well your homepage signals clarity to AI"
-                : "How well your blog answers questions for AI"}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {resultData.categories.map((cat, i) => (
-              <div key={i} className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">{cat.name}</span>
-                  <span className="font-semibold">{cat.percentage}%</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className={`h-full transition-all duration-500 ${
-                      cat.percentage >= 70 ? "bg-green-500" : cat.percentage >= 50 ? "bg-yellow-500" : "bg-red-500"
-                    }`}
-                    style={{ width: `${cat.percentage}%` }}
-                  />
-                </div>
-                {cat.key === "schemaMarkup" && cat.breakdown?.summary && (
-                  <p className="text-xs text-muted-foreground pl-2">{cat.breakdown.summary}</p>
-                )}
-              </div>
-            ))}
+          <CardContent className="pt-8 pb-6">
+            <SpeedometerGauge score={resultData.score} />
+
+            <div className="text-center mt-4">
+              <h2 className={`text-3xl font-bold ${GRADE_COLORS[resultData.grade]}`}>
+                Grade: {resultData.grade} ({GRADE_LABELS[resultData.grade]})
+              </h2>
+              <p className="text-muted-foreground mt-1">
+                Analyzed {resultData.criteriaCount} criteria across {Object.keys(resultData.categories).length}{" "}
+                categories
+              </p>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex justify-center gap-3 mt-6">
+              <Button variant="outline" onClick={handleShare}>
+                <Share2 className="h-4 w-4 mr-2" />
+                {copiedShare ? "Copied!" : "Share"}
+              </Button>
+              <Button variant="outline" onClick={handleDownload}>
+                <Download className="h-4 w-4 mr-2" />
+                Download report
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Industry comparison */}
-        <Card className="mb-8 border-2">
+        {/* Category breakdown */}
+        <Card className="mb-8">
           <CardHeader>
-            <CardTitle>📊 Industry comparison</CardTitle>
-            <CardDescription>Based on {resultData.testType} tests from the past 30 days</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-between mb-2">
-              <span className="text-muted-foreground">Your score:</span>
-              <span className="text-2xl font-bold">{resultData.score}</span>
-            </div>
-            <div className="flex justify-between mb-4">
-              <span className="text-muted-foreground">Industry average:</span>
-              <span className="text-2xl font-bold">{resultData.industryAverage}</span>
-            </div>
-            <p
-              className={`font-semibold ${resultData.score >= resultData.industryAverage ? "text-green-600" : "text-orange-600"}`}
-            >
-              {resultData.score > resultData.industryAverage
-                ? `You're ${resultData.score - resultData.industryAverage} points above average 🎯`
-                : resultData.score === resultData.industryAverage
-                  ? "You're at average. Room to improve!"
-                  : `You're ${resultData.industryAverage - resultData.score} points below average. Let's fix that.`}
+            <CardTitle>Category breakdown</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              How well your {isHomepage ? "homepage" : "blog"}{" "}
+              {isHomepage ? "signals clarity to AI" : "answers questions for AI"}
             </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {Object.entries(resultData.categories).map(([key, category]) => (
+              <div key={key}>
+                <div className="flex justify-between mb-1">
+                  <span className="text-sm font-medium">{CATEGORY_NAMES[key] || key}</span>
+                  <span className="text-sm text-muted-foreground">{category.percentage}%</span>
+                </div>
+                <Progress value={category.percentage} className="h-2" />
+              </div>
+            ))}
           </CardContent>
         </Card>
 
         {/* Recommendations */}
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle>📋 Recommendations</CardTitle>
-            <CardDescription>
-              {resultData.recommendations.filter((r) => r.priority === "critical").length} critical issues found
-              {!isUnlocked && lockedRecs.length > 0 && (
-                <span className="ml-2 text-primary font-medium">• {lockedRecs.length} more locked</span>
-              )}
-            </CardDescription>
+            <CardTitle>Recommendations</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {resultData.recommendations.length} issues found, sorted by priority
+            </p>
           </CardHeader>
-          <CardContent>
-            {/* Unlocked view */}
+          <CardContent className="space-y-4">
             {isUnlocked ? (
-              <Accordion type="single" collapsible className="w-full">
-                {resultData.recommendations.map((rec) => (
-                  <UnlockedRecommendation key={rec.id} rec={rec} />
-                ))}
-              </Accordion>
+              // All unlocked
+              resultData.recommendations.map((rec) => <UnlockedRecommendation key={rec.id} rec={rec} />)
             ) : (
               <>
                 {/* Free recs - show problem, blur solution */}
@@ -1196,28 +1032,28 @@ Generated by FoundIndex.com on ${new Date().toLocaleDateString()}
                   <FreeRecommendation key={rec.id} rec={rec} onUnlock={() => setShowUnlockDialog(true)} />
                 ))}
 
-                {/* Locked recs - fully blurred */}
+                {/* Locked recs count */}
                 {lockedRecs.length > 0 && (
-                  <div className="mt-6">
-                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3">
+                  <div className="py-3 text-center">
+                    <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
                       <Lock className="h-4 w-4" />
                       {lockedRecs.length} more recommendations
-                    </div>
+                    </p>
+                  </div>
+                )}
 
-                    {lockedRecs.slice(0, 2).map((rec) => (
-                      <LockedRecommendation key={rec.id} rec={rec} onUnlock={() => setShowUnlockDialog(true)} />
-                    ))}
+                {/* Locked recs - fully blurred */}
+                {lockedRecs.slice(0, 2).map((rec) => (
+                  <LockedRecommendation key={rec.id} rec={rec} onUnlock={() => setShowUnlockDialog(true)} />
+                ))}
 
-                    {lockedRecs.length > 2 && (
-                      <p className="text-sm text-muted-foreground text-center mb-4">
-                        + {lockedRecs.length - 2} more recommendations
-                      </p>
-                    )}
-
-                    <Button onClick={() => setShowUnlockDialog(true)} className="w-full gap-2">
-                      <Lock className="h-4 w-4" />
-                      Unlock all {resultData.recommendations.length} recommendations
+                {lockedRecs.length > 2 && (
+                  <div className="text-center py-2">
+                    <Button variant="outline" onClick={() => setShowUnlockDialog(true)}>
+                      <Lock className="h-4 w-4 mr-2" />
+                      Unlock with email
                     </Button>
+                    <p className="text-xs text-muted-foreground mt-2">+ {lockedRecs.length - 2} more recommendations</p>
                   </div>
                 )}
               </>
@@ -1225,54 +1061,62 @@ Generated by FoundIndex.com on ${new Date().toLocaleDateString()}
           </CardContent>
         </Card>
 
-        {/* AI Rewrite Teaser */}
-        <AIRewriteTeaser onContactClick={() => navigate("/contact")} />
+        {/* AI Rewrite teaser */}
+        <Card className="mb-8 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-white rounded-lg shadow-sm">
+                <Sparkles className="h-6 w-6 text-purple-500" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold">Coming soon: AI rewrite</h3>
+                <p className="text-muted-foreground mt-1">Don't just know what's wrong — get it fixed automatically</p>
+                <Button variant="outline" className="mt-3" onClick={() => navigate("/contact")}>
+                  Get notified when it launches
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Feedback */}
+        {/* Feedback CTA */}
         <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>💬 Share feedback, get a backlink</CardTitle>
-            <CardDescription>
-              Help us improve — if we feature your testimonial, we'll link to your site!
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => setShowFeedbackDialog(true)} variant="outline" className="w-full">
-              Share your feedback
-            </Button>
+          <CardContent className="p-6 text-center">
+            <Star className="h-8 w-8 text-yellow-500 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold">How was your experience?</h3>
+            <p className="text-muted-foreground mt-1 mb-4">
+              Share your feedback and get featured on our site (with a backlink!)
+            </p>
+            <Button onClick={() => setShowFeedbackDialog(true)}>Share feedback</Button>
           </CardContent>
         </Card>
 
-        {/* Retest */}
-        <Card className="mb-8 bg-primary/5 border-primary/20">
-          <CardHeader>
-            <CardTitle>🔄 Implement and retest</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4">Make the changes, then check your new score</p>
-            <Button onClick={() => navigate("/")} className="w-full min-h-[48px]" size="lg">
-              Test another URL
-            </Button>
-          </CardContent>
-        </Card>
+        {/* CTA */}
+        <div className="text-center py-8">
+          <h3 className="text-xl font-semibold mb-2">Implement and retest</h3>
+          <p className="text-muted-foreground mb-4">Make the changes, then check your new score</p>
+          <Button onClick={() => navigate("/")}>Test another URL</Button>
+        </div>
       </main>
 
       {/* Dialogs */}
-      <EmailUnlockDialog
+      <UnlockEmailDialog
         open={showUnlockDialog}
         onOpenChange={setShowUnlockDialog}
         onUnlock={() => setIsUnlocked(true)}
         website={website}
-        testId={testId}
+        testId={testId || ""}
       />
 
-      <TestimonialFeedbackDialog
+      <FeedbackDialog
         open={showFeedbackDialog}
         onOpenChange={setShowFeedbackDialog}
+        testId={testId || ""}
         website={website}
-        testId={testId}
         score={resultData.score}
       />
     </div>
   );
-}
+};
+
+export default Results;
