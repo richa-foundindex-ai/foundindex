@@ -607,12 +607,9 @@ const FreeRecommendation = ({ rec, onUnlock }: { rec: Recommendation; onUnlock: 
 
         {isExpanded && (
           <div className="mt-4 pt-4 border-t">
-            {/* Solution is blurred with CSS filter */}
+            {/* Solution is blurred */}
             <div className="relative">
-              <div 
-                className="pointer-events-none select-none bg-muted/50 p-4 rounded"
-                style={{ filter: 'blur(4px)' }}
-              >
+              <div className="filter blur-sm select-none pointer-events-none bg-muted/50 p-4 rounded">
                 <p className="font-medium mb-2">How to fix:</p>
                 <ul className="list-disc list-inside text-sm space-y-1">
                   <li>Step 1: Implementation details hidden...</li>
@@ -620,8 +617,8 @@ const FreeRecommendation = ({ rec, onUnlock }: { rec: Recommendation; onUnlock: 
                   <li>Step 3: Expected improvement hidden...</li>
                 </ul>
               </div>
-              <div className="absolute inset-0 flex items-center justify-center bg-background/30">
-                <Button onClick={onUnlock} variant="secondary" className="gap-2 shadow-lg">
+              <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+                <Button onClick={onUnlock} variant="secondary" className="gap-2">
                   <Lock className="h-4 w-4" />
                   Unlock solution
                 </Button>
@@ -637,10 +634,7 @@ const FreeRecommendation = ({ rec, onUnlock }: { rec: Recommendation; onUnlock: 
 // LOCKED: Fully blurred
 const LockedRecommendation = ({ rec, onUnlock }: { rec: Recommendation; onUnlock: () => void }) => (
   <Card className="relative overflow-hidden">
-    <div 
-      className="pointer-events-none select-none p-4"
-      style={{ filter: 'blur(4px)' }}
-    >
+    <div className="filter blur-sm select-none pointer-events-none p-4">
       <div className="flex items-start gap-3">
         <div className="p-1.5 rounded bg-gray-100">
           <AlertCircle className="h-4 w-4 text-gray-400" />
@@ -654,8 +648,8 @@ const LockedRecommendation = ({ rec, onUnlock }: { rec: Recommendation; onUnlock
         </div>
       </div>
     </div>
-    <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm">
-      <Button onClick={onUnlock} variant="outline" className="gap-2 shadow-lg">
+    <div className="absolute inset-0 flex items-center justify-center bg-background/50">
+      <Button onClick={onUnlock} variant="outline" className="gap-2">
         <Lock className="h-4 w-4" />
         Unlock with email
       </Button>
