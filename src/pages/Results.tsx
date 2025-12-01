@@ -764,7 +764,16 @@ const Results = () => {
   const [copiedShare, setCopiedShare] = useState(false);
 
   // Check if already unlocked
+  // BETA TESTING: Set to false to always show blur, change to true for production
+  const BETA_ALWAYS_SHOW_BLUR = true;
+
   useEffect(() => {
+    if (BETA_ALWAYS_SHOW_BLUR) {
+      // During beta testing, always start locked to verify blur works
+      setIsUnlocked(false);
+      return;
+    }
+
     const savedEmail = localStorage.getItem("fi_unlocked_email");
     if (savedEmail) {
       setIsUnlocked(true);
