@@ -1,5 +1,5 @@
 // src/utils/urlValidation.ts
-// URL validation utilities for pre-flight checks
+// URL validation utilities - FIXES blog URL path stripping
 
 export interface ValidationResult {
   valid: boolean;
@@ -12,14 +12,7 @@ export interface ValidationResult {
 
 /**
  * Client-side URL validation and normalization
- * Runs instantly before any API calls.
- *
- * Should accept:
- *   - "slack.com" → https://slack.com
- *   - "foundindex.com" → https://foundindex.com
- *   - "thehindu.com" → https://thehindu.com
- *   - "https://example.com" → https://example.com
- *   - "http://example.org" → http://example.org
+ * CRITICAL: Preserves full path for blog URLs
  */
 export function validateAndNormalizeUrl(input: string): ValidationResult {
   // Empty input
@@ -48,7 +41,7 @@ export function validateAndNormalizeUrl(input: string): ValidationResult {
     };
   }
 
-  // ✅ AUTO-ADD https:// IF MISSING
+  // Auto-add https:// if no protocol is present
   if (!url.startsWith("http://") && !url.startsWith("https://")) {
     url = "https://" + url;
   }
@@ -77,7 +70,10 @@ export function validateAndNormalizeUrl(input: string): ValidationResult {
       };
     }
 
-    const normalizedUrl = `${urlObj.protocol}//${urlObj.hostname}/`;
+    // ✅ CRITICAL FIX: Preserve full path + query (fixes blog URL stripping)
+    // OLD (broken): normalizedUrl = `${urlObj.protocol}//${urlObj.hostname}/`
+    // NEW (correct): Keep the full path
+    const normalizedUrl = urlObj.origin + urlObj.pathname + urlObj.search;
 
     return {
       valid: true,
