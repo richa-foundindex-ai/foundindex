@@ -99,6 +99,18 @@ export const releaseTestLock = () => {
 };
 
 export const checkRateLimit = (url: string) => {
+  // TEMPORARILY DISABLED FOR TESTING - RE-ENABLE BEFORE PRODUCTION
+  return {
+    allowed: true,
+    remainingTests: 999,
+    previousScore: undefined,
+    testId: undefined,
+    daysUntilReset: undefined,
+    resetDate: undefined,
+    message: undefined
+  };
+  
+  /* COMMENTED OUT FOR TESTING
   // Acquire lock to prevent concurrent checks
   if (!acquireTestLock()) {
     return {
@@ -155,6 +167,7 @@ export const checkRateLimit = (url: string) => {
     previousScore: undefined,
     testId: undefined
   };
+  */
 };
 
 export const recordTest = (url: string, score: number, testId: string) => {
