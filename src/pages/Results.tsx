@@ -357,13 +357,8 @@ const FeedbackDialog = ({ open, onOpenChange, testId, website, score }: Feedback
         score: score,
         user_type: formData.userType,
         surprising_result: formData.surprisingResult,
-        most_useful: formData.mostUseful,
-        would_recommend: formData.wouldRecommend,
-        improvements: formData.improvements,
-        can_use_name: formData.canUseName,
-        can_feature_testimonial: formData.canFeatureTestimonial,
-        backlink_url: formData.backlinkUrl,
-        name: formData.name,
+        describe_to_colleague: formData.wouldRecommend,
+        preventing_improvements: formData.improvements,
       });
 
       if (error) {
@@ -806,8 +801,8 @@ const Results = () => {
           grade: data.grade,
           detectedType: data.detected_type,
           requestedType: data.test_type,
-          categories: data.categories as Record<string, Category>,
-          recommendations: data.recommendations as Recommendation[],
+          categories: data.categories as unknown as Record<string, Category>,
+          recommendations: data.recommendations as unknown as Recommendation[],
           industryAverage: 58,
           criteriaCount: data.test_type === "homepage" ? 47 : 52,
         });
