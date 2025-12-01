@@ -15,8 +15,6 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronDown,
-  ChevronUp,
   Copy,
   Download,
   Share2,
@@ -72,9 +70,6 @@ interface ResultData {
 // CONSTANTS
 // =============================================================================
 
-// Show 2 recommendations with problem visible, solution blurred
-const FREE_WITH_PROBLEM = 2;
-
 // Category display names
 const CATEGORY_NAMES: Record<string, string> = {
   schemaMarkup: "Schema Markup",
@@ -119,6 +114,28 @@ const PRIORITY_ICONS: Record<string, React.ReactNode> = {
   critical: <AlertCircle className="h-4 w-4" />,
   medium: <TrendingUp className="h-4 w-4" />,
   good: <CheckCircle2 className="h-4 w-4" />,
+};
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+// Format expected improvement to always show "+" suffix
+const formatExpectedImprovement = (improvement: string): string => {
+  if (!improvement) return "";
+
+  // If it already ends with "+", return as is
+  if (improvement.endsWith("+")) return improvement;
+
+  // Extract number and add "+"
+  // Handle formats like "+4 points", "4 points", "+4", "4"
+  const match = improvement.match(/\+?(\d+)\s*(points?)?/i);
+  if (match) {
+    const num = match[1];
+    return `+${num}+ points`;
+  }
+
+  return improvement;
 };
 
 // =============================================================================
@@ -572,93 +589,17 @@ const FeedbackDialog = ({ open, onOpenChange, testId, website, score }: Feedback
 };
 
 // =============================================================================
-// RECOMMENDATION COMPONENTS
+// RECOMMENDATION CARD COMPONENT
 // =============================================================================
 
-// FREE: Shows problem, blurs solution
-const FreeRecommendation = ({ rec, onUnlock }: { rec: Recommendation; onUnlock: () => void }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+interface RecommendationCardProps {
+  rec: Recommendation;
+  index: number;
+  isUnlocked: boolean;
+  onUnlock: () => void;
+}
 
-  return (
-    <Card
-      className="border-l-4"
-      style={{
-        borderLeftColor: rec.priority === "critical" ? "#ef4444" : rec.priority === "medium" ? "#f59e0b" : "#22c55e",
-      }}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3 flex-1">
-            <div className={`p-1.5 rounded ${PRIORITY_COLORS[rec.priority]}`}>{PRIORITY_ICONS[rec.priority]}</div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <Badge variant="outline" className={PRIORITY_COLORS[rec.priority]}>
-                  {rec.priority}
-                </Badge>
-                <h4 className="font-medium">{rec.title}</h4>
-              </div>
-              <p className="text-sm text-muted-foreground">{rec.problem}</p>
-            </div>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
-            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </Button>
-        </div>
-
-        {isExpanded && (
-          <div className="mt-4 pt-4 border-t">
-            {/* Solution is blurred */}
-            <div className="relative">
-              <div className="blur-sm select-none pointer-events-none bg-muted/50 p-4 rounded">
-                <p className="font-medium mb-2">How to fix:</p>
-                <ul className="list-disc list-inside text-sm space-y-1">
-                  <li>Step 1: Implementation details hidden...</li>
-                  <li>Step 2: Code example locked...</li>
-                  <li>Step 3: Expected improvement hidden...</li>
-                </ul>
-              </div>
-              <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-                <Button onClick={onUnlock} variant="secondary" className="gap-2">
-                  <Lock className="h-4 w-4" />
-                  Unlock solution
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-
-// LOCKED: Fully blurred
-const LockedRecommendation = ({ rec, onUnlock }: { rec: Recommendation; onUnlock: () => void }) => (
-  <Card className="relative overflow-hidden">
-    <div className="blur-sm select-none pointer-events-none p-4">
-      <div className="flex items-start gap-3">
-        <div className="p-1.5 rounded bg-gray-100">
-          <AlertCircle className="h-4 w-4 text-gray-400" />
-        </div>
-        <div>
-          <Badge variant="outline" className="mb-1">
-            Priority issue
-          </Badge>
-          <h4 className="font-medium">Recommendation title hidden</h4>
-          <p className="text-sm text-muted-foreground">Problem description locked...</p>
-        </div>
-      </div>
-    </div>
-    <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-      <Button onClick={onUnlock} variant="outline" className="gap-2">
-        <Lock className="h-4 w-4" />
-        Unlock with email
-      </Button>
-    </div>
-  </Card>
-);
-
-// UNLOCKED: Full details with accordion
-const UnlockedRecommendation = ({ rec, index, isUnlocked, onUnlock }: { rec: Recommendation; index: number; isUnlocked: boolean; onUnlock: () => void }) => {
+const RecommendationCard = ({ rec, index, isUnlocked, onUnlock }: RecommendationCardProps) => {
   const [copied, setCopied] = useState(false);
 
   const copyCode = () => {
@@ -669,16 +610,50 @@ const UnlockedRecommendation = ({ rec, index, isUnlocked, onUnlock }: { rec: Rec
     }
   };
 
+  // First 2 recommendations (index 0, 1): Show title + problem, blur solution
+  // Recommendations 3+ (index 2, 3, 4...): Blur everything
+  const isFullyLocked = index >= 2 && !isUnlocked;
+  const isSolutionLocked = index < 2 && !isUnlocked;
+
+  // If fully locked (recommendations 3+), show blurred card
+  if (isFullyLocked) {
+    return (
+      <div className="relative border rounded-lg overflow-hidden">
+        {/* Blurred content */}
+        <div className="blur-sm select-none pointer-events-none p-4">
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 rounded bg-gray-100">
+              <AlertCircle className="h-4 w-4 text-gray-400" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <Badge variant="outline" className="bg-gray-100 text-gray-500">
+                  {rec.priority}
+                </Badge>
+                <span className="font-medium text-gray-400">Hidden recommendation</span>
+              </div>
+              <p className="text-sm text-gray-400">
+                This recommendation is locked. Enter your email to unlock all recommendations and see the full details.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Overlay with unlock button */}
+        <div className="absolute inset-0 bg-white/70 backdrop-blur-[2px] flex items-center justify-center z-10">
+          <Button onClick={onUnlock} className="bg-blue-600 hover:bg-blue-700 text-white gap-2">
+            <Lock className="h-4 w-4" />
+            Unlock with email
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // For first 2 recommendations OR unlocked state
   return (
     <Accordion type="single" collapsible className="w-full">
-      <AccordionItem value={rec.id} className="border rounded-lg relative">
-        {index >= 2 && !isUnlocked && (
-          <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg">
-            <Button onClick={onUnlock} className="bg-blue-600 text-white">
-              🔓 Unlock more recommendations
-            </Button>
-          </div>
-        )}
+      <AccordionItem value={rec.id} className="border rounded-lg">
         <AccordionTrigger className="px-4 hover:no-underline">
           <div className="flex items-center gap-3 text-left">
             <div className={`p-1.5 rounded ${PRIORITY_COLORS[rec.priority]}`}>{PRIORITY_ICONS[rec.priority]}</div>
@@ -693,37 +668,70 @@ const UnlockedRecommendation = ({ rec, index, isUnlocked, onUnlock }: { rec: Rec
             </div>
           </div>
         </AccordionTrigger>
+
         <AccordionContent className="px-4 pb-4">
-          <div className="space-y-4">
-            <div>
-              <h5 className="font-medium mb-2">How to fix:</h5>
-              <ul className="list-disc list-inside text-sm space-y-1">
-                {Array.isArray(rec.howToFix) 
-                  ? rec.howToFix.map((step, i) => <li key={i}>{step}</li>)
-                  : <li>{rec.howToFix || "See details above"}</li>
-                }
-              </ul>
-            </div>
-
-            {rec.codeExample && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h5 className="font-medium">Code example:</h5>
-                  <Button variant="ghost" size="sm" onClick={copyCode}>
-                    <Copy className="h-4 w-4 mr-1" />
-                    {copied ? "Copied!" : "Copy"}
-                  </Button>
+          {/* If solution is locked (first 2 recs, not unlocked yet) */}
+          {isSolutionLocked ? (
+            <div className="relative mt-2">
+              {/* Blurred solution content */}
+              <div className="blur-sm select-none pointer-events-none space-y-4">
+                <div>
+                  <h5 className="font-medium mb-2">How to fix:</h5>
+                  <ul className="list-disc list-inside text-sm space-y-1">
+                    <li>Step 1: Implementation details hidden...</li>
+                    <li>Step 2: Code example locked...</li>
+                    <li>Step 3: Expected improvement hidden...</li>
+                  </ul>
                 </div>
-                <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
-                  <code>{rec.codeExample}</code>
-                </pre>
+                <div className="bg-muted p-3 rounded-lg">
+                  <code className="text-xs">// Code example locked...</code>
+                </div>
               </div>
-            )}
 
-            {rec.expectedImprovement && (
-              <p className="text-sm text-green-600 font-medium">Expected: {rec.expectedImprovement}</p>
-            )}
-          </div>
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
+                <Button onClick={onUnlock} variant="secondary" className="gap-2">
+                  <Lock className="h-4 w-4" />
+                  Unlock solution
+                </Button>
+              </div>
+            </div>
+          ) : (
+            /* Fully unlocked content */
+            <div className="space-y-4">
+              <div>
+                <h5 className="font-medium mb-2">How to fix:</h5>
+                <ul className="list-disc list-inside text-sm space-y-1">
+                  {Array.isArray(rec.howToFix) ? (
+                    rec.howToFix.map((step, i) => <li key={i}>{step}</li>)
+                  ) : (
+                    <li>{rec.howToFix || "See details above"}</li>
+                  )}
+                </ul>
+              </div>
+
+              {rec.codeExample && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h5 className="font-medium">Code example:</h5>
+                    <Button variant="ghost" size="sm" onClick={copyCode}>
+                      <Copy className="h-4 w-4 mr-1" />
+                      {copied ? "Copied!" : "Copy"}
+                    </Button>
+                  </div>
+                  <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
+                    <code>{rec.codeExample}</code>
+                  </pre>
+                </div>
+              )}
+
+              {rec.expectedImprovement && (
+                <p className="text-sm text-green-600 font-medium">
+                  Expected: {formatExpectedImprovement(rec.expectedImprovement)}
+                </p>
+              )}
+            </div>
+          )}
         </AccordionContent>
       </AccordionItem>
     </Accordion>
@@ -879,9 +887,9 @@ ${resultData.recommendations
     (rec, i) => `
 ${i + 1}. [${rec.priority.toUpperCase()}] ${rec.title}
    Problem: ${rec.problem}
-   Fix: ${rec.howToFix.join("; ")}
+   Fix: ${Array.isArray(rec.howToFix) ? rec.howToFix.join("; ") : rec.howToFix}
    ${rec.codeExample ? `Code: ${rec.codeExample}` : ""}
-   Expected: ${rec.expectedImprovement}
+   Expected: ${formatExpectedImprovement(rec.expectedImprovement)}
 `,
   )
   .join("\n")}
@@ -1022,9 +1030,9 @@ Generated by FoundIndex.com
           </CardHeader>
           <CardContent className="space-y-4">
             {resultData.recommendations.map((rec, index) => (
-              <UnlockedRecommendation 
-                key={rec.id} 
-                rec={rec} 
+              <RecommendationCard
+                key={rec.id}
+                rec={rec}
                 index={index}
                 isUnlocked={isUnlocked}
                 onUnlock={() => setShowUnlockDialog(true)}
