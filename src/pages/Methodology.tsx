@@ -23,6 +23,62 @@ export default function Methodology() {
           find, understand, and cite your content.
         </p>
 
+        {/* Our Approach */}
+        <Card className="mb-8 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/10 dark:to-purple-900/10 border-blue-200">
+          <CardHeader>
+            <CardTitle>Our Approach</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-lg font-medium mb-4">
+              We show you WHERE to add expertise signals. What you put there is your competitive advantage.
+            </p>
+            <p className="text-muted-foreground">
+              AI finds the gaps. You fill them with what only humans can create.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* What We Analyze vs What You Create */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>What We Analyze vs What You Create</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-semibold">What FoundIndex Detects</th>
+                    <th className="text-left py-3 px-4 font-semibold">What Only You Can Add</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Missing author schema</td>
+                    <td className="py-3 px-4 font-medium text-primary">Your actual credentials</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">No testimonial markup</td>
+                    <td className="py-3 px-4 font-medium text-primary">Real customer stories</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Generic FAQ structure</td>
+                    <td className="py-3 px-4 font-medium text-primary">Your unique insights</td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="py-3 px-4">Missing expertise signals</td>
+                    <td className="py-3 px-4 font-medium text-primary">Original research & data</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3 px-4">Weak content structure</td>
+                    <td className="py-3 px-4 font-medium text-primary">Firsthand experience</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Research foundation */}
         <Card className="mb-8 bg-red-50 dark:bg-red-900/10">
           <CardHeader>
@@ -178,6 +234,20 @@ export default function Methodology() {
                 45-65.
               </p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Closing Quote */}
+        <Card className="mb-8 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10 border-purple-200">
+          <CardContent className="py-8 px-6">
+            <blockquote className="text-center">
+              <p className="text-xl font-medium mb-4 italic">
+                "We show you WHERE to add expertise signals. What you put there is your competitive advantage."
+              </p>
+              <p className="text-lg text-muted-foreground italic">
+                AI finds the gaps. You fill them with what only humans can create.
+              </p>
+            </blockquote>
           </CardContent>
         </Card>
       </main>
