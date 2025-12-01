@@ -51,7 +51,7 @@ interface Recommendation {
   problem: string;
   howToFix: string[];
   codeExample?: string;
-  expectedImprovement: string;
+  expectedImprovement: string | number;
 }
 
 interface ResultData {
@@ -121,21 +121,25 @@ const PRIORITY_ICONS: Record<string, React.ReactNode> = {
 // =============================================================================
 
 // Format expected improvement to always show "+" suffix
-const formatExpectedImprovement = (improvement: string): string => {
-  if (!improvement) return "";
+// FIX: Handle both string and number types from database
+const formatExpectedImprovement = (improvement: string | number | undefined): string => {
+  if (!improvement && improvement !== 0) return "";
+
+  // Convert to string if it's a number
+  const improvementStr = String(improvement);
 
   // If it already ends with "+", return as is
-  if (improvement.endsWith("+")) return improvement;
+  if (improvementStr.endsWith("+")) return improvementStr;
 
   // Extract number and add "+"
   // Handle formats like "+4 points", "4 points", "+4", "4"
-  const match = improvement.match(/\+?(\d+)\s*(points?)?/i);
+  const match = improvementStr.match(/\+?(\d+)\s*(points?)?/i);
   if (match) {
     const num = match[1];
     return `+${num}+ points`;
   }
 
-  return improvement;
+  return improvementStr;
 };
 
 // =============================================================================
