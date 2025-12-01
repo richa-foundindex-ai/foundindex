@@ -581,7 +581,7 @@ const getGrade = (score: number): string => {
 // =============================================================================
 
 const checkRateLimit = async (
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   url: string,
   testType: "homepage" | "blog",
 ): Promise<{ allowed: boolean; daysRemaining?: number; lastTestDate?: string }> => {
@@ -604,7 +604,7 @@ const checkRateLimit = async (
       return { allowed: true };
     }
 
-    const lastTest = new Date(data[0].created_at);
+    const lastTest = new Date((data[0] as any).created_at);
     const now = new Date();
     const daysSinceLastTest = Math.floor((now.getTime() - lastTest.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -1035,7 +1035,17 @@ Return ONLY valid JSON:
     // SAVE TO DATABASE
     // ==========================================================================
 
-    console.log(`[${testId}] Attempting to save to database...`);
+    console.log(`[${testId}] 📝 BEFORE DATABASE INSERT - About to save results to test_history table`);
+    console.log(`[${testId}] Insert data:`, JSON.stringify({
+      test_id: testId,
+      website: validatedWebsite,
+      test_type: testType,
+      detected_type: detectedType,
+      score: totalScore,
+      grade,
+      categories_count: Object.keys(displayCategories).length,
+      recommendations_count: allRecommendations.length
+    }));
 
     const insertData = {
       test_id: testId,
@@ -1048,27 +1058,21 @@ Return ONLY valid JSON:
       recommendations: allRecommendations,
     };
 
-    console.log(
-      `[${testId}] Insert data prepared:`,
-      JSON.stringify({ test_id: testId, website: validatedWebsite, score: totalScore }),
-    );
-
     const { data: insertResult, error: insertError } = await supabaseAdmin
       .from("test_history")
       .insert(insertData)
       .select();
 
-    if (insertError) {
-      console.error(`[${testId}] DATABASE INSERT ERROR:`, insertError);
-      console.error(`[${testId}] Error code: ${insertError.code}`);
-      console.error(`[${testId}] Error message: ${insertError.message}`);
-      console.error(`[${testId}] Error details:`, insertError.details);
+    console.log(`[${testId}] 📊 AFTER DATABASE INSERT ATTEMPT`);
 
+    if (insertError) {
+      console.error(`[${testId}] ❌ DATABASE ERROR:`, insertError.message, insertError.code, insertError.details);
+      console.error(`[${testId}] Full error object:`, JSON.stringify(insertError, null, 2));
       // Still return success to user but log the error
       // Don't block the user experience
     } else {
-      console.log(`[${testId}] ✅ SAVED TO DATABASE successfully`);
-      console.log(`[${testId}] Insert result:`, insertResult);
+      console.log(`[${testId}] ✅ SAVED TO DATABASE:`, insertResult?.[0]?.id);
+      console.log(`[${testId}] Full insert result:`, JSON.stringify(insertResult, null, 2));
     }
 
     const duration = Date.now() - startTime;
