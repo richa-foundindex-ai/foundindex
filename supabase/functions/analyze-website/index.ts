@@ -484,11 +484,17 @@ const validateEmail = (email: string | undefined): string => {
 
 const normalizeUrl = (url: string): string => {
   let normalized = url.trim().toLowerCase();
-  normalized = normalized.replace(/\/+$/, "");
-  if (!normalized.startsWith("http://") && !normalized.startsWith("https://")) {
-    normalized = "https://" + normalized;
+  try {
+    if (!normalized.includes('://')) {
+      normalized = 'https://' + normalized;
+    }
+    return new URL(normalized).href;
+  } catch {
+    if (!normalized.includes('://')) {
+      normalized = 'https://' + normalized;
+    }
+    return normalized;
   }
-  return normalized;
 };
 
 const validateWebsite = (website: string): string => {
@@ -663,6 +669,36 @@ serve(async (req) => {
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+
+    // Check for cached results from last 7 days
+    const { data: cachedTest } = await supabaseAdmin
+      .from("test_history")
+      .select("*")
+      .eq("website", validatedWebsite)
+      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (cachedTest) {
+      console.log(`[CACHE HIT] Returning cached results for ${validatedWebsite} from ${cachedTest.created_at}`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          testId: cachedTest.test_id,
+          score: cachedTest.score,
+          grade: cachedTest.grade,
+          detectedType: cachedTest.detected_type,
+          requestedType: testType,
+          categories: cachedTest.categories,
+          recommendations: cachedTest.recommendations,
+          industryAverage: 58, // Default value for cached results
+          criteriaCount: cachedTest.test_type === "homepage" ? 47 : 52,
+          isCached: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     const testId = crypto.randomUUID();
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
