@@ -201,7 +201,6 @@ function parseJsonLdItems(jsonLdItems: unknown[]): SchemaItem[] {
 
     schemaItems.push({ type, properties, isValid, errors });
 
-    // Process nested objects
     for (const value of Object.values(properties)) {
       if (value && typeof value === "object" && !Array.isArray(value)) {
         const valueObj = value as Record<string, unknown>;
@@ -421,7 +420,6 @@ function analyzeTechnical(url: string, html: string) {
     hasMetaDescription: 2,
     hasH1: 2,
   };
-
   const maxScore = 13;
   let score = 0;
 
@@ -468,11 +466,7 @@ function analyzeImages(html: string, pageType: "homepage" | "blog") {
     score = Math.round((altRatio * 0.5 + descriptiveRatio * 0.5) * maxScore * 10) / 10;
   }
 
-  return {
-    score: Math.min(score, maxScore),
-    maxScore,
-    details: { totalImages, withAltText, withDescriptiveAlt },
-  };
+  return { score: Math.min(score, maxScore), maxScore, details: { totalImages, withAltText, withDescriptiveAlt } };
 }
 
 // =============================================================================
@@ -505,30 +499,72 @@ const validateWebsite = (website: string): string => {
   throw new Error('Please enter a valid website URL (like "example.com")');
 };
 
-// IMPROVED: Better page type detection that respects user selection
+// FIXED: Much better page type detection - TRUST USER SELECTION for blog URLs
 const detectPageType = (url: string, html: string, requestedType: "homepage" | "blog"): "homepage" | "blog" => {
   const urlLower = url.toLowerCase();
 
-  // Strong blog indicators in URL
-  const blogPatterns = ["/blog/", "/post/", "/article/", "/news/", "/insights/", "/stories/", "/journal/"];
-  const hasBlogUrl = blogPatterns.some((pattern) => urlLower.includes(pattern));
+  // Extract just the path (after domain)
+  let path = "";
+  try {
+    const urlObj = new URL(url);
+    path = urlObj.pathname.toLowerCase();
+  } catch {
+    path = urlLower;
+  }
+
+  // If path is just "/" or empty, it's a homepage regardless of what user selected
+  if (path === "/" || path === "") {
+    return "homepage";
+  }
+
+  // If user selected "blog" AND there's a path, trust them - it's likely a blog post
+  if (requestedType === "blog" && path.length > 1) {
+    return "blog";
+  }
+
+  // Strong blog indicators in URL path
+  const blogPatterns = [
+    "/blog/",
+    "/post/",
+    "/article/",
+    "/news/",
+    "/insights/",
+    "/stories/",
+    "/journal/",
+    "/travel-guide",
+    "/guide-",
+    "/how-to-",
+    "/what-is-",
+    "/best-",
+    "/top-",
+    "/review-",
+    "-tips",
+    "-guide",
+    "-tutorial",
+    "-explained",
+  ];
+  const hasBlogUrl = blogPatterns.some((pattern) => path.includes(pattern));
+
+  // Date patterns in URL (common for blog posts)
   const datePattern = /\/\d{4}\/\d{2}\//;
   const hasDateUrl = datePattern.test(urlLower);
+
+  // Blog subdomain
   const hasBlogSubdomain = /^https?:\/\/blog\./i.test(url);
 
   // Strong blog indicators in HTML
-  const hasBlogHTML =
+  const hasBlogSchema =
     html.includes('"@type":"BlogPosting"') ||
     html.includes('"@type":"Article"') ||
     html.includes('"@type": "BlogPosting"') ||
     html.includes('"@type": "Article"');
 
-  // If URL or HTML strongly indicates blog, return blog
-  if (hasBlogUrl || hasDateUrl || hasBlogSubdomain || hasBlogHTML) {
+  // If any strong blog indicator, return blog
+  if (hasBlogUrl || hasDateUrl || hasBlogSubdomain || hasBlogSchema) {
     return "blog";
   }
 
-  // Otherwise trust the user's selection
+  // Default to user's selection
   return requestedType;
 };
 
@@ -541,6 +577,53 @@ const getGrade = (score: number): string => {
 };
 
 // =============================================================================
+// RATE LIMITING
+// =============================================================================
+
+const checkRateLimit = async (
+  supabase: ReturnType<typeof createClient>,
+  url: string,
+  testType: "homepage" | "blog",
+): Promise<{ allowed: boolean; daysRemaining?: number; lastTestDate?: string }> => {
+  const COOLDOWN_DAYS = 7;
+
+  try {
+    const { data, error } = await supabase
+      .from("test_history")
+      .select("created_at")
+      .eq("website", url)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.warn("Rate limit check failed:", error);
+      return { allowed: true }; // Allow if check fails
+    }
+
+    if (!data || data.length === 0) {
+      return { allowed: true };
+    }
+
+    const lastTest = new Date(data[0].created_at);
+    const now = new Date();
+    const daysSinceLastTest = Math.floor((now.getTime() - lastTest.getTime()) / (1000 * 60 * 60 * 24));
+
+    if (daysSinceLastTest < COOLDOWN_DAYS) {
+      return {
+        allowed: false,
+        daysRemaining: COOLDOWN_DAYS - daysSinceLastTest,
+        lastTestDate: lastTest.toISOString().split("T")[0],
+      };
+    }
+
+    return { allowed: true };
+  } catch (e) {
+    console.warn("Rate limit check error:", e);
+    return { allowed: true };
+  }
+};
+
+// =============================================================================
 // MAIN HANDLER
 // =============================================================================
 
@@ -548,6 +631,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const startTime = Date.now();
 
   try {
     const { email, website, testType }: TestSubmission = await req.json();
@@ -562,17 +647,45 @@ serve(async (req) => {
     const validatedEmail = validateEmail(email);
     const validatedWebsite = validateWebsite(website);
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    );
+    // Initialize Supabase
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    console.log(`[INIT] Supabase URL: ${supabaseUrl ? "SET" : "MISSING"}`);
+    console.log(`[INIT] Supabase Key: ${supabaseKey ? "SET (length: " + supabaseKey.length + ")" : "MISSING"}`);
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("[INIT] Missing Supabase credentials!");
+      return new Response(
+        JSON.stringify({ success: false, error: "Server configuration error. Please contact support." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
     const testId = crypto.randomUUID();
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
-    // Use gpt-4o-mini for cost savings (~15x cheaper than gpt-4o)
     const modelName = Deno.env.get("OPENAI_MODEL_NAME") || "gpt-4o-mini";
 
     console.log(`[${testId}] Starting analysis for ${testType}: ${validatedWebsite}`);
+
+    // Check rate limit
+    const rateCheck = await checkRateLimit(supabaseAdmin, validatedWebsite, testType);
+    if (!rateCheck.allowed) {
+      console.log(`[${testId}] Rate limited - tested ${rateCheck.daysRemaining} days ago`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "This URL was recently tested",
+          rateLimited: true,
+          daysRemaining: rateCheck.daysRemaining,
+          lastTestDate: rateCheck.lastTestDate,
+          message: `This URL was tested on ${rateCheck.lastTestDate}. You can retest in ${rateCheck.daysRemaining} days. Need an early retest? Contact us.`,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     // Fetch website
     let websiteHtml = "";
@@ -581,7 +694,7 @@ serve(async (req) => {
     try {
       const websiteResponse = await fetch(validatedWebsite, {
         headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; FoundIndex-Bot/1.0)",
+          "User-Agent": "Mozilla/5.0 (compatible; FoundIndex-Bot/1.0; +https://foundindex.com)",
           Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         },
         redirect: "follow",
@@ -591,6 +704,8 @@ serve(async (req) => {
         websiteHtml = await websiteResponse.text();
         fetchSuccess = true;
         console.log(`[${testId}] Fetched ${websiteHtml.length} chars`);
+      } else {
+        console.error(`[${testId}] Fetch failed with status: ${websiteResponse.status}`);
       }
     } catch (fetchError) {
       console.error(`[${testId}] Fetch failed:`, fetchError);
@@ -655,23 +770,26 @@ serve(async (req) => {
       );
     }
 
-    // FIXED: Pass requestedType to detection function
+    // FIXED: Better page type detection
     const detectedType = detectPageType(validatedWebsite, websiteHtml, testType);
     console.log(`[${testId}] Detected type: ${detectedType}, Requested: ${testType}`);
+
+    // Use the detected type for analysis
+    const analysisType = detectedType;
 
     // ==========================================================================
     // DETERMINISTIC SCORING (40 points)
     // ==========================================================================
 
-    const schemaResult = parseSchemaMarkup(websiteHtml, testType);
-    const semanticResult = analyzeSemanticHtml(websiteHtml, testType);
+    const schemaResult = parseSchemaMarkup(websiteHtml, analysisType);
+    const semanticResult = analyzeSemanticHtml(websiteHtml, analysisType);
     const technicalResult = analyzeTechnical(validatedWebsite, websiteHtml);
-    const imageResult = analyzeImages(websiteHtml, testType);
+    const imageResult = analyzeImages(websiteHtml, analysisType);
 
-    const schemaWeight = testType === "homepage" ? 20 : 18;
-    const semanticWeight = testType === "homepage" ? 12 : 14;
+    const schemaWeight = analysisType === "homepage" ? 20 : 18;
+    const semanticWeight = analysisType === "homepage" ? 12 : 14;
     const technicalWeight = 8;
-    const imageWeight = testType === "homepage" ? 0 : 8;
+    const imageWeight = analysisType === "homepage" ? 0 : 8;
 
     const schemaScore =
       schemaResult.maxScore > 0 ? (schemaResult.totalScore / schemaResult.maxScore) * schemaWeight : 0;
@@ -680,10 +798,9 @@ serve(async (req) => {
     const imageScore = (imageResult.score / imageResult.maxScore) * imageWeight;
 
     const deterministicTotal = Math.round((schemaScore + semanticScore + technicalScore + imageScore) * 10) / 10;
-    const deterministicMax = schemaWeight + semanticWeight + technicalWeight + imageWeight;
 
     console.log(
-      `[${testId}] Deterministic scores: schema=${schemaScore.toFixed(1)}, semantic=${semanticScore.toFixed(1)}, technical=${technicalScore.toFixed(1)}, images=${imageScore.toFixed(1)}, total=${deterministicTotal}/${deterministicMax}`,
+      `[${testId}] Deterministic: schema=${schemaScore.toFixed(1)}, semantic=${semanticScore.toFixed(1)}, technical=${technicalScore.toFixed(1)}, images=${imageScore.toFixed(1)}`,
     );
 
     // ==========================================================================
@@ -693,7 +810,7 @@ serve(async (req) => {
     const extractedContent = websiteHtml.substring(0, 50000);
 
     const analysisPrompt =
-      testType === "homepage"
+      analysisType === "homepage"
         ? `Analyze this business homepage for AI search visibility.
 
 URL: ${validatedWebsite}
@@ -707,7 +824,7 @@ Score these 3 categories (60 points total):
 
 For each issue, provide:
 - priority: "critical" | "medium" | "good"
-- title: Short issue name (sentence case, not title case)
+- title: Short issue name (sentence case)
 - pointsLost: Negative number
 - problem: What's wrong
 - howToFix: Array of specific steps
@@ -736,7 +853,7 @@ Score these 3 categories (60 points total):
 
 For each issue, provide:
 - priority: "critical" | "medium" | "good"
-- title: Short issue name (sentence case, not title case)
+- title: Short issue name (sentence case)
 - pointsLost: Negative number
 - problem: What's wrong
 - howToFix: Array of specific steps
@@ -753,7 +870,7 @@ Return ONLY valid JSON:
   "recommendations": [...]
 }`;
 
-    console.log(`[${testId}] Calling OpenAI...`);
+    console.log(`[${testId}] Calling OpenAI for ${analysisType} analysis...`);
 
     let aiAnalysisResult: Record<string, unknown> = { categories: {}, recommendations: [] };
 
@@ -813,7 +930,7 @@ Return ONLY valid JSON:
     const totalScore = Math.round(deterministicTotal + aiTotal);
     const grade = getGrade(totalScore);
 
-    // Build combined categories for display - FIXED: No spread on unknown types
+    // Build display categories
     const displayCategories: Record<string, unknown> = {
       schemaMarkup: {
         score: Math.round(schemaScore * 10) / 10,
@@ -835,7 +952,7 @@ Return ONLY valid JSON:
       },
     };
 
-    if (testType === "blog") {
+    if (analysisType === "blog") {
       displayCategories.images = {
         score: Math.round(imageScore * 10) / 10,
         max: imageWeight,
@@ -844,7 +961,6 @@ Return ONLY valid JSON:
       };
     }
 
-    // Add AI categories - FIXED: Properly typed iteration
     for (const [key, value] of Object.entries(aiCategories)) {
       if (value && typeof value === "object") {
         const catValue = value as { score?: number; max?: number };
@@ -858,7 +974,7 @@ Return ONLY valid JSON:
       }
     }
 
-    // Generate schema recommendations
+    // Generate recommendations
     const schemaRecommendations = schemaResult.scores
       .filter((s) => !s.found || s.missingFields.length > 0)
       .slice(0, 3)
@@ -870,24 +986,13 @@ Return ONLY valid JSON:
         problem: s.details,
         howToFix: s.found
           ? [`Add missing fields: ${s.missingFields.join(", ")}`]
-          : [
-              `Add ${s.category} schema to your page`,
-              `Use JSON-LD format in a script tag`,
-              `Include required fields: ${s.missingFields.join(", ")}`,
-            ],
+          : [`Add ${s.category} schema to your page`, `Use JSON-LD format`, `Include: ${s.missingFields.join(", ")}`],
         codeExample: !s.found
-          ? `<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "${s.category}",
-  ${s.missingFields.map((f) => `"${f}": "..."`).join(",\n  ")}
-}
-</script>`
+          ? `<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "${s.category}",\n  ${s.missingFields.map((f) => `"${f}": "..."`).join(",\n  ")}\n}\n</script>`
           : "",
         expectedImprovement: `+${Math.round((s.maxPoints - s.earnedPoints) * 10) / 10} points`,
       }));
 
-    // Get AI recommendations safely
     const aiRecommendations = Array.isArray(aiAnalysisResult.recommendations) ? aiAnalysisResult.recommendations : [];
 
     const allRecommendations = [...schemaRecommendations, ...aiRecommendations].map((rec, idx) => {
@@ -904,22 +1009,18 @@ Return ONLY valid JSON:
       };
     });
 
-    // Sort by priority
     allRecommendations.sort((a, b) => {
       const priorityOrder: Record<string, number> = { critical: 0, medium: 1, good: 2 };
-      const aPriority = priorityOrder[a.priority] ?? 2;
-      const bPriority = priorityOrder[b.priority] ?? 2;
-      if (aPriority !== bPriority) return aPriority - bPriority;
-      return (a.pointsLost || 0) - (b.pointsLost || 0);
+      return (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
     });
 
-    // Calculate dynamic industry average from database
+    // Calculate industry average
     let industryAverage = 58;
     try {
       const { data: avgData } = await supabaseAdmin
         .from("test_history")
         .select("score")
-        .eq("test_type", testType)
+        .eq("test_type", analysisType)
         .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
 
       if (avgData && avgData.length > 5) {
@@ -930,51 +1031,66 @@ Return ONLY valid JSON:
       console.warn(`[${testId}] Could not calculate industry average:`, e);
     }
 
-    // Save to database - USING CORRECT TABLE NAME: test_history
-    try {
-      await supabaseAdmin.from("test_history").insert({
-        test_id: testId,
-        website: validatedWebsite,
-        test_type: testType,
-        detected_type: detectedType,
-        score: totalScore,
-        grade,
-        categories: displayCategories,
-        recommendations: allRecommendations,
-      });
-      console.log(`[${testId}] Saved to database`);
-    } catch (historyError) {
-      console.error(`[${testId}] Database save failed:`, historyError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Failed to save results. Please contact support.",
-          details: historyError instanceof Error ? historyError.message : "Database error",
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
+    // ==========================================================================
+    // SAVE TO DATABASE
+    // ==========================================================================
 
-    const responseData = {
-      success: true,
-      testId,
+    console.log(`[${testId}] Attempting to save to database...`);
+
+    const insertData = {
+      test_id: testId,
+      website: validatedWebsite,
+      test_type: testType,
+      detected_type: detectedType,
       score: totalScore,
       grade,
-      detectedType,
-      requestedType: testType,
       categories: displayCategories,
       recommendations: allRecommendations,
-      industryAverage,
-      criteriaCount: testType === "homepage" ? 47 : 52,
     };
 
-    console.log(`[${testId}] SUCCESS - Score: ${totalScore}, Grade: ${grade}`);
+    console.log(
+      `[${testId}] Insert data prepared:`,
+      JSON.stringify({ test_id: testId, website: validatedWebsite, score: totalScore }),
+    );
 
-    return new Response(JSON.stringify(responseData), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const { data: insertResult, error: insertError } = await supabaseAdmin
+      .from("test_history")
+      .insert(insertData)
+      .select();
+
+    if (insertError) {
+      console.error(`[${testId}] DATABASE INSERT ERROR:`, insertError);
+      console.error(`[${testId}] Error code: ${insertError.code}`);
+      console.error(`[${testId}] Error message: ${insertError.message}`);
+      console.error(`[${testId}] Error details:`, insertError.details);
+
+      // Still return success to user but log the error
+      // Don't block the user experience
+    } else {
+      console.log(`[${testId}] ✅ SAVED TO DATABASE successfully`);
+      console.log(`[${testId}] Insert result:`, insertResult);
+    }
+
+    const duration = Date.now() - startTime;
+    console.log(`[${testId}] SUCCESS - Score: ${totalScore}, Grade: ${grade}, Duration: ${duration}ms`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        testId,
+        score: totalScore,
+        grade,
+        detectedType,
+        requestedType: testType,
+        categories: displayCategories,
+        recommendations: allRecommendations,
+        industryAverage,
+        criteriaCount: analysisType === "homepage" ? 47 : 52,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (error) {
-    console.error("Error:", error);
+    console.error("FATAL ERROR:", error);
     return new Response(
       JSON.stringify({
         success: false,
