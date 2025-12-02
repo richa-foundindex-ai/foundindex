@@ -276,6 +276,23 @@ const Index = () => {
             <span><strong>60 seconds</strong> to score</span>
           </div>
         </div>
+
+        {/* CTA Button */}
+        <a
+          href="#test-section"
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById('test-section')?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="inline-block"
+        >
+          <Button
+            size="lg"
+            className="h-14 px-10 text-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            Test your site free
+          </Button>
+        </a>
       </header>
 
       {/* Explanation cards */}
@@ -313,7 +330,7 @@ const Index = () => {
         </div>
 
         {/* Test cards */}
-        <div className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
+        <div id="test-section" className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto scroll-mt-8">
           {/* Homepage card */}
           <Card className="relative bg-gradient-to-br from-blue-50 to-background dark:from-blue-950/20 border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 transition-all duration-300">
             <CardContent className="p-8">
