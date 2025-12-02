@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
+import SEOSchema from "@/components/SEOSchema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, AlertCircle, Zap, Target, TrendingUp, Shield } from "lucide-react";
+import { Loader2, AlertCircle, Zap, Target, TrendingUp, Shield, CheckCircle, AlertTriangle, ClipboardList } from "lucide-react";
 import { analytics } from "@/utils/analytics";
 import { validateAndNormalizeUrl, getErrorMessage } from "@/utils/urlValidation";
 import { supabase } from "@/integrations/supabase/client";
@@ -243,30 +244,75 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOSchema />
       <Header />
 
       {/* Hero section */}
-      <section className="container mx-auto px-4 py-12 md:py-24 text-center">
-        <Badge className="mb-6 text-sm md:text-base px-4 md:px-6 py-2 bg-primary text-primary-foreground hover:bg-primary-hover">
-          🚀 Free beta — all features unlocked
-        </Badge>
+      <header className="container mx-auto px-4 py-12 md:py-24 text-center">
+        <p className="text-sm md:text-base font-semibold text-destructive mb-4">
+          Your SEO is fine. AI still can't find you.
+        </p>
 
         <h1 className="text-[2rem] md:text-6xl font-bold mb-6 text-foreground leading-tight px-2">
-          Get cited by AI search engines
+          Score your website's visibility to AI search engines
         </h1>
 
-        <p className="text-lg md:text-2xl text-muted-foreground mb-4 max-w-3xl mx-auto px-4">
-          Score your website in 60 seconds. See exactly what blocks ChatGPT, Perplexity, and Claude from citing your
-          content.
+        <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-3xl mx-auto px-4">
+          ChatGPT, Perplexity, and Claude don't rank pages—they cite sources. FoundIndex analyzes if your website is structured clearly enough for AI to understand, parse, and recommend.
         </p>
 
-        <p className="text-sm text-muted-foreground px-4">
-          <span className="font-semibold">47+ criteria analyzed</span> · Based on AI search optimization research
-        </p>
-      </section>
+        {/* Social proof row */}
+        <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 mb-8">
+          <div className="flex items-center gap-2 text-sm md:text-base">
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            <span><strong>75+</strong> websites tested</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm md:text-base">
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            <span><strong>47</strong> criteria analyzed</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm md:text-base">
+            <CheckCircle className="h-5 w-5 text-green-500" />
+            <span><strong>60 seconds</strong> to score</span>
+          </div>
+        </div>
+      </header>
 
-      {/* Test cards */}
+      {/* Explanation cards */}
       <section className="container mx-auto px-4 pb-12 md:pb-16">
+        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-12">
+          <article className="p-6 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800">
+            <div className="flex items-center gap-3 mb-3">
+              <AlertTriangle className="h-6 w-6 text-red-500" />
+              <h3 className="font-bold text-foreground">The Problem</h3>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              Google ranks pages. AI cites sources. Your SEO strategy doesn't prepare you for ChatGPT, Perplexity, or Claude—which now drive 10%+ of search queries.
+            </p>
+          </article>
+
+          <article className="p-6 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-3 mb-3">
+              <ClipboardList className="h-6 w-6 text-blue-500" />
+              <h3 className="font-bold text-foreground">What We Check</h3>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              Schema markup, semantic structure, content clarity, authority signals, and 40+ other criteria that determine if AI can parse and cite your content.
+            </p>
+          </article>
+
+          <article className="p-6 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+            <div className="flex items-center gap-3 mb-3">
+              <Zap className="h-6 w-6 text-green-500" />
+              <h3 className="font-bold text-foreground">What You Get</h3>
+            </div>
+            <p className="text-muted-foreground text-sm">
+              A 0-100 score with prioritized recommendations and copy-paste code examples. Fix issues in minutes, not months. Retest to track improvement.
+            </p>
+          </article>
+        </div>
+
+        {/* Test cards */}
         <div className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto">
           {/* Homepage card */}
           <Card className="relative bg-gradient-to-br from-blue-50 to-background dark:from-blue-950/20 border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 transition-all duration-300">
