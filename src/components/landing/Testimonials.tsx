@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
+import gunishthaPhoto from "@/assets/gunishtha-doomra.jpg";
 
 const Testimonials = () => {
   return (
@@ -21,15 +22,33 @@ const Testimonials = () => {
               The AI visibility insights were very accurate, and the blog audit was on-point.
             </p>
 
-            {/* Photo placeholder */}
+            {/* Photo and info */}
             <div className="flex flex-col items-center">
-              <div className="w-[60px] h-[60px] rounded-full bg-gray-200 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 mb-3" />
+              <img 
+                src={gunishthaPhoto} 
+                alt="Gunishtha Doomra" 
+                className="w-[60px] h-[60px] rounded-full object-cover border-2 border-gray-300 dark:border-gray-600 mb-3"
+              />
               
               {/* Name */}
-              <p className="font-bold text-foreground">Gunishtha Doomra</p>
+              <a
+                href="https://www.linkedin.com/in/gunishtha-doomra/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-foreground hover:underline transition-colors"
+              >
+                Gunishtha Doomra
+              </a>
               
               {/* Title */}
-              <p className="text-sm text-muted-foreground">FoundIndex Beta User</p>
+              <a
+                href="https://guptahimanshi.medium.com/part-1-why-dependency-injection-matters-in-android-e9d9b67e32f2"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-muted-foreground hover:underline transition-colors"
+              >
+                FoundIndex Beta User
+              </a>
             </div>
           </Card>
 
