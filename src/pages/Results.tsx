@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertCircle,
   CheckCircle2,
@@ -27,6 +27,7 @@ import {
   ArrowLeft,
   MessageSquare,
   TrendingUp,
+  Info,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -120,6 +121,30 @@ const PRIORITY_ICONS: Record<string, React.ReactNode> = {
 // HELPER FUNCTIONS
 // =============================================================================
 
+// Get color based on score percentage (0-100)
+// 0-39: Red, 40-69: Orange, 70-84: Yellow/Amber, 85-100: Green
+const getScoreColor = (percentage: number): { bg: string; text: string; hex: string } => {
+  if (percentage >= 85) return { bg: "bg-emerald-500", text: "text-emerald-600", hex: "#10B981" };
+  if (percentage >= 70) return { bg: "bg-amber-400", text: "text-amber-600", hex: "#FBBF24" };
+  if (percentage >= 40) return { bg: "bg-orange-500", text: "text-orange-600", hex: "#F59E0B" };
+  return { bg: "bg-red-500", text: "text-red-600", hex: "#EF4444" };
+};
+
+// Category tooltips
+const CATEGORY_TOOLTIPS: Record<string, string> = {
+  contentClarity: "Measures how explicitly your homepage states what you do, who you serve, and what problems you solve. AI systems need clear, direct language.",
+  technicalFoundation: "Evaluates schema markup, heading structure, and machine-readable elements that help AI parse your content.",
+  semanticStructure: "Analyzes content organization, FAQ sections, and information architecture for AI comprehension.",
+  authoritySignals: "Checks for testimonials, credentials, case studies, and credibility markers AI systems trust.",
+  answerStructure: "Measures whether key information (pricing, services, contact) is easily discoverable.",
+  scannability: "Evaluates how easily AI can scan and extract key points from your content structure.",
+  expertiseSignals: "Checks for author credentials, expertise indicators, and trust markers.",
+  faqSchema: "Evaluates FAQ structured data and question-answer formatting for AI comprehension.",
+  technicalSEO: "Analyzes technical SEO elements that improve AI discoverability.",
+  schemaMarkup: "Evaluates structured data markup that helps AI understand your content.",
+  images: "Checks image optimization, alt text, and visual content accessibility for AI.",
+};
+
 // Format expected improvement to always show "+" suffix
 // FIX: Handle both string and number types from database
 const formatExpectedImprovement = (improvement: string | number | undefined): string => {
@@ -146,40 +171,93 @@ const formatExpectedImprovement = (improvement: string | number | undefined): st
 // HELPER COMPONENTS
 // =============================================================================
 
-// Speedometer gauge component
+// Speedometer gauge component with updated color zones
 const SpeedometerGauge = ({ score }: { score: number }) => {
   const rotation = -90 + (score / 100) * 180;
+  const scoreColor = getScoreColor(score);
 
   return (
     <div className="relative w-64 h-40 mx-auto">
       <svg viewBox="0 0 200 120" className="w-full h-full">
         {/* Background arc */}
         <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#e5e7eb" strokeWidth="12" strokeLinecap="round" />
-        {/* Red zone (0-40) */}
-        <path d="M 20 100 A 80 80 0 0 1 52 38" fill="none" stroke="#ef4444" strokeWidth="12" strokeLinecap="round" />
-        {/* Orange zone (40-60) */}
-        <path d="M 52 38 A 80 80 0 0 1 100 20" fill="none" stroke="#f97316" strokeWidth="12" strokeLinecap="round" />
-        {/* Yellow zone (60-80) */}
-        <path d="M 100 20 A 80 80 0 0 1 148 38" fill="none" stroke="#eab308" strokeWidth="12" strokeLinecap="round" />
-        {/* Green zone (80-100) */}
-        <path d="M 148 38 A 80 80 0 0 1 180 100" fill="none" stroke="#22c55e" strokeWidth="12" strokeLinecap="round" />
+        {/* Red zone (0-39) */}
+        <path d="M 20 100 A 80 80 0 0 1 50 42" fill="none" stroke="#EF4444" strokeWidth="12" strokeLinecap="round" />
+        {/* Orange zone (40-69) */}
+        <path d="M 50 42 A 80 80 0 0 1 124 22" fill="none" stroke="#F59E0B" strokeWidth="12" strokeLinecap="round" />
+        {/* Yellow/Amber zone (70-84) */}
+        <path d="M 124 22 A 80 80 0 0 1 156 46" fill="none" stroke="#FBBF24" strokeWidth="12" strokeLinecap="round" />
+        {/* Green zone (85-100) */}
+        <path d="M 156 46 A 80 80 0 0 1 180 100" fill="none" stroke="#10B981" strokeWidth="12" strokeLinecap="round" />
         {/* Needle */}
         <g transform={`rotate(${rotation}, 100, 100)`}>
           <line x1="100" y1="100" x2="100" y2="35" stroke="#1f2937" strokeWidth="3" strokeLinecap="round" />
           <circle cx="100" cy="100" r="8" fill="#1f2937" />
         </g>
         {/* Score labels */}
-        <text x="25" y="115" fontSize="12" fill="#6b7280">
-          20
-        </text>
-        <text x="165" y="115" fontSize="12" fill="#6b7280">
-          80
-        </text>
+        <text x="15" y="115" fontSize="10" fill="#6b7280">0</text>
+        <text x="40" y="55" fontSize="10" fill="#6b7280">40</text>
+        <text x="120" y="35" fontSize="10" fill="#6b7280">70</text>
+        <text x="155" y="55" fontSize="10" fill="#6b7280">85</text>
+        <text x="170" y="115" fontSize="10" fill="#6b7280">100</text>
       </svg>
       {/* Center score display */}
       <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 text-center">
-        <div className="text-5xl font-bold text-gray-900">{score}</div>
+        <div className={`text-5xl font-bold ${scoreColor.text}`}>{score}</div>
         <div className="text-sm text-gray-500">out of 100</div>
+      </div>
+    </div>
+  );
+};
+
+// Category progress bar with color coding and tooltip
+const CategoryProgressBar = ({ 
+  categoryKey, 
+  category, 
+  displayName 
+}: { 
+  categoryKey: string; 
+  category: { score: number; max: number; percentage: number }; 
+  displayName: string;
+}) => {
+  const color = getScoreColor(category.percentage);
+  const tooltip = CATEGORY_TOOLTIPS[categoryKey] || `Score for ${displayName}`;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-medium">{displayName}</span>
+          <TooltipProvider>
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <button className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                  <Info className="h-3.5 w-3.5" />
+                  <span className="sr-only">More info about {displayName}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs text-sm">
+                <p>{tooltip}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <span className={`text-sm font-semibold ${color.text}`}>
+          {category.percentage}%
+        </span>
+      </div>
+      {/* Progress bar container */}
+      <div className="relative h-3 w-full overflow-hidden rounded-full bg-secondary">
+        <div
+          className={`h-full transition-all duration-500 ease-out ${color.bg}`}
+          style={{ width: `${category.percentage}%` }}
+        />
+        {/* Percentage label inside bar (for larger percentages) */}
+        {category.percentage >= 25 && (
+          <span className="absolute inset-y-0 left-2 flex items-center text-[10px] font-medium text-white">
+            {category.score}/{category.max}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -1019,16 +1097,34 @@ Generated by FoundIndex.com
               How well your {isHomepage ? "homepage" : "blog"}{" "}
               {isHomepage ? "signals clarity to AI" : "answers questions for AI"}
             </p>
+            {/* Color legend */}
+            <div className="flex flex-wrap gap-3 mt-3 text-xs">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-red-500" />
+                <span className="text-muted-foreground">Critical (0-39%)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-orange-500" />
+                <span className="text-muted-foreground">Needs work (40-69%)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-amber-400" />
+                <span className="text-muted-foreground">Good (70-84%)</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-emerald-500" />
+                <span className="text-muted-foreground">Excellent (85-100%)</span>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {Object.entries(resultData.categories).map(([key, category]) => (
-              <div key={key}>
-                <div className="flex justify-between mb-1">
-                  <span className="text-sm font-medium">{CATEGORY_NAMES[key] || key}</span>
-                  <span className="text-sm text-muted-foreground">{category.percentage}%</span>
-                </div>
-                <Progress value={category.percentage} className="h-2" />
-              </div>
+              <CategoryProgressBar
+                key={key}
+                categoryKey={key}
+                category={category}
+                displayName={CATEGORY_NAMES[key] || key}
+              />
             ))}
           </CardContent>
         </Card>
