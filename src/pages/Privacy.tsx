@@ -62,6 +62,7 @@ export default function Privacy() {
           {/* Terms of Service */}
           <section>
             <h2 className="text-2xl font-bold mb-4">Terms of service</h2>
+            <p className="text-sm text-muted-foreground mb-6">Last updated: December 2025</p>
 
             <div className="space-y-6">
               <div>
@@ -73,27 +74,75 @@ export default function Privacy() {
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-2">2. Acceptable use</h3>
+                <h3 className="text-lg font-semibold mb-2">2. Account & access</h3>
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
-                  <li>Only submit URLs you have permission to analyze</li>
-                  <li>Do not attempt to circumvent rate limits</li>
-                  <li>Do not use automated tools to submit bulk requests</li>
+                  <li>No account is required for basic use</li>
+                  <li>Email submission unlocks full results</li>
+                  <li>One analysis per URL every 7 days</li>
                 </ul>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-2">3. Disclaimer</h3>
+                <h3 className="text-lg font-semibold mb-2">3. Acceptable use</h3>
+                <p className="text-muted-foreground mb-2">You agree NOT to:</p>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Submit URLs you don't have permission to analyze</li>
+                  <li>Attempt to circumvent rate limits</li>
+                  <li>Use automated tools for bulk submissions</li>
+                  <li>Reverse engineer our scoring algorithms</li>
+                  <li>Misrepresent FoundIndex scores as official rankings</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-2">4. Intellectual property</h3>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Our scoring methodology, algorithms, and recommendations are proprietary</li>
+                  <li>You may share your own scores publicly</li>
+                  <li>You may not claim affiliation with FoundIndex without permission</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-2">5. Disclaimer of warranties</h3>
+                <p className="text-muted-foreground mb-2">
+                  FoundIndex is provided "as is" without warranties of any kind. We do not guarantee:
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
+                  <li>Improved rankings in any search engine</li>
+                  <li>Accuracy of all recommendations for your specific situation</li>
+                  <li>Uninterrupted service availability</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-2">6. Limitation of liability</h3>
                 <p className="text-muted-foreground">
-                  Our scores and recommendations are advisory. We cannot guarantee improved rankings in any search
-                  engine. Results may vary based on many factors outside our control.
+                  FoundIndex and its creators shall not be liable for any indirect, incidental, or consequential damages arising from use of this service.
                 </p>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold mb-2">4. Beta service</h3>
+                <h3 className="text-lg font-semibold mb-2">7. Beta service notice</h3>
                 <p className="text-muted-foreground">
-                  FoundIndex is currently in beta. Features, pricing, and availability may change. We appreciate your
-                  feedback as we improve the service.
+                  FoundIndex is currently in beta. Features, pricing, and availability may change without notice. We appreciate your feedback as we improve.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-2">8. Changes to terms</h3>
+                <p className="text-muted-foreground">
+                  We may update these terms at any time. Continued use constitutes acceptance of updated terms.
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-2">9. Contact</h3>
+                <p className="text-muted-foreground">
+                  For questions about these terms:{" "}
+                  <Link to="/contact" className="text-link">
+                    Contact us
+                  </Link>
                 </p>
               </div>
             </div>
@@ -103,7 +152,7 @@ export default function Privacy() {
 
           {/* Contact */}
           <section>
-            <h2 className="text-2xl font-bold mb-4">5. Contact</h2>
+            <h2 className="text-2xl font-bold mb-4">Contact</h2>
             <p className="text-muted-foreground mb-4">For privacy-related questions or any other inquiries:</p>
             <Link to="/contact">
               <Button variant="outline">Contact us</Button>
