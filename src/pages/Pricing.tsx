@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Helmet } from "react-helmet-async";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -139,6 +140,10 @@ export default function Pricing() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Pricing - FoundIndex</title>
+        <meta name="description" content="FoundIndex pricing plans. Free tier available. Score your website's AI visibility today." />
+      </Helmet>
       <Header />
 
       <main className="container mx-auto px-4 py-12 max-w-5xl">
