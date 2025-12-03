@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
+import foundindexLogo from "@/assets/foundindex-logo.png";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -26,9 +27,9 @@ const Header = () => {
         <Link
           to="/"
           onClick={handleHomeClick}
-          className="text-xl font-bold text-foreground hover:text-primary transition-colors"
+          className="hover:opacity-80 transition-opacity"
         >
-          FoundIndex
+          <img src={foundindexLogo} alt="FoundIndex" className="h-8" />
         </Link>
         
         {/* Desktop Navigation */}
