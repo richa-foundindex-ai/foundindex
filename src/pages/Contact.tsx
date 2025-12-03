@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import Header from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,6 +97,10 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Contact - FoundIndex</title>
+        <meta name="description" content="Contact the FoundIndex team. Questions about AI visibility scoring or feedback welcome." />
+      </Helmet>
       <Header />
       <main className="container mx-auto px-4 py-12 max-w-xl">
         <Card>

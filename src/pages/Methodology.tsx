@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import Header from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle } from "lucide-react";
@@ -6,6 +7,10 @@ import { Link } from "react-router-dom";
 export default function Methodology() {
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Methodology - FoundIndex</title>
+        <meta name="description" content="Learn how FoundIndex scores websites across 47 criteria for AI visibility. Understand our analysis methodology." />
+      </Helmet>
       <Header />
 
       <main className="container mx-auto px-4 py-8 max-w-4xl">
