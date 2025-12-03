@@ -28,7 +28,7 @@ const Header = () => {
           onClick={handleHomeClick}
           className="text-xl font-bold text-foreground hover:text-primary transition-colors"
         >
-          Found<span className="relative inline-block">ı<span className="absolute top-0 left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full"></span></span>ndex
+          Found<span className="relative inline-block">ı<span className="absolute top-[0.15em] left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full"></span></span>ndex
         </Link>
         
         {/* Desktop Navigation */}
