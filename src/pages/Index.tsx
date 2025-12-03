@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, AlertCircle, Zap, Target, TrendingUp, Shield, CheckCircle, AlertTriangle, ClipboardList } from "lucide-react";
+import { Loader2, AlertCircle, Zap, Target, TrendingUp, Shield, CheckCircle, AlertTriangle, ClipboardList, BarChart3, Search, CheckSquare, X, Check } from "lucide-react";
 import { analytics } from "@/utils/analytics";
 import { validateAndNormalizeUrl, getErrorMessage } from "@/utils/urlValidation";
 import { supabase } from "@/integrations/supabase/client";
@@ -328,7 +328,137 @@ const Index = () => {
             </p>
           </article>
         </div>
+      </section>
 
+      {/* Comparison Section - How FoundIndex is Different */}
+      <section className="bg-muted py-16 md:py-24">
+        <div className="container mx-auto px-4">
+          <h2 className="text-2xl md:text-4xl font-bold text-center mb-4 text-foreground">
+            Not Another Brand Monitor
+          </h2>
+          <p className="text-center text-muted-foreground mb-12 max-w-3xl mx-auto text-lg">
+            Most AI visibility tools tell you IF you're being mentioned. FoundIndex tells you WHY you're not—and how to fix it.
+          </p>
+
+          {/* Comparison Table */}
+          <div className="max-w-5xl mx-auto mb-12">
+            <div className="overflow-x-auto pb-2 relative">
+              <div className="md:hidden text-xs text-muted-foreground text-center mb-2 flex items-center justify-center gap-2">
+                <span>← Scroll to compare →</span>
+              </div>
+              <table className="w-full min-w-[700px] border-collapse bg-background rounded-lg overflow-hidden shadow-sm">
+                <thead>
+                  <tr className="bg-[#1a365d] text-white">
+                    <th className="text-left p-4 font-semibold">Feature</th>
+                    <th className="text-center p-4 font-semibold">HubSpot AEO Grader</th>
+                    <th className="text-center p-4 font-semibold">Semrush AI Visibility</th>
+                    <th className="text-center p-4 font-semibold bg-blue-700">FoundIndex</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">What it measures</td>
+                    <td className="p-4 text-center text-muted-foreground">Brand mentions in AI answers</td>
+                    <td className="p-4 text-center text-muted-foreground">Brand share of voice across AI platforms</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-foreground">Page parseability & AI readability</td>
+                  </tr>
+                  <tr className="border-b border-border bg-muted/50">
+                    <td className="p-4 font-medium text-foreground">Input required</td>
+                    <td className="p-4 text-center text-muted-foreground">Brand name</td>
+                    <td className="p-4 text-center text-muted-foreground">Brand name</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-foreground">Specific URL</td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Analyzes specific pages</td>
+                    <td className="p-4 text-center"><X className="h-5 w-5 mx-auto text-gray-400" /></td>
+                    <td className="p-4 text-center"><X className="h-5 w-5 mx-auto text-gray-400" /></td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 mx-auto text-green-500" /></td>
+                  </tr>
+                  <tr className="border-b border-border bg-muted/50">
+                    <td className="p-4 font-medium text-foreground">Shows exactly what to fix</td>
+                    <td className="p-4 text-center"><X className="h-5 w-5 mx-auto text-gray-400" /></td>
+                    <td className="p-4 text-center"><X className="h-5 w-5 mx-auto text-gray-400" /></td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 mx-auto text-green-500" /></td>
+                  </tr>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Before/after benchmarking</td>
+                    <td className="p-4 text-center"><X className="h-5 w-5 mx-auto text-gray-400" /></td>
+                    <td className="p-4 text-center text-muted-foreground text-sm"><X className="h-5 w-5 mx-auto text-gray-400" /></td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 mx-auto text-green-500" /></td>
+                  </tr>
+                  <tr className="border-b border-border bg-muted/50">
+                    <td className="p-4 font-medium text-foreground">Works for any website</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">Only if AI recognizes the brand</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">Only if AI recognizes the brand</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-green-600 dark:text-green-400">✓ Any URL</td>
+                  </tr>
+                  <tr>
+                    <td className="p-4 font-medium text-foreground">Price</td>
+                    <td className="p-4 text-center text-muted-foreground">Free</td>
+                    <td className="p-4 text-center text-muted-foreground">$99/month</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-bold text-green-600 dark:text-green-400">Free</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Differentiator Cards */}
+          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-12">
+            <article className="p-6 bg-background rounded-lg shadow-sm border border-border">
+              <div className="flex items-center gap-3 mb-4">
+                <BarChart3 className="h-8 w-8 text-blue-500" />
+              </div>
+              <h3 className="font-bold text-lg mb-3 text-foreground">The Scoreboard vs The Playbook</h3>
+              <p className="text-muted-foreground text-sm">
+                HubSpot and Semrush show the scoreboard—how often AI mentions your brand. FoundIndex gives you the playbook—exactly what to change so AI can understand and cite your content.
+              </p>
+            </article>
+
+            <article className="p-6 bg-background rounded-lg shadow-sm border border-border">
+              <div className="flex items-center gap-3 mb-4">
+                <Search className="h-8 w-8 text-purple-500" />
+              </div>
+              <h3 className="font-bold text-lg mb-3 text-foreground">Page-Level, Not Brand-Level</h3>
+              <p className="text-muted-foreground text-sm">
+                Brand monitors work for Nike and HubSpot. But if AI has never heard of you, they can't help. FoundIndex analyzes your actual content and tells you what's blocking AI from finding it.
+              </p>
+            </article>
+
+            <article className="p-6 bg-background rounded-lg shadow-sm border border-border">
+              <div className="flex items-center gap-3 mb-4">
+                <CheckSquare className="h-8 w-8 text-green-500" />
+              </div>
+              <h3 className="font-bold text-lg mb-3 text-foreground">Fix It, Then Prove It</h3>
+              <p className="text-muted-foreground text-sm">
+                Use your FoundIndex score as a baseline. Make the recommended changes. Re-test. Show clients the improvement. That's how you prove ROI on AI optimization work.
+              </p>
+            </article>
+          </div>
+
+          {/* CTA Button */}
+          <div className="text-center">
+            <a
+              href="#test-section"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById('test-section')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="inline-block"
+            >
+              <Button
+                size="lg"
+                className="h-14 px-10 text-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                Test Your Page Now →
+              </Button>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* URL Input Section */}
+      <section className="container mx-auto px-4 py-12 md:py-16">
         {/* Test cards */}
         <div id="test-section" className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto scroll-mt-8">
           {/* Homepage card */}
