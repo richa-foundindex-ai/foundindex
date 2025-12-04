@@ -1,8 +1,44 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import gunishthaPhoto from "@/assets/gunishtha-doomra.jpg";
+import blueNectarLogo from "@/assets/blue-nectar-logo.png";
+
+const testimonials = [
+  {
+    id: 1,
+    quote: "The AI visibility insights were very accurate, and the blog audit was on-point.",
+    name: "Gunishtha Doomra",
+    title: "FoundIndex Beta User",
+    image: gunishthaPhoto,
+    isPhoto: true,
+    nameLink: "https://www.linkedin.com/in/gunishtha-doomra/",
+    titleLink: "https://guptahimanshi.medium.com/part-1-why-dependency-injection-matters-in-android-e9d9b67e32f2",
+  },
+  {
+    id: 2,
+    quote: "Genuinely seems like a top class tool to me. And definitely a good market to get in early. UI is slick, recommendations are clear and seem actionable.",
+    name: "Sanyog Jain",
+    title: "Co-Founder, Blue Nectar Ayurved",
+    image: blueNectarLogo,
+    isPhoto: false,
+    nameLink: "https://www.linkedin.com/in/sanyog/",
+    titleLink: "https://www.bluenectar.co.in",
+  },
+];
 
 const Testimonials = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  };
+
   return (
     <section className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4">
@@ -10,58 +46,142 @@ const Testimonials = () => {
           What Early Users Say
         </h2>
 
-        <div className="max-w-2xl mx-auto">
-          <Card className="p-8 bg-white dark:bg-card shadow-md rounded-xl text-center">
-            {/* Decorative quotation mark */}
-            <span className="text-6xl md:text-8xl text-gray-200 dark:text-gray-700 font-serif leading-none block mb-4">
-              "
-            </span>
-            
-            {/* Quote text */}
-            <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 mb-8 -mt-4">
-              The AI visibility insights were very accurate, and the blog audit was on-point.
-            </p>
+        {/* Desktop/Tablet: Side by side */}
+        <div className="hidden md:grid md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
+          {testimonials.map((testimonial) => (
+            <TestimonialCard key={testimonial.id} testimonial={testimonial} />
+          ))}
+        </div>
 
-            {/* Photo and info */}
-            <div className="flex flex-col items-center">
-              <img 
-                src={gunishthaPhoto} 
-                alt="Gunishtha Doomra" 
-                className="w-[60px] h-[60px] rounded-full object-cover border-2 border-gray-300 dark:border-gray-600 mb-3"
-              />
-              
-              {/* Name */}
-              <a
-                href="https://www.linkedin.com/in/gunishtha-doomra/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-foreground hover:underline transition-colors"
-              >
-                Gunishtha Doomra
-              </a>
-              
-              {/* Title */}
-              <a
-                href="https://guptahimanshi.medium.com/part-1-why-dependency-injection-matters-in-android-e9d9b67e32f2"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-muted-foreground hover:underline transition-colors"
-              >
-                FoundIndex Beta User
-              </a>
+        {/* Mobile: Carousel */}
+        <div className="md:hidden relative">
+          <div className="overflow-hidden">
+            <div
+              className="flex transition-transform duration-300 ease-in-out"
+              style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+            >
+              {testimonials.map((testimonial) => (
+                <div key={testimonial.id} className="w-full flex-shrink-0 px-2">
+                  <TestimonialCard testimonial={testimonial} />
+                </div>
+              ))}
             </div>
-          </Card>
+          </div>
 
-          {/* Contact CTA */}
-          <p className="text-center text-sm text-muted-foreground mt-8">
-            Want to share your experience?{" "}
-            <Link to="/contact" className="underline hover:text-foreground transition-colors">
-              Contact us
-            </Link>
+          {/* Navigation Arrows */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 bg-white dark:bg-card shadow-md rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Previous testimonial"
+          >
+            <ChevronLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 bg-white dark:bg-card shadow-md rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Next testimonial"
+          >
+            <ChevronRight className="w-5 h-5 text-foreground" />
+          </button>
+
+          {/* Dot Indicators */}
+          <div className="flex justify-center gap-2 mt-6">
+            {testimonials.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                  index === currentIndex
+                    ? "bg-primary"
+                    : "bg-gray-300 dark:bg-gray-600"
+                }`}
+                aria-label={`Go to testimonial ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Contact CTA */}
+        <p className="text-center text-sm text-muted-foreground mt-10">
+          Want to share your experience?{" "}
+          <Link to="/contact" className="underline hover:text-foreground transition-colors">
+            Contact us
+          </Link>
+        </p>
+
+        {/* Trusted Partners Section */}
+        <div className="mt-10 bg-gray-50 dark:bg-gray-900/50 rounded-lg py-6 px-8 max-w-2xl mx-auto text-center">
+          <p className="text-[15px] text-gray-700 dark:text-gray-300">
+            Thank you to our early users and partners:{" "}
+            <span className="text-gray-800 dark:text-gray-200">Gunishtha Doomra</span>
+            {" · "}
+            <a
+              href="https://www.bluenectar.co.in"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#0066cc] hover:underline transition-colors"
+            >
+              Blue Nectar Ayurved
+            </a>
           </p>
         </div>
       </div>
     </section>
+  );
+};
+
+interface TestimonialCardProps {
+  testimonial: typeof testimonials[0];
+}
+
+const TestimonialCard = ({ testimonial }: TestimonialCardProps) => {
+  return (
+    <Card className="p-6 md:p-8 bg-white dark:bg-card shadow-md rounded-xl text-center hover:scale-[1.02] transition-transform duration-200">
+      {/* Decorative quotation mark */}
+      <span className="text-5xl md:text-6xl text-gray-200 dark:text-gray-700 font-serif leading-none block mb-2 opacity-50">
+        "
+      </span>
+
+      {/* Quote text */}
+      <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-6 -mt-2 leading-relaxed">
+        {testimonial.quote}
+      </p>
+
+      {/* Photo/Logo and info */}
+      <div className="flex flex-col items-center">
+        <div
+          className={`w-[60px] h-[60px] rounded-full border border-gray-200 dark:border-gray-600 mb-3 overflow-hidden flex items-center justify-center ${
+            testimonial.isPhoto ? "" : "bg-white p-1"
+          }`}
+        >
+          <img
+            src={testimonial.image}
+            alt={testimonial.name}
+            className={testimonial.isPhoto ? "w-full h-full object-cover" : "w-full h-full object-contain"}
+          />
+        </div>
+
+        {/* Name */}
+        <a
+          href={testimonial.nameLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-foreground hover:text-[#0066cc] hover:underline transition-colors"
+        >
+          {testimonial.name}
+        </a>
+
+        {/* Title */}
+        <a
+          href={testimonial.titleLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm text-muted-foreground hover:text-[#0066cc] hover:underline transition-colors"
+        >
+          {testimonial.title}
+        </a>
+      </div>
+    </Card>
   );
 };
 
