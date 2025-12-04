@@ -109,24 +109,6 @@ const Testimonials = () => {
           </Link>
         </p>
 
-        {/* Featured By Section */}
-        <div className="mt-16 border-t border-border/50 pt-10 max-w-xl mx-auto text-center">
-          <p className="text-xs uppercase tracking-widest font-medium text-muted-foreground mb-4">
-            Featured by innovative teams at
-          </p>
-          <p className="text-[15px] text-foreground/80 font-medium tracking-wide">
-            Gunishtha Doomra{" "}
-            <span className="text-muted-foreground/50 mx-2">·</span>{" "}
-            <a
-              href="https://www.bluenectar.co.in"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:text-primary/80 hover:underline transition-colors"
-            >
-              Blue Nectar Ayurved
-            </a>
-          </p>
-        </div>
       </div>
     </section>
   );
