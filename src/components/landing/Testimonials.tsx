@@ -8,16 +8,6 @@ import blueNectarLogo from "@/assets/blue-nectar-logo.png";
 const testimonials = [
   {
     id: 1,
-    quote: "The AI visibility insights were very accurate, and the blog audit was on-point.",
-    name: "Gunishtha Doomra",
-    title: "Tech Blogger & Software Developer",
-    image: gunishthaPhoto,
-    isPhoto: true,
-    nameLink: "https://www.linkedin.com/in/gunishtha-doomra/",
-    titleLink: "https://guptahimanshi.medium.com/",
-  },
-  {
-    id: 2,
     quote: "A genuinely top-tier tool. The AI visibility insights uncovered opportunities our regular SEO stack misses entirely. Clear, actionable recommendations in a space that's moving fast - this tool is ahead of the curve.",
     name: "Sanyog Jain",
     title: "Co-Founder, Blue Nectar Ayurved",
@@ -25,6 +15,16 @@ const testimonials = [
     isPhoto: false,
     nameLink: "https://www.linkedin.com/in/sanyog/",
     titleLink: "https://www.bluenectar.co.in",
+  },
+  {
+    id: 2,
+    quote: "Surprisingly accurate insights. FoundIndex highlighted AI visibility gaps that didn't show up anywhere else. It's now part of my regular audit workflow.",
+    name: "Gunishtha Doomra",
+    title: "Tech Blogger & Software Developer",
+    image: gunishthaPhoto,
+    isPhoto: true,
+    nameLink: "https://www.linkedin.com/in/gunishtha-doomra/",
+    titleLink: "https://guptahimanshi.medium.com/",
   },
 ];
 
@@ -110,17 +110,18 @@ const Testimonials = () => {
         </p>
 
         {/* Featured By Section */}
-        <div className="mt-12 bg-[#f8fafc] dark:bg-gray-900/50 rounded-xl py-8 px-8 max-w-2xl mx-auto text-center">
-          <p className="text-[15px] font-medium text-gray-600 dark:text-gray-400 mb-2">
-            Featured by innovative teams at:
+        <div className="mt-16 border-t border-border/50 pt-10 max-w-xl mx-auto text-center">
+          <p className="text-xs uppercase tracking-widest font-medium text-muted-foreground mb-4">
+            Featured by innovative teams at
           </p>
-          <p className="text-base text-gray-900 dark:text-gray-200">
-            Gunishtha Doomra{" · "}
+          <p className="text-[15px] text-foreground/80 font-medium tracking-wide">
+            Gunishtha Doomra{" "}
+            <span className="text-muted-foreground/50 mx-2">·</span>{" "}
             <a
               href="https://www.bluenectar.co.in"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#1e40af] hover:text-[#3b82f6] hover:underline transition-colors"
+              className="text-primary hover:text-primary/80 hover:underline transition-colors"
             >
               Blue Nectar Ayurved
             </a>
@@ -137,22 +138,12 @@ interface TestimonialCardProps {
 
 const TestimonialCard = ({ testimonial }: TestimonialCardProps) => {
   return (
-    <Card className="p-6 md:p-8 bg-white dark:bg-card shadow-md rounded-xl text-center hover:scale-[1.02] transition-transform duration-200">
-      {/* Decorative quotation mark */}
-      <span className="text-5xl md:text-6xl text-gray-200 dark:text-gray-700 font-serif leading-none block mb-2 opacity-50">
-        "
-      </span>
-
-      {/* Quote text */}
-      <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 mb-6 -mt-2 leading-relaxed">
-        {testimonial.quote}
-      </p>
-
-      {/* Photo/Logo and info */}
-      <div className="flex flex-col items-center">
+    <Card className="p-6 md:p-8 bg-white dark:bg-card shadow-md rounded-xl hover:scale-[1.02] transition-transform duration-200">
+      {/* Top-left avatar/logo */}
+      <div className="flex items-start gap-4 mb-4">
         <div
-          className={`w-[60px] h-[60px] rounded-full border border-gray-200 dark:border-gray-600 mb-3 overflow-hidden flex items-center justify-center ${
-            testimonial.isPhoto ? "" : "bg-white p-1"
+          className={`w-[60px] h-[60px] flex-shrink-0 rounded-full border border-gray-200 dark:border-gray-600 overflow-hidden flex items-center justify-center ${
+            testimonial.isPhoto ? "" : "bg-white p-2"
           }`}
         >
           <img
@@ -161,27 +152,32 @@ const TestimonialCard = ({ testimonial }: TestimonialCardProps) => {
             className={testimonial.isPhoto ? "w-full h-full object-cover" : "w-full h-full object-contain"}
           />
         </div>
-
-        {/* Name */}
-        <a
-          href={testimonial.nameLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-semibold text-foreground hover:text-[#0066cc] hover:underline transition-colors"
-        >
-          {testimonial.name}
-        </a>
-
-        {/* Title */}
-        <a
-          href={testimonial.titleLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm text-muted-foreground hover:text-[#0066cc] hover:underline transition-colors"
-        >
-          {testimonial.title}
-        </a>
+        <div className="flex flex-col pt-1">
+          {/* Name */}
+          <a
+            href={testimonial.nameLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-foreground hover:text-primary hover:underline transition-colors"
+          >
+            {testimonial.name}
+          </a>
+          {/* Title */}
+          <a
+            href={testimonial.titleLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-muted-foreground hover:text-primary hover:underline transition-colors"
+          >
+            {testimonial.title}
+          </a>
+        </div>
       </div>
+
+      {/* Quote text */}
+      <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+        "{testimonial.quote}"
+      </p>
     </Card>
   );
 };
