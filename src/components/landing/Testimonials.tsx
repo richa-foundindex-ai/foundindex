@@ -10,15 +10,15 @@ const testimonials = [
     id: 1,
     quote: "The AI visibility insights were very accurate, and the blog audit was on-point.",
     name: "Gunishtha Doomra",
-    title: "FoundIndex Beta User",
+    title: "Tech Blogger & Software Developer",
     image: gunishthaPhoto,
     isPhoto: true,
     nameLink: "https://www.linkedin.com/in/gunishtha-doomra/",
-    titleLink: "https://guptahimanshi.medium.com/part-1-why-dependency-injection-matters-in-android-e9d9b67e32f2",
+    titleLink: "https://guptahimanshi.medium.com/",
   },
   {
     id: 2,
-    quote: "Genuinely seems like a top class tool to me. And definitely a good market to get in early. UI is slick, recommendations are clear and seem actionable.",
+    quote: "A genuinely top-tier tool. The AI visibility insights uncovered opportunities our regular SEO stack misses entirely. Clear, actionable recommendations in a space that's moving fast - this tool is ahead of the curve.",
     name: "Sanyog Jain",
     title: "Co-Founder, Blue Nectar Ayurved",
     image: blueNectarLogo,
@@ -42,8 +42,8 @@ const Testimonials = () => {
   return (
     <section className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4">
-        <h2 className="text-2xl md:text-4xl font-bold text-center mb-12 text-foreground">
-          What Early Users Say
+        <h2 className="text-2xl md:text-[28px] font-semibold text-center mb-8 text-[#1a365d]">
+          Trusted by founders and teams building better businesses
         </h2>
 
         {/* Desktop/Tablet: Side by side */}
@@ -109,17 +109,18 @@ const Testimonials = () => {
           </Link>
         </p>
 
-        {/* Trusted Partners Section */}
-        <div className="mt-10 bg-gray-50 dark:bg-gray-900/50 rounded-lg py-6 px-8 max-w-2xl mx-auto text-center">
-          <p className="text-[15px] text-gray-700 dark:text-gray-300">
-            Thank you to our early users and partners:{" "}
-            <span className="text-gray-800 dark:text-gray-200">Gunishtha Doomra</span>
-            {" · "}
+        {/* Featured By Section */}
+        <div className="mt-12 bg-[#f8fafc] dark:bg-gray-900/50 rounded-xl py-8 px-8 max-w-2xl mx-auto text-center">
+          <p className="text-[15px] font-medium text-gray-600 dark:text-gray-400 mb-2">
+            Featured by innovative teams at:
+          </p>
+          <p className="text-base text-gray-900 dark:text-gray-200">
+            Gunishtha Doomra{" · "}
             <a
               href="https://www.bluenectar.co.in"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[#0066cc] hover:underline transition-colors"
+              className="text-[#1e40af] hover:text-[#3b82f6] hover:underline transition-colors"
             >
               Blue Nectar Ayurved
             </a>

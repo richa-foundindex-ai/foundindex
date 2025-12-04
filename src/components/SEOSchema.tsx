@@ -98,10 +98,20 @@ const SEOSchema = () => {
     <Helmet>
       <title>FoundIndex - AI Visibility Diagnostic Tool</title>
       <meta name="description" content="Free tool that scores how well AI search engines like ChatGPT, Perplexity, and Claude can find and cite your website. Get your AI visibility score in 60 seconds." />
-      <meta property="og:title" content="FoundIndex - AI Visibility Diagnostic Tool" />
-      <meta property="og:description" content="Score your website's visibility to AI search engines. Free tool analyzing 47+ criteria." />
+      <meta property="og:title" content="FoundIndex - AI Visibility Diagnostic" />
+      <meta property="og:description" content="Score your website 0-100 on how well AI search engines can find and recommend you." />
       <meta property="og:type" content="website" />
       <meta property="og:url" content="https://foundindex.com" />
+      <meta property="og:image" content="https://foundindex.com/og-image.png" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:image:type" content="image/png" />
+      <meta property="og:image:alt" content="FoundIndex - AI Visibility Diagnostic Tool" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:image" content="https://foundindex.com/og-image.png" />
+      <meta name="twitter:image:alt" content="FoundIndex - AI Visibility Diagnostic Tool" />
+      <meta name="twitter:title" content="FoundIndex - AI Visibility Diagnostic" />
+      <meta name="twitter:description" content="Score your website 0-100 on how well AI search engines can find and recommend you." />
       <script type="application/ld+json">{JSON.stringify(organizationSchema)}</script>
       <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
       <script type="application/ld+json">{JSON.stringify(webPageSchema)}</script>
