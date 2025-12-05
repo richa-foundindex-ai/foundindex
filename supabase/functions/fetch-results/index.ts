@@ -6,6 +6,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// UUID validation to prevent injection attacks
+const isValidUUID = (id: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -21,14 +27,26 @@ serve(async (req) => {
       });
     }
 
+    // Validate testId format to prevent Airtable formula injection
+    if (typeof testId !== 'string' || !isValidUUID(testId)) {
+      console.warn(`[fetch-results] Invalid test ID format rejected: ${testId}`);
+      return new Response(JSON.stringify({ error: 'Invalid test ID format' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log(`[fetch-results] Fetching data for test ID: ${testId}`);
 
     const airtableApiKey = Deno.env.get('AIRTABLE_API_KEY');
     const airtableBaseId = Deno.env.get('AIRTABLE_BASE_ID');
 
+    // Use encodeURIComponent for additional safety
+    const encodedTestId = encodeURIComponent(testId);
+
     // Fetch test record from Tests table
     const testsResponse = await fetch(
-      `https://api.airtable.com/v0/${airtableBaseId}/Tests?filterByFormula={test_id}='${testId}'`,
+      `https://api.airtable.com/v0/${airtableBaseId}/Tests?filterByFormula={test_id}='${encodedTestId}'`,
       {
         headers: {
           'Authorization': `Bearer ${airtableApiKey}`,
@@ -71,7 +89,7 @@ serve(async (req) => {
 
     // Fetch query results from Query_Results table
     const queryResultsResponse = await fetch(
-      `https://api.airtable.com/v0/${airtableBaseId}/Query_Results?filterByFormula={test_id}='${testId}'&sort[0][field]=query_number&sort[0][direction]=asc`,
+      `https://api.airtable.com/v0/${airtableBaseId}/Query_Results?filterByFormula={test_id}='${encodedTestId}'&sort[0][field]=query_number&sort[0][direction]=asc`,
       {
         headers: {
           'Authorization': `Bearer ${airtableApiKey}`,
