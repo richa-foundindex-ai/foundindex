@@ -22,6 +22,16 @@ serve(async (req) => {
       });
     }
 
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (typeof email !== 'string' || !emailRegex.test(email) || email.length > 255) {
+      console.log(`[submit-waitlist] Invalid email format: ${email}`);
+      return new Response(JSON.stringify({ error: "Invalid email format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const AIRTABLE_API_KEY = Deno.env.get("AIRTABLE_API_KEY");
     const AIRTABLE_BASE_ID = Deno.env.get("AIRTABLE_BASE_ID");
 

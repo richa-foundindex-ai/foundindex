@@ -30,9 +30,8 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("[check-existing-test] Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return new Response(
-      JSON.stringify({ exists: false, error: errorMessage }),
+      JSON.stringify({ exists: false, error: "An error occurred" }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
