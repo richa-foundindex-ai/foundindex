@@ -883,35 +883,33 @@ const Results = () => {
           }
         }
 
-        // Fetch from Supabase
-        const { data, error: fetchError } = await supabase
-          .from("test_history")
-          .select("*")
-          .eq("test_id", testId)
-          .single();
+        // Fetch from Edge Function (bypasses RLS)
+        const { data: fnData, error: fnError } = await supabase.functions.invoke("fetch-results", {
+          body: { testId },
+        });
 
-        if (fetchError) {
-          console.error("[Results] Supabase error:", fetchError);
-          throw fetchError;
+        if (fnError) {
+          console.error("[Results] Edge function error:", fnError);
+          throw fnError;
         }
 
-        if (!data) {
-          console.log("[Results] No data found for test:", testId);
-          throw new Error("Test not found");
+        if (!fnData || fnData.error) {
+          console.log("[Results] No data found for test:", testId, fnData?.error);
+          throw new Error(fnData?.error || "Test not found");
         }
 
-        console.log("[Results] Data loaded:", data);
+        console.log("[Results] Data loaded:", fnData);
 
         setResultData({
-          testId: data.test_id,
-          score: data.score,
-          grade: data.grade,
-          detectedType: data.detected_type,
-          requestedType: data.test_type,
-          categories: data.categories as unknown as Record<string, Category>,
-          recommendations: data.recommendations as unknown as Recommendation[],
+          testId: fnData.testId,
+          score: fnData.score,
+          grade: fnData.grade,
+          detectedType: fnData.detectedType,
+          requestedType: fnData.testType,
+          categories: fnData.categories as unknown as Record<string, Category>,
+          recommendations: fnData.recommendations as unknown as Recommendation[],
           industryAverage: 58,
-          criteriaCount: data.test_type === "homepage" ? 47 : 52,
+          criteriaCount: fnData.testType === "homepage" ? 47 : 52,
         });
       } catch (err) {
         console.error("[Results] Error:", err);
