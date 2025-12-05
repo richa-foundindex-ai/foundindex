@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import gunishthaPhoto from "@/assets/gunishtha-doomra.jpg";
 import blueNectarLogo from "@/assets/blue-nectar-logo.png";
+import nitinPhoto from "@/assets/nitin-kaura.jpg";
 
 const testimonials = [
   {
@@ -18,6 +19,16 @@ const testimonials = [
   },
   {
     id: 2,
+    quote: "Ran a past client homepage through FoundIndex, scored 73 — and yes, I absolutely patted myself on the back. The breakdown was sharp and surprisingly aligned with how I evaluate pages for AEO/LLM relevance. Finally a tool that tells you what actually matters for AI search.",
+    name: "Nitin Kaura",
+    title: "Full-Stack Marketer & SEO Specialist",
+    image: nitinPhoto,
+    isPhoto: true,
+    nameLink: "https://www.linkedin.com/in/nitinkaura/",
+    titleLink: "https://topmate.io/nitinkaura",
+  },
+  {
+    id: 3,
     quote: "Surprisingly accurate insights. FoundIndex highlighted AI visibility gaps that didn't show up anywhere else. It's now part of my regular audit workflow.",
     name: "Gunishtha Doomra",
     title: "Tech Blogger & Software Developer",
@@ -30,6 +41,7 @@ const testimonials = [
 
 const Testimonials = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [desktopIndex, setDesktopIndex] = useState(0);
 
   const nextSlide = () => {
     setCurrentIndex((prev) => (prev + 1) % testimonials.length);
@@ -39,6 +51,38 @@ const Testimonials = () => {
     setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
   };
 
+  const nextDesktopSlide = () => {
+    setDesktopIndex((prev) => (prev + 1) % testimonials.length);
+  };
+
+  const prevDesktopSlide = () => {
+    setDesktopIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  };
+
+  // Keyboard navigation
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === "ArrowLeft") {
+      prevSlide();
+    } else if (e.key === "ArrowRight") {
+      nextSlide();
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Get visible testimonials for desktop (2 at a time with peek)
+  const getVisibleDesktopTestimonials = () => {
+    const first = testimonials[desktopIndex];
+    const second = testimonials[(desktopIndex + 1) % testimonials.length];
+    const peek = testimonials[(desktopIndex + 2) % testimonials.length];
+    return { first, second, peek };
+  };
+
+  const { first, second, peek } = getVisibleDesktopTestimonials();
+
   return (
     <section className="py-16 md:py-24 bg-background">
       <div className="container mx-auto px-4">
@@ -46,15 +90,78 @@ const Testimonials = () => {
           Trusted by founders and teams building better businesses
         </h2>
 
-        {/* Desktop/Tablet: Side by side */}
-        <div className="hidden md:grid md:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
-          {testimonials.map((testimonial) => (
+        {/* Desktop (≥1200px): 2 columns with peek */}
+        <div className="hidden xl:block relative max-w-6xl mx-auto" role="region" aria-label="Testimonials carousel">
+          <div className="flex items-center gap-4">
+            {/* Left arrow */}
+            <button
+              onClick={prevDesktopSlide}
+              className="flex-shrink-0 bg-white dark:bg-card shadow-md rounded-full p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-10"
+              aria-label="Previous testimonials"
+            >
+              <ChevronLeft className="w-5 h-5 text-foreground" />
+            </button>
+
+            {/* Cards container with overflow for peek */}
+            <div className="flex-1 overflow-hidden">
+              <div className="flex gap-6">
+                {/* First card */}
+                <div className="w-[calc(50%-12px)] flex-shrink-0">
+                  <TestimonialCard testimonial={first} />
+                </div>
+                {/* Second card */}
+                <div className="w-[calc(50%-12px)] flex-shrink-0">
+                  <TestimonialCard testimonial={second} />
+                </div>
+                {/* Peek card with gradient overlay */}
+                <div className="w-[80px] flex-shrink-0 relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background z-10" />
+                  <TestimonialCard testimonial={peek} />
+                </div>
+              </div>
+            </div>
+
+            {/* Right arrow */}
+            <button
+              onClick={nextDesktopSlide}
+              className="flex-shrink-0 bg-white dark:bg-card shadow-md rounded-full p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-10"
+              aria-label="Next testimonials"
+            >
+              <ChevronRight className="w-5 h-5 text-foreground" />
+            </button>
+          </div>
+
+          {/* Desktop dot indicators */}
+          <div className="flex justify-center gap-2 mt-6">
+            {testimonials.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setDesktopIndex(index)}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  index === desktopIndex
+                    ? "bg-primary"
+                    : "bg-gray-300 dark:bg-gray-600 hover:bg-gray-400"
+                }`}
+                aria-label={`Go to testimonial group ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Tablet (768-1199px): 2 columns */}
+        <div className="hidden md:grid xl:hidden md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          {testimonials.slice(0, 2).map((testimonial) => (
             <TestimonialCard key={testimonial.id} testimonial={testimonial} />
           ))}
+          <div className="md:col-span-2 flex justify-center">
+            <div className="w-full max-w-md">
+              <TestimonialCard testimonial={testimonials[2]} />
+            </div>
+          </div>
         </div>
 
         {/* Mobile: Carousel */}
-        <div className="md:hidden relative">
+        <div className="md:hidden relative" role="region" aria-label="Testimonials carousel">
           <div className="overflow-hidden">
             <div
               className="flex transition-transform duration-300 ease-in-out"
@@ -120,17 +227,17 @@ interface TestimonialCardProps {
 
 const TestimonialCard = ({ testimonial }: TestimonialCardProps) => {
   return (
-    <Card className="p-6 md:p-8 bg-white dark:bg-card shadow-md rounded-xl hover:scale-[1.02] transition-transform duration-200">
+    <Card className="p-6 md:p-8 bg-white dark:bg-card shadow-md rounded-xl hover:scale-[1.02] transition-transform duration-200 h-full">
       {/* Top-left avatar/logo */}
       <div className="flex items-start gap-4 mb-4">
         <div
-          className={`w-[60px] h-[60px] flex-shrink-0 rounded-full border border-gray-200 dark:border-gray-600 overflow-hidden flex items-center justify-center ${
+          className={`w-[60px] h-[60px] flex-shrink-0 rounded-full border border-[#ddd] dark:border-gray-600 overflow-hidden flex items-center justify-center ${
             testimonial.isPhoto ? "" : "bg-white p-2"
           }`}
         >
           <img
             src={testimonial.image}
-            alt={testimonial.name}
+            alt={`${testimonial.name} profile photo`}
             className={testimonial.isPhoto ? "w-full h-full object-cover" : "w-full h-full object-contain"}
           />
         </div>
