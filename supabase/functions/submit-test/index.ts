@@ -711,7 +711,6 @@ ${testQueries.map((q, i) => `${i + 1}. ${q}`).join("\n")}`;
     return new Response(
       JSON.stringify({
         error: "An error occurred. Please try again.",
-        details: error instanceof Error ? error.message : "Unknown error",
       }),
       {
         status: 500,
