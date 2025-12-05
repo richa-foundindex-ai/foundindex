@@ -485,13 +485,13 @@ const validateEmail = (email: string | undefined): string => {
 const normalizeUrl = (url: string): string => {
   let normalized = url.trim().toLowerCase();
   try {
-    if (!normalized.includes('://')) {
-      normalized = 'https://' + normalized;
+    if (!normalized.includes("://")) {
+      normalized = "https://" + normalized;
     }
     return new URL(normalized).href;
   } catch {
-    if (!normalized.includes('://')) {
-      normalized = 'https://' + normalized;
+    if (!normalized.includes("://")) {
+      normalized = "https://" + normalized;
     }
     return normalized;
   }
@@ -505,11 +505,9 @@ const validateWebsite = (website: string): string => {
   throw new Error('Please enter a valid website URL (like "example.com")');
 };
 
-// FIXED: Much better page type detection - TRUST USER SELECTION for blog URLs
 const detectPageType = (url: string, html: string, requestedType: "homepage" | "blog"): "homepage" | "blog" => {
   const urlLower = url.toLowerCase();
 
-  // Extract just the path (after domain)
   let path = "";
   try {
     const urlObj = new URL(url);
@@ -518,17 +516,14 @@ const detectPageType = (url: string, html: string, requestedType: "homepage" | "
     path = urlLower;
   }
 
-  // If path is just "/" or empty, it's a homepage regardless of what user selected
   if (path === "/" || path === "") {
     return "homepage";
   }
 
-  // If user selected "blog" AND there's a path, trust them - it's likely a blog post
   if (requestedType === "blog" && path.length > 1) {
     return "blog";
   }
 
-  // Strong blog indicators in URL path
   const blogPatterns = [
     "/blog/",
     "/post/",
@@ -551,26 +546,21 @@ const detectPageType = (url: string, html: string, requestedType: "homepage" | "
   ];
   const hasBlogUrl = blogPatterns.some((pattern) => path.includes(pattern));
 
-  // Date patterns in URL (common for blog posts)
   const datePattern = /\/\d{4}\/\d{2}\//;
   const hasDateUrl = datePattern.test(urlLower);
 
-  // Blog subdomain
   const hasBlogSubdomain = /^https?:\/\/blog\./i.test(url);
 
-  // Strong blog indicators in HTML
   const hasBlogSchema =
     html.includes('"@type":"BlogPosting"') ||
     html.includes('"@type":"Article"') ||
     html.includes('"@type": "BlogPosting"') ||
     html.includes('"@type": "Article"');
 
-  // If any strong blog indicator, return blog
   if (hasBlogUrl || hasDateUrl || hasBlogSubdomain || hasBlogSchema) {
     return "blog";
   }
 
-  // Default to user's selection
   return requestedType;
 };
 
@@ -603,7 +593,7 @@ const checkRateLimit = async (
 
     if (error) {
       console.warn("Rate limit check failed:", error);
-      return { allowed: true }; // Allow if check fails
+      return { allowed: true };
     }
 
     if (!data || data.length === 0) {
@@ -673,10 +663,10 @@ serve(async (req) => {
     // SERVER-SIDE IP-BASED RATE LIMITING
     const RATE_LIMIT_TESTS_PER_PERIOD = 10;
     const RATE_LIMIT_PERIOD_HOURS = 24;
-    
+
     const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
     const rateLimitCutoff = new Date(Date.now() - RATE_LIMIT_PERIOD_HOURS * 60 * 60 * 1000).toISOString();
-    
+
     const { count: recentTestCount, error: countError } = await supabaseAdmin
       .from("test_submissions")
       .select("*", { count: "exact", head: true })
@@ -686,7 +676,9 @@ serve(async (req) => {
     if (countError) {
       console.error("Rate limit check failed:", countError);
     } else if (recentTestCount !== null && recentTestCount >= RATE_LIMIT_TESTS_PER_PERIOD) {
-      console.warn(`[rate-limit] IP ${clientIP} exceeded limit: ${recentTestCount} tests in last ${RATE_LIMIT_PERIOD_HOURS}h`);
+      console.warn(
+        `[rate-limit] IP ${clientIP} exceeded limit: ${recentTestCount} tests in last ${RATE_LIMIT_PERIOD_HOURS}h`,
+      );
       return new Response(
         JSON.stringify({
           success: false,
@@ -702,60 +694,15 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[rate-limit] IP ${clientIP} has ${recentTestCount || 0}/${RATE_LIMIT_TESTS_PER_PERIOD} tests in period`);
-
-    // TEMPORARILY DISABLED FOR TESTING - Check for cached results from last 7 days
-    // const { data: cachedTest } = await supabaseAdmin
-    //   .from("test_history")
-    //   .select("*")
-    //   .eq("website", validatedWebsite)
-    //   .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-    //   .order("created_at", { ascending: false })
-    //   .limit(1)
-    //   .single();
-
-    // if (cachedTest) {
-    //   console.log(`[CACHE HIT] Returning cached results for ${validatedWebsite} from ${cachedTest.created_at}`);
-    //   return new Response(
-    //     JSON.stringify({
-    //       success: true,
-    //       testId: cachedTest.test_id,
-    //       score: cachedTest.score,
-    //       grade: cachedTest.grade,
-    //       detectedType: cachedTest.detected_type,
-    //       requestedType: testType,
-    //       categories: cachedTest.categories,
-    //       recommendations: cachedTest.recommendations,
-    //       industryAverage: 58, // Default value for cached results
-    //       criteriaCount: cachedTest.test_type === "homepage" ? 47 : 52,
-    //       isCached: true,
-    //     }),
-    //     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    //   );
-    // }
+    console.log(
+      `[rate-limit] IP ${clientIP} has ${recentTestCount || 0}/${RATE_LIMIT_TESTS_PER_PERIOD} tests in period`,
+    );
 
     const testId = crypto.randomUUID();
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
     const modelName = Deno.env.get("OPENAI_MODEL_NAME") || "gpt-4o-mini";
 
     console.log(`[${testId}] Starting analysis for ${testType}: ${validatedWebsite}`);
-
-    // TEMPORARILY DISABLED FOR TESTING - Check rate limit
-    // const rateCheck = await checkRateLimit(supabaseAdmin, validatedWebsite, testType);
-    // if (!rateCheck.allowed) {
-    //   console.log(`[${testId}] Rate limited - tested ${rateCheck.daysRemaining} days ago`);
-    //   return new Response(
-    //     JSON.stringify({
-    //       success: false,
-    //       error: "This URL was recently tested",
-    //       rateLimited: true,
-    //       daysRemaining: rateCheck.daysRemaining,
-    //       lastTestDate: rateCheck.lastTestDate,
-    //       message: `This URL was tested on ${rateCheck.lastTestDate}. You can retest in ${rateCheck.daysRemaining} days. Need an early retest? Contact us.`,
-    //     }),
-    //     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    //   );
-    // }
 
     // Fetch website
     let websiteHtml = "";
@@ -840,11 +787,9 @@ serve(async (req) => {
       );
     }
 
-    // FIXED: Better page type detection
     const detectedType = detectPageType(validatedWebsite, websiteHtml, testType);
     console.log(`[${testId}] Detected type: ${detectedType}, Requested: ${testType}`);
 
-    // Use the detected type for analysis
     const analysisType = detectedType;
 
     // ==========================================================================
@@ -1105,17 +1050,7 @@ Return ONLY valid JSON:
     // SAVE TO DATABASE
     // ==========================================================================
 
-    console.log(`[${testId}] 📝 BEFORE DATABASE INSERT - About to save results to test_history table`);
-    console.log(`[${testId}] Insert data:`, JSON.stringify({
-      test_id: testId,
-      website: validatedWebsite,
-      test_type: testType,
-      detected_type: detectedType,
-      score: totalScore,
-      grade,
-      categories_count: Object.keys(displayCategories).length,
-      recommendations_count: allRecommendations.length
-    }));
+    console.log(`[${testId}] 📝 Saving to Supabase test_history table`);
 
     const insertData = {
       test_id: testId,
@@ -1133,19 +1068,13 @@ Return ONLY valid JSON:
       .insert(insertData)
       .select();
 
-    console.log(`[${testId}] 📊 AFTER DATABASE INSERT ATTEMPT`);
-
     if (insertError) {
-      console.error(`[${testId}] ❌ DATABASE ERROR:`, insertError.message, insertError.code, insertError.details);
-      console.error(`[${testId}] Full error object:`, JSON.stringify(insertError, null, 2));
-      // Still return success to user but log the error
-      // Don't block the user experience
+      console.error(`[${testId}] ❌ DATABASE ERROR:`, insertError.message);
     } else {
       console.log(`[${testId}] ✅ SAVED TO DATABASE:`, insertResult?.[0]?.id);
-      console.log(`[${testId}] Full insert result:`, JSON.stringify(insertResult, null, 2));
     }
 
-    // Record submission for rate limiting tracking
+    // Record submission for rate limiting
     await supabaseAdmin.from("test_submissions").insert({
       email: validatedEmail,
       ip_address: clientIP,
