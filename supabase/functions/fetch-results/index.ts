@@ -7,7 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// UUID validation to prevent injection attacks
 const isValidUUID = (id: string): boolean => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(id);
@@ -28,7 +27,6 @@ serve(async (req) => {
       });
     }
 
-    // Validate testId format
     if (typeof testId !== "string" || !isValidUUID(testId)) {
       console.warn(`[fetch-results] Invalid test ID format rejected: ${testId}`);
       return new Response(JSON.stringify({ error: "Invalid test ID format" }), {
@@ -39,7 +37,6 @@ serve(async (req) => {
 
     console.log(`[fetch-results] Fetching data for test ID: ${testId}`);
 
-    // Initialize Supabase with SERVICE ROLE KEY
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -50,7 +47,6 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch test record from test_history table
     const { data: testData, error: testError } = await supabase
       .from("test_history")
       .select("*")
@@ -79,7 +75,6 @@ serve(async (req) => {
 
     console.log(`[fetch-results] Found test: ${testData.test_id}, Score: ${testData.score}`);
 
-    // Transform the data for the frontend
     const result = {
       testId: testData.test_id,
       website: testData.website,
