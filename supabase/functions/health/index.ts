@@ -12,28 +12,17 @@ serve(async (req) => {
   }
 
   try {
-    // Check if critical environment variables are set
-    const checks = {
-      supabaseUrl: !!Deno.env.get('SUPABASE_URL'),
-      supabaseKey: !!Deno.env.get('SUPABASE_PUBLISHABLE_KEY'),
-      openaiKey: !!Deno.env.get('OPENAI_API_KEY'),
-      airtableKey: !!Deno.env.get('AIRTABLE_API_KEY'),
-    };
-
-    const allHealthy = Object.values(checks).every(check => check === true);
-
+    // Simple health check without exposing configuration details
     const response = {
-      status: allHealthy ? "ok" : "degraded",
+      status: "ok",
       timestamp: new Date().toISOString(),
       version: "1.0.0",
-      environment: Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development',
-      checks,
     };
 
-    console.log('[Health Check]', response);
+    console.log('[Health Check] OK');
 
     return new Response(JSON.stringify(response), {
-      status: allHealthy ? 200 : 503,
+      status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
@@ -43,7 +32,6 @@ serve(async (req) => {
       status: "error",
       timestamp: new Date().toISOString(),
       version: "1.0.0",
-      error: error instanceof Error ? error.message : 'Unknown error'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
