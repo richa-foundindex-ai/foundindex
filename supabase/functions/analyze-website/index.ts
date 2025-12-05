@@ -1177,7 +1177,6 @@ Return ONLY valid JSON:
       JSON.stringify({
         success: false,
         error: "An unexpected error occurred",
-        details: error instanceof Error ? error.message : "Unknown error",
       }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

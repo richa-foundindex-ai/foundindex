@@ -151,8 +151,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('[fetch-results] Error:', error);
     return new Response(JSON.stringify({ 
-      error: 'An error occurred fetching results',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'An error occurred fetching results'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
