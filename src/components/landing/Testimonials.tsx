@@ -90,41 +90,28 @@ const Testimonials = () => {
           Trusted by founders and teams building better businesses
         </h2>
 
-        {/* Desktop (≥1200px): 2 columns with peek */}
-        <div className="hidden xl:block relative max-w-6xl mx-auto" role="region" aria-label="Testimonials carousel">
+        {/* Desktop/Tablet: Grid with navigation */}
+        <div className="hidden md:block relative max-w-4xl mx-auto" role="region" aria-label="Testimonials carousel">
           <div className="flex items-center gap-4">
             {/* Left arrow */}
             <button
               onClick={prevDesktopSlide}
-              className="flex-shrink-0 bg-white dark:bg-card shadow-md rounded-full p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-10"
+              className="flex-shrink-0 bg-white dark:bg-card shadow-md rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               aria-label="Previous testimonials"
             >
               <ChevronLeft className="w-5 h-5 text-foreground" />
             </button>
 
-            {/* Cards container with overflow for peek */}
-            <div className="flex-1 overflow-hidden">
-              <div className="flex gap-6">
-                {/* First card */}
-                <div className="w-[calc(50%-12px)] flex-shrink-0">
-                  <TestimonialCard testimonial={first} />
-                </div>
-                {/* Second card */}
-                <div className="w-[calc(50%-12px)] flex-shrink-0">
-                  <TestimonialCard testimonial={second} />
-                </div>
-                {/* Peek card with gradient overlay */}
-                <div className="w-[80px] flex-shrink-0 relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background z-10" />
-                  <TestimonialCard testimonial={peek} />
-                </div>
-              </div>
+            {/* Cards container */}
+            <div className="flex-1 grid md:grid-cols-2 gap-6">
+              <TestimonialCard testimonial={first} />
+              <TestimonialCard testimonial={second} />
             </div>
 
             {/* Right arrow */}
             <button
               onClick={nextDesktopSlide}
-              className="flex-shrink-0 bg-white dark:bg-card shadow-md rounded-full p-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors z-10"
+              className="flex-shrink-0 bg-white dark:bg-card shadow-md rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               aria-label="Next testimonials"
             >
               <ChevronRight className="w-5 h-5 text-foreground" />
@@ -145,18 +132,6 @@ const Testimonials = () => {
                 aria-label={`Go to testimonial group ${index + 1}`}
               />
             ))}
-          </div>
-        </div>
-
-        {/* Tablet (768-1199px): 2 columns */}
-        <div className="hidden md:grid xl:hidden md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-          {testimonials.slice(0, 2).map((testimonial) => (
-            <TestimonialCard key={testimonial.id} testimonial={testimonial} />
-          ))}
-          <div className="md:col-span-2 flex justify-center">
-            <div className="w-full max-w-md">
-              <TestimonialCard testimonial={testimonials[2]} />
-            </div>
           </div>
         </div>
 
