@@ -670,6 +670,40 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
+    // SERVER-SIDE IP-BASED RATE LIMITING
+    const RATE_LIMIT_TESTS_PER_PERIOD = 10;
+    const RATE_LIMIT_PERIOD_HOURS = 24;
+    
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
+    const rateLimitCutoff = new Date(Date.now() - RATE_LIMIT_PERIOD_HOURS * 60 * 60 * 1000).toISOString();
+    
+    const { count: recentTestCount, error: countError } = await supabaseAdmin
+      .from("test_submissions")
+      .select("*", { count: "exact", head: true })
+      .eq("ip_address", clientIP)
+      .gte("created_at", rateLimitCutoff);
+
+    if (countError) {
+      console.error("Rate limit check failed:", countError);
+    } else if (recentTestCount !== null && recentTestCount >= RATE_LIMIT_TESTS_PER_PERIOD) {
+      console.warn(`[rate-limit] IP ${clientIP} exceeded limit: ${recentTestCount} tests in last ${RATE_LIMIT_PERIOD_HOURS}h`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Rate limit exceeded. You can run ${RATE_LIMIT_TESTS_PER_PERIOD} tests per ${RATE_LIMIT_PERIOD_HOURS} hours. Please try again later.`,
+          errorType: "rate_limit_exceeded",
+          testsUsed: recentTestCount,
+          testsAllowed: RATE_LIMIT_TESTS_PER_PERIOD,
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    console.log(`[rate-limit] IP ${clientIP} has ${recentTestCount || 0}/${RATE_LIMIT_TESTS_PER_PERIOD} tests in period`);
+
     // TEMPORARILY DISABLED FOR TESTING - Check for cached results from last 7 days
     // const { data: cachedTest } = await supabaseAdmin
     //   .from("test_history")
@@ -1110,6 +1144,14 @@ Return ONLY valid JSON:
       console.log(`[${testId}] ✅ SAVED TO DATABASE:`, insertResult?.[0]?.id);
       console.log(`[${testId}] Full insert result:`, JSON.stringify(insertResult, null, 2));
     }
+
+    // Record submission for rate limiting tracking
+    await supabaseAdmin.from("test_submissions").insert({
+      email: validatedEmail,
+      ip_address: clientIP,
+      test_id: testId,
+      created_at: new Date().toISOString(),
+    });
 
     const duration = Date.now() - startTime;
     console.log(`[${testId}] SUCCESS - Score: ${totalScore}, Grade: ${grade}, Duration: ${duration}ms`);
