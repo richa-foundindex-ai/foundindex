@@ -1,9 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.83.0";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 // UUID validation to prevent injection attacks
@@ -13,7 +14,7 @@ const isValidUUID = (id: string): boolean => {
 };
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -21,140 +22,92 @@ serve(async (req) => {
     const { testId } = await req.json();
 
     if (!testId) {
-      return new Response(JSON.stringify({ error: 'Test ID is required' }), {
+      return new Response(JSON.stringify({ error: "Test ID is required" }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Validate testId format to prevent Airtable formula injection
-    if (typeof testId !== 'string' || !isValidUUID(testId)) {
+    // Validate testId format
+    if (typeof testId !== "string" || !isValidUUID(testId)) {
       console.warn(`[fetch-results] Invalid test ID format rejected: ${testId}`);
-      return new Response(JSON.stringify({ error: 'Invalid test ID format' }), {
+      return new Response(JSON.stringify({ error: "Invalid test ID format" }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     console.log(`[fetch-results] Fetching data for test ID: ${testId}`);
 
-    const airtableApiKey = Deno.env.get('AIRTABLE_API_KEY');
-    const airtableBaseId = Deno.env.get('AIRTABLE_BASE_ID');
+    // Initialize Supabase with SERVICE ROLE KEY
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    // Use encodeURIComponent for additional safety
-    const encodedTestId = encodeURIComponent(testId);
-
-    // Fetch test record from Tests table
-    const testsResponse = await fetch(
-      `https://api.airtable.com/v0/${airtableBaseId}/Tests?filterByFormula={test_id}='${encodedTestId}'`,
-      {
-        headers: {
-          'Authorization': `Bearer ${airtableApiKey}`,
-        },
-      }
-    );
-
-    if (!testsResponse.ok) {
-      console.error('[fetch-results] Failed to fetch Tests:', testsResponse.status);
-      throw new Error('Failed to fetch test data');
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("[fetch-results] Missing Supabase credentials");
+      throw new Error("Server configuration error");
     }
 
-    const testsData = await testsResponse.json();
-    console.log(`[fetch-results] Tests records found: ${testsData.records.length}`);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    if (testsData.records.length === 0) {
-      return new Response(JSON.stringify({ error: 'Test not found' }), {
+    // Fetch test record from test_history table
+    const { data: testData, error: testError } = await supabase
+      .from("test_history")
+      .select("*")
+      .eq("test_id", testId)
+      .single();
+
+    if (testError) {
+      console.error("[fetch-results] Database error:", testError);
+
+      if (testError.code === "PGRST116") {
+        return new Response(JSON.stringify({ error: "Test not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      throw testError;
+    }
+
+    if (!testData) {
+      return new Response(JSON.stringify({ error: "Test not found" }), {
         status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const testRecord = testsData.records[0].fields;
+    console.log(`[fetch-results] Found test: ${testData.test_id}, Score: ${testData.score}`);
 
-    // === ENHANCED LOGGING: What we got from Airtable ===
-    console.log(`[fetch-results] ═══════════════════════════════════════`);
-    console.log(`[fetch-results] === DATA FROM AIRTABLE ===`);
-    console.log(`[fetch-results] ═══════════════════════════════════════`);
-    console.log(`[fetch-results] Test record exists: ${!!testRecord}`);
-    console.log(`[fetch-results] foundindex_score: ${testRecord.foundindex_score}`);
-    console.log(`[fetch-results] content_clarity_score from DB: ${testRecord.content_clarity_score}`);
-    console.log(`[fetch-results] structured_data_score from DB: ${testRecord.structured_data_score}`);
-    console.log(`[fetch-results] authority_score from DB: ${testRecord.authority_score}`);
-    console.log(`[fetch-results] discoverability_score from DB: ${testRecord.discoverability_score}`);
-    console.log(`[fetch-results] comparison_score from DB: ${testRecord.comparison_score}`);
-    console.log(`[fetch-results] chatgpt_score: ${testRecord.chatgpt_score}`);
-    console.log(`[fetch-results] recommendations field exists: ${!!testRecord.recommendations}`);
-    console.log(`[fetch-results] analysis_details field exists: ${!!testRecord.analysis_details}`);
-    console.log(`[fetch-results] ═══════════════════════════════════════`);
-
-    // Fetch query results from Query_Results table
-    const queryResultsResponse = await fetch(
-      `https://api.airtable.com/v0/${airtableBaseId}/Query_Results?filterByFormula={test_id}='${encodedTestId}'&sort[0][field]=query_number&sort[0][direction]=asc`,
-      {
-        headers: {
-          'Authorization': `Bearer ${airtableApiKey}`,
-        },
-      }
-    );
-
-    if (!queryResultsResponse.ok) {
-      console.error('[fetch-results] Failed to fetch Query_Results:', queryResultsResponse.status);
-      throw new Error('Failed to fetch query results');
-    }
-
-    const queryResultsData = await queryResultsResponse.json();
-    console.log(`[fetch-results] Query_Results records found: ${queryResultsData.records.length}`);
-
-    const queryResults = queryResultsData.records.map((record: any) => ({
-      queryNumber: record.fields.query_number,
-      queryText: record.fields.query_text,
-      engine: record.fields.engine,
-      wasRecommended: record.fields.was_recommended,
-      contextSnippet: record.fields.context_snippet,
-      recommendationPosition: record.fields.recommendation_position,
-      qualityRating: record.fields.quality_rating,
-    }));
-
+    // Transform the data for the frontend
     const result = {
-      testId: testRecord.test_id,
-      website: testRecord.website_url,
-      industry: testRecord.industry,
-      businessType: testRecord.business_type || testRecord.industry,
-      generatedQueries: testRecord.generated_queries ? JSON.parse(testRecord.generated_queries) : [],
-      testDate: testRecord.test_date,
-      
-      // AI Readiness Scores
-      foundIndexScore: testRecord.foundindex_score,
-      contentClarityScore: testRecord.content_clarity_score || 0,
-      structuredDataScore: testRecord.structured_data_score || 0,
-      authorityScore: testRecord.authority_score || 0,
-      discoverabilityScore: testRecord.discoverability_score || 0,
-      comparisonScore: testRecord.comparison_score || 0,
-      analysisDetails: testRecord.analysis_details ? JSON.parse(testRecord.analysis_details) : {},
-      recommendations: testRecord.recommendations ? JSON.parse(testRecord.recommendations) : [],
-      
-      // Query-Based Visibility
-      chatgptScore: testRecord.chatgpt_score,
-      claudeScore: testRecord.claude_score || 0,
-      perplexityScore: testRecord.perplexity_score || 0,
-      recommendationsCount: testRecord.recommendations_count,
-      recommendationRate: testRecord.recommendation_rate,
-      queryResults,
+      testId: testData.test_id,
+      website: testData.website,
+      testType: testData.test_type,
+      detectedType: testData.detected_type,
+      score: testData.score,
+      grade: testData.grade,
+      categories: testData.categories || {},
+      recommendations: testData.recommendations || [],
+      createdAt: testData.created_at,
     };
 
     console.log(`[fetch-results] Successfully fetched results for test ${testId}`);
 
     return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-
   } catch (error) {
-    console.error('[fetch-results] Error:', error);
-    return new Response(JSON.stringify({ 
-      error: 'An error occurred fetching results'
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error("[fetch-results] Error:", error);
+    return new Response(
+      JSON.stringify({
+        error: "An error occurred fetching results",
+        details: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });
