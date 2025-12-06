@@ -354,43 +354,6 @@ export default function Methodology() {
           </CardContent>
         </Card>
 
-        {/* FAQ */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Frequently asked questions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h4 className="font-medium mb-2">Why did my site score low?</h4>
-              <p className="text-sm text-muted-foreground">
-                The most common reasons are missing schema markup (especially Organization and Article schemas), unclear
-                value propositions in the first 200 words, and lack of visible author credentials.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">How often can I retest?</h4>
-              <p className="text-sm text-muted-foreground">
-                Each URL can be retested after 7 days. This gives you time to implement changes. Made updates sooner?
-                Contact us to request an early retest.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">Is my data stored?</h4>
-              <p className="text-sm text-muted-foreground">
-                We store your test results to calculate industry averages and allow you to track progress. We never
-                share individual results publicly without permission.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">What's a good score?</h4>
-              <p className="text-sm text-muted-foreground">
-                80+ is excellent (Grade A-B). 60-79 is average. Below 60 needs work. Most sites we test score between
-                45-65.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
       </main>
     </div>
   );
