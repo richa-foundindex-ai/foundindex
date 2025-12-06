@@ -47,17 +47,6 @@ const SEOSchema = () => {
     }
   };
 
-  const reviewSchema = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": "FoundIndex",
-    "review": [{
-      "@type": "Review",
-      "author": {"@type": "Person", "name": "Testimonial Author"},
-      "reviewRating": {"@type": "Rating", "ratingValue": "5"}
-    }]
-  };
-
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -103,7 +92,6 @@ const SEOSchema = () => {
       <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
       <script type="application/ld+json">{JSON.stringify(webPageSchema)}</script>
       <script type="application/ld+json">{JSON.stringify(softwareSchema)}</script>
-      <script type="application/ld+json">{JSON.stringify(reviewSchema)}</script>
       <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
     </Helmet>
   );
