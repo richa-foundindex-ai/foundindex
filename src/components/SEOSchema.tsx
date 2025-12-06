@@ -47,6 +47,17 @@ const SEOSchema = () => {
     }
   };
 
+  const reviewSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "FoundIndex",
+    "review": [{
+      "@type": "Review",
+      "author": {"@type": "Person", "name": "Testimonial Author"},
+      "reviewRating": {"@type": "Rating", "ratingValue": "5"}
+    }]
+  };
+
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
