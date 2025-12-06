@@ -294,6 +294,7 @@ function scoreSchemaType(type: string, items: SchemaItem[]): SchemaScore {
 
   // FIXED: Check for type aliases
   const aliases = SCHEMA_TYPE_ALIASES[type] || [type];
+  console.log(`[alias-debug] Scoring ${type}, aliases: ${JSON.stringify(aliases)}, found schemas: ${items.map(s => s.type).join(', ')}`);
   const matchingItems = items.filter((item) => aliases.includes(item.type));
 
   if (matchingItems.length === 0) {
