@@ -267,7 +267,7 @@ const Index = () => {
         <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 mb-8">
           <div className="flex items-center gap-2 text-sm md:text-base">
             <CheckCircle className="h-5 w-5 text-green-500" />
-            <span><strong>143+</strong> websites tested</span>
+            <span><strong>217+</strong> websites tested</span>
           </div>
           <div className="flex items-center gap-2 text-sm md:text-base">
             <CheckCircle className="h-5 w-5 text-green-500" />

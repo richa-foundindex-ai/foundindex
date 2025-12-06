@@ -183,7 +183,7 @@ export default function Methodology() {
               gives you a real benchmark against other websites being analyzed, not a static number.
             </p>
             <p className="text-sm text-muted-foreground mt-3">
-              Currently based on {">"}50 real website analyses. Updated daily.
+              Industry average calculated from all website tests. Updated daily as new sites are analyzed.
             </p>
           </CardContent>
         </Card>
