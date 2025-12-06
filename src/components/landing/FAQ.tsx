@@ -15,44 +15,47 @@ interface FAQ {
 const FAQ = () => {
   const faqs: FAQ[] = [
     {
-      question: "What does FoundIndex measure?",
+      question: "Who is FoundIndex for?",
       answer:
-        "FoundIndex evaluates five AI-critical factors: content clarity, information discoverability, authority signals, technical structure, and differentiation clarity. These reflect how major AI systems interpret, extract, and reason about website content.",
+        "Perfect for: New brands (Semrush shows 'no data'), businesses entering new markets, content teams optimizing pages, agencies managing client sites. Also valuable for established brands fixing page-level structure.",
     },
     {
-      question: "Why do you only analyze the homepage?",
+      question: "How is this different from SEO tools?",
       answer:
-        "AI models treat your homepage as the primary source of meaning. If clarity breaks here, AI rarely infers deeper pages. (Multi-page analysis coming in v2.)",
+        "Traditional SEO (Semrush, Ahrefs): Backlinks, keywords → optimizes for Google. FoundIndex: Schema, content structure → optimizes for AI parsing. Complementary tools - you need both.",
     },
     {
-      question: "Is this the same as SEO?",
+      question: "What happens after I get my score?",
       answer:
-        "No. SEO optimizes for ranking algorithms. AI visibility optimizes for meaning extraction, clarity, and comprehension. Think of it like SEO, but for AI assistants.",
+        "You receive: (1) 0-100 score with breakdown, (2) Specific issues identified, (3) Copy-paste code fixes, (4) Priority ranking. Start with schema markup (biggest impact), then content structure.",
     },
     {
-      question: "How accurate is the score?",
+      question: "Will this guarantee AI recommendations?",
       answer:
-        "Scores may vary ±5-10 points between tests—this is normal with AI-powered analysis. FoundIndex is a directional assessment based on factors we believe matter for AI comprehension.",
+        "No. Good structure is necessary but not sufficient. AI recommendations also depend on content quality, authority, and brand reputation. We measure IF AI can understand your structure WHEN it crawls you.",
     },
     {
-      question: "What do I get for free?",
-      answer:
-        "AI Visibility Score, diagnostic breakdown across all 5 categories, and your top 3 improvement priorities.",
+      question: "Do I need to sign up?",
+      answer: "No. Free during beta, no email required.",
     },
     {
-      question: "Who built this?",
+      question: "Can you help rewrite my content?",
       answer:
-        "FoundIndex was created by Richa Deo—a UX researcher with 14+ years of experience, focused on how AI interprets and classifies information.",
+        "Coming Q1 2026: Content rewriting service that maintains your voice while optimizing for AI readability. Based on 15+ years UX research and content strategy experience.",
     },
     {
-      question: "How many tests can I run?",
+      question: "Why is it free?",
       answer:
-        "10 tests per week per device during beta. The limit resets automatically 7 days after your first test. If you test the same URL twice, we'll show you the previous score.",
+        "Beta phase. Free forever for single URL testing. Paid (launching 2026): Weekly monitoring $29/mo, Multi-site + content rewrites $49/mo, API access $99/mo. Early users get lifetime discounts.",
     },
     {
-      question: "Do you store my website content?",
+      question: "What's your background?",
       answer:
-        "No. We analyze your homepage and store only the URL, scores, and recommendations. We never store your HTML or website content. See our",
+        "Built by UX researcher with 15+ years experience (British Telecom, Indian Navy), combining technical analysis with content strategy expertise.",
+    },
+    {
+      question: "How can I give feedback?",
+      answer: "Use the feedback button on results page or",
       hasLink: true,
     },
   ];
@@ -77,7 +80,7 @@ const FAQ = () => {
               <AccordionContent className="text-muted-foreground text-base leading-relaxed pt-2">
                 {faq.answer}
                 {faq.hasLink && (
-                  <span> <Link to="/privacy" className="text-link hover:underline">Privacy Policy</Link> for details.</span>
+                  <span> <Link to="/contact" className="text-link hover:underline">contact us</Link>.</span>
                 )}
               </AccordionContent>
             </AccordionItem>
