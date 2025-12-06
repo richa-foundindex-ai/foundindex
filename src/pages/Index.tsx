@@ -342,67 +342,85 @@ const Index = () => {
           </p>
 
           {/* Comparison Table */}
-          <div className="max-w-5xl mx-auto mb-12">
+          <div className="max-w-5xl mx-auto mb-8">
             <div className="overflow-x-auto pb-2 relative">
               <div className="md:hidden text-xs text-muted-foreground text-center mb-2 flex items-center justify-center gap-2">
                 <span>← Scroll to compare →</span>
               </div>
-              <table className="w-full min-w-[700px] border-collapse bg-background rounded-lg overflow-hidden shadow-sm">
+              <table className="w-full min-w-[800px] border-collapse bg-background rounded-lg overflow-hidden shadow-lg">
                 <thead>
                   <tr className="bg-[#1a365d] text-white">
-                    <th className="text-left p-4 font-semibold">Feature</th>
-                    <th className="text-center p-4 font-semibold">HubSpot AEO Grader</th>
-                    <th className="text-center p-4 font-semibold">Semrush AI Visibility</th>
-                    <th className="text-center p-4 font-semibold bg-blue-700">FoundIndex</th>
+                    <th className="text-left p-4 font-semibold w-[28%]">Feature</th>
+                    <th className="text-center p-4 font-semibold w-[22%]">HubSpot AEO Grader</th>
+                    <th className="text-center p-4 font-semibold w-[22%]">Semrush AI Visibility</th>
+                    <th className="text-center p-4 font-semibold w-[28%] bg-blue-600">FoundIndex</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-b border-border">
                     <td className="p-4 font-medium text-foreground">What it measures</td>
-                    <td className="p-4 text-center text-muted-foreground">Brand mentions in AI answers</td>
-                    <td className="p-4 text-center text-muted-foreground">Brand share of voice across AI platforms</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-foreground">Page parseability & AI readability</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">Brand mentions in AI answers</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">Brand share of voice across AI</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-foreground text-sm">Page structure & AI readability</td>
                   </tr>
                   <tr className="border-b border-border bg-muted/50">
                     <td className="p-4 font-medium text-foreground">Input required</td>
-                    <td className="p-4 text-center text-muted-foreground">Brand name</td>
-                    <td className="p-4 text-center text-muted-foreground">Brand name</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-foreground">Specific URL</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">Brand name</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">Brand name</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-foreground text-sm">Specific URL</td>
                   </tr>
                   <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Works for unknown brands</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">❌ Only known brands</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">❌ Only tracked brands</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 inline mr-1 text-green-500" /><span className="text-green-600 dark:text-green-400 font-medium text-sm">Any URL, even day-1 startups</span></td>
+                  </tr>
+                  <tr className="border-b border-border bg-muted/50">
                     <td className="p-4 font-medium text-foreground">Analyzes specific pages</td>
-                    <td className="p-4 text-center"><X className="h-5 w-5 mx-auto text-gray-400" /></td>
-                    <td className="p-4 text-center"><X className="h-5 w-5 mx-auto text-gray-400" /></td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 mx-auto text-green-500" /></td>
-                  </tr>
-                  <tr className="border-b border-border bg-muted/50">
-                    <td className="p-4 font-medium text-foreground">Shows exactly what to fix</td>
-                    <td className="p-4 text-center"><X className="h-5 w-5 mx-auto text-gray-400" /></td>
-                    <td className="p-4 text-center"><X className="h-5 w-5 mx-auto text-gray-400" /></td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 mx-auto text-green-500" /></td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">❌ Brand-level only</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">❌ Brand-level only</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 inline mr-1 text-green-500" /><span className="text-green-600 dark:text-green-400 font-medium text-sm">URL-specific diagnostics</span></td>
                   </tr>
                   <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Before/after benchmarking</td>
-                    <td className="p-4 text-center"><X className="h-5 w-5 mx-auto text-gray-400" /></td>
-                    <td className="p-4 text-center text-muted-foreground text-sm"><X className="h-5 w-5 mx-auto text-gray-400" /></td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 mx-auto text-green-500" /></td>
+                    <td className="p-4 font-medium text-foreground">Shows exact code to fix</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">❌ General positioning only</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">❌ Metrics only</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 inline mr-1 text-green-500" /><span className="text-green-600 dark:text-green-400 font-medium text-sm">Copy-paste schema + fixes</span></td>
                   </tr>
                   <tr className="border-b border-border bg-muted/50">
-                    <td className="p-4 font-medium text-foreground">Works for any website</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">Only if AI recognizes the brand</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">Only if AI recognizes the brand</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-green-600 dark:text-green-400">✓ Any URL</td>
+                    <td className="p-4 font-medium text-foreground">Before/after testing</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">❌</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">⚠️ Monthly tracking</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 inline mr-1 text-green-500" /><span className="text-green-600 dark:text-green-400 font-medium text-sm">Test → fix → instant retest</span></td>
                   </tr>
-                  <tr>
+                  <tr className="border-b border-border">
+                    <td className="p-4 font-medium text-foreground">Schema validation</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">❌</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">⚠️ Basic check</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 inline mr-1 text-green-500" /><span className="text-green-600 dark:text-green-400 font-medium text-sm">Detailed schema.org validation</span></td>
+                  </tr>
+                  <tr className="border-b border-border bg-muted/50">
                     <td className="p-4 font-medium text-foreground">Price</td>
-                    <td className="p-4 text-center text-muted-foreground">Free</td>
-                    <td className="p-4 text-center text-muted-foreground">$99/month</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-bold text-green-600 dark:text-green-400">Free</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">Free (email gate)</td>
+                    <td className="p-4 text-center text-muted-foreground text-sm">$199/month</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-bold text-green-600 dark:text-green-400">Free (beta)</td>
+                  </tr>
+                  {/* Killer row - the real differentiator */}
+                  <tr className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-t-2 border-amber-300 dark:border-amber-700">
+                    <td className="p-5 font-bold text-foreground text-base">Example: semrush.com</td>
+                    <td className="p-5 text-center font-semibold text-muted-foreground">No data (not tracked)</td>
+                    <td className="p-5 text-center font-semibold text-muted-foreground">Shows mentions only</td>
+                    <td className="p-5 text-center bg-blue-100 dark:bg-blue-900/40 font-bold text-blue-700 dark:text-blue-300 text-base">59/100 – Missing FAQ schema, weak entity markup</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
+          
+          {/* Comparison note */}
+          <p className="text-center text-muted-foreground text-sm max-w-3xl mx-auto mb-12 italic">
+            Semrush/HubSpot track mentions AFTER AI knows you. FoundIndex fixes structure BEFORE discovery.
+          </p>
 
           {/* Differentiator Cards */}
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto mb-12">
