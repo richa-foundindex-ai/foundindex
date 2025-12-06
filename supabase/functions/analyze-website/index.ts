@@ -370,7 +370,7 @@ function parseSchemaMarkup(html: string, pageType: "homepage" | "blog"): SchemaP
   const jsonLdItems = extractJsonLd(html);
   const allSchemas = parseJsonLdItems(jsonLdItems);
 
-  console.log(`[schema-debug] Found ${allSchemas.length} total schemas: ${allSchemas.map(s => s.type).join(", ")}`);
+  console.log(`[schema-debug] Found ${allSchemas.length} total schemas: ${allSchemas.map((s) => s.type).join(", ")}`);
 
   const schemasToScore =
     pageType === "homepage"
@@ -382,8 +382,8 @@ function parseSchemaMarkup(html: string, pageType: "homepage" | "blog"): SchemaP
   for (const schemaType of schemasToScore) {
     // FIXED: For blogs, if we have Article schema, don't penalize for missing BlogPosting
     if (schemaType === "BlogPosting" && pageType === "blog") {
-      const hasArticle = allSchemas.some((s) => 
-        ["Article", "BlogPosting", "NewsArticle", "TechArticle"].includes(s.type)
+      const hasArticle = allSchemas.some((s) =>
+        ["Article", "BlogPosting", "NewsArticle", "TechArticle"].includes(s.type),
       );
       if (hasArticle) {
         console.log(`[schema-debug] Skipping BlogPosting check - Article schema already found`);
@@ -705,4 +705,477 @@ serve(async (req) => {
 
   const startTime = Date.now();
 
-  try
+  try {
+    const { email, website, testType }: TestSubmission = await req.json();
+
+    if (!testType || !["homepage", "blog"].includes(testType)) {
+      return new Response(JSON.stringify({ success: false, error: "testType must be 'homepage' or 'blog'" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const validatedEmail = validateEmail(email);
+    const validatedWebsite = validateWebsite(website);
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    console.log(`[INIT] Supabase URL: ${supabaseUrl ? "SET" : "MISSING"}`);
+    console.log(`[INIT] Supabase Key: ${supabaseKey ? "SET (length: " + supabaseKey.length + ")" : "MISSING"}`);
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("[INIT] Missing Supabase credentials!");
+      return new Response(
+        JSON.stringify({ success: false, error: "Server configuration error. Please contact support." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+
+    const RATE_LIMIT_TESTS_PER_PERIOD = 10;
+    const RATE_LIMIT_PERIOD_HOURS = 24;
+
+    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
+    const rateLimitCutoff = new Date(Date.now() - RATE_LIMIT_PERIOD_HOURS * 60 * 60 * 1000).toISOString();
+
+    const { count: recentTestCount, error: countError } = await supabaseAdmin
+      .from("test_submissions")
+      .select("*", { count: "exact", head: true })
+      .eq("ip_address", clientIP)
+      .gte("created_at", rateLimitCutoff);
+
+    if (countError) {
+      console.error("Rate limit check failed:", countError);
+    } else if (recentTestCount !== null && recentTestCount >= RATE_LIMIT_TESTS_PER_PERIOD) {
+      console.warn(
+        `[rate-limit] IP ${clientIP} exceeded limit: ${recentTestCount} tests in last ${RATE_LIMIT_PERIOD_HOURS}h`,
+      );
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Rate limit exceeded. You can run ${RATE_LIMIT_TESTS_PER_PERIOD} tests per ${RATE_LIMIT_PERIOD_HOURS} hours. Please try again later.`,
+          errorType: "rate_limit_exceeded",
+          testsUsed: recentTestCount,
+          testsAllowed: RATE_LIMIT_TESTS_PER_PERIOD,
+        }),
+        {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    console.log(
+      `[rate-limit] IP ${clientIP} has ${recentTestCount || 0}/${RATE_LIMIT_TESTS_PER_PERIOD} tests in period`,
+    );
+
+    const testId = crypto.randomUUID();
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    const modelName = Deno.env.get("OPENAI_MODEL_NAME") || "gpt-4o-mini";
+
+    console.log(`[${testId}] Starting analysis for ${testType}: ${validatedWebsite}`);
+
+    let websiteHtml = "";
+    let fetchSuccess = false;
+
+    try {
+      const websiteResponse = await fetch(validatedWebsite, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; FoundIndex-Bot/1.0; +https://foundindex.com)",
+          Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+        redirect: "follow",
+      });
+
+      if (websiteResponse.ok) {
+        websiteHtml = await websiteResponse.text();
+        fetchSuccess = true;
+        console.log(`[${testId}] Fetched ${websiteHtml.length} chars`);
+      } else {
+        console.error(`[${testId}] Fetch failed with status: ${websiteResponse.status}`);
+      }
+    } catch (fetchError) {
+      console.error(`[${testId}] Fetch failed:`, fetchError);
+    }
+
+    if (!fetchSuccess || websiteHtml.length < 100) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Unable to access this website",
+          details: `Could not load content from ${validatedWebsite}. The site may be blocking bots, temporarily down, or require login.`,
+          testId,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const spaMarkers = ['id="root"', 'id="app"', "__NEXT_DATA__", "window.__NUXT__"];
+    const hasSPAMarker = spaMarkers.some((marker) => websiteHtml.includes(marker));
+
+    let textContent = websiteHtml
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    let isLikelyJSRendered = hasSPAMarker && textContent.length < 500;
+
+    if (isLikelyJSRendered) {
+      console.log(`[${testId}] JS-rendered detected, trying Jina.ai...`);
+      try {
+        const jinaResponse = await fetch(`https://r.jina.ai/${validatedWebsite}`, {
+          headers: { Accept: "text/html" },
+          signal: AbortSignal.timeout(30000),
+        });
+
+        if (jinaResponse.ok) {
+          const rendered = await jinaResponse.text();
+          if (rendered.length > textContent.length) {
+            textContent = rendered;
+            websiteHtml = `<!DOCTYPE html><html><body>${rendered}</body></html>`;
+            isLikelyJSRendered = false;
+            console.log(`[${testId}] Jina.ai rendered ${rendered.length} chars`);
+          }
+        }
+      } catch (e) {
+        console.warn(`[${testId}] Jina.ai failed:`, e);
+      }
+    }
+
+    if (isLikelyJSRendered && textContent.length < 200) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error:
+            "Unable to analyze JavaScript-rendered website. Ensure your content is server-rendered for AI visibility.",
+          testId,
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const detectedType = detectPageType(validatedWebsite, websiteHtml, testType);
+    console.log(`[${testId}] Detected type: ${detectedType}, Requested: ${testType}`);
+
+    const analysisType = detectedType;
+
+    const schemaResult = parseSchemaMarkup(websiteHtml, analysisType);
+    const semanticResult = analyzeSemanticHtml(websiteHtml, analysisType);
+    const technicalResult = analyzeTechnical(validatedWebsite, websiteHtml);
+    const imageResult = analyzeImages(websiteHtml, analysisType);
+
+    const schemaWeight = analysisType === "homepage" ? 20 : 18;
+    const semanticWeight = analysisType === "homepage" ? 12 : 14;
+    const technicalWeight = 8;
+    const imageWeight = analysisType === "homepage" ? 0 : 8;
+
+    const schemaScore =
+      schemaResult.maxScore > 0 ? (schemaResult.totalScore / schemaResult.maxScore) * schemaWeight : 0;
+    const semanticScore = (semanticResult.score / semanticResult.maxScore) * semanticWeight;
+    const technicalScore = (technicalResult.score / technicalResult.maxScore) * technicalWeight;
+    const imageScore = (imageResult.score / imageResult.maxScore) * imageWeight;
+
+    const deterministicTotal = Math.round((schemaScore + semanticScore + technicalScore + imageScore) * 10) / 10;
+
+    console.log(
+      `[${testId}] Deterministic: schema=${schemaScore.toFixed(1)}, semantic=${semanticScore.toFixed(1)}, technical=${technicalScore.toFixed(1)}, images=${imageScore.toFixed(1)}`,
+    );
+
+    const extractedContent = websiteHtml.substring(0, 50000);
+
+    const analysisPrompt =
+      analysisType === "homepage"
+        ? `Analyze this business homepage for AI search visibility.
+
+URL: ${validatedWebsite}
+HTML: ${extractedContent}
+
+Score these 3 categories (60 points total):
+
+1. CONTENT CLARITY (max 25 points): Does the page clearly answer "what is this business, who is it for, what problem does it solve?"
+2. ANSWER STRUCTURE (max 20 points): Are key answers front-loaded? Can AI extract the core value proposition in the first 200 words?
+3. AUTHORITY SIGNALS (max 15 points): Credentials, testimonials, data, specific claims with evidence?
+
+For each issue, provide:
+- priority: "critical" | "medium" | "good"
+- title: Short issue name (sentence case)
+- pointsLost: Negative number
+- problem: What's wrong
+- howToFix: Array of specific steps
+- codeExample: HTML snippet if applicable
+- expectedImprovement: Point gain estimate
+
+Return ONLY valid JSON:
+{
+  "categories": {
+    "contentClarity": { "score": 18, "max": 25 },
+    "answerStructure": { "score": 14, "max": 20 },
+    "authoritySignals": { "score": 10, "max": 15 }
+  },
+  "recommendations": [...]
+}`
+        : `Analyze this blog post for AI search visibility.
+
+URL: ${validatedWebsite}
+HTML: ${extractedContent}
+
+Score these 3 categories (60 points total):
+
+1. ANSWER STRUCTURE (max 25 points): Does it answer the title question directly in the first 150 words? AI needs upfront answers.
+2. SCANNABILITY (max 20 points): Clear subheadings every 300 words? Bullet points for lists? Short paragraphs?
+3. EXPERTISE SIGNALS (max 15 points): Author credentials visible? Citations? Specific data? Original insights?
+
+For each issue, provide:
+- priority: "critical" | "medium" | "good"
+- title: Short issue name (sentence case)
+- pointsLost: Negative number
+- problem: What's wrong
+- howToFix: Array of specific steps
+- codeExample: HTML snippet if applicable
+- expectedImprovement: Point gain estimate
+
+Return ONLY valid JSON:
+{
+  "categories": {
+    "answerStructure": { "score": 18, "max": 25 },
+    "scannability": { "score": 14, "max": 20 },
+    "expertiseSignals": { "score": 10, "max": 15 }
+  },
+  "recommendations": [...]
+}`;
+
+    console.log(`[${testId}] Calling OpenAI for ${analysisType} analysis...`);
+
+    let aiAnalysisResult: Record<string, unknown> = { categories: {}, recommendations: [] };
+
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${openaiApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: modelName,
+          temperature: 0.3,
+          response_format: { type: "json_object" },
+          messages: [{ role: "user", content: analysisPrompt }],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[${testId}] OpenAI error:`, response.status, errorText);
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0].message.content
+        .replace(/```json\n?/g, "")
+        .replace(/```\n?/g, "")
+        .trim();
+
+      aiAnalysisResult = JSON.parse(content);
+      console.log(`[${testId}] AI analysis complete`);
+    } catch (error) {
+      console.error(`[${testId}] AI analysis failed:`, error);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "AI analysis failed. Please try again.",
+          details: error instanceof Error ? error.message : "Unknown error",
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const aiCategories = (aiAnalysisResult.categories || {}) as Record<string, { score?: number; max?: number }>;
+    const aiTotal = Object.values(aiCategories).reduce((sum: number, cat) => {
+      if (cat && typeof cat === "object" && typeof cat.score === "number") {
+        return sum + cat.score;
+      }
+      return sum;
+    }, 0);
+
+    const totalScore = Math.round(deterministicTotal + aiTotal);
+    const grade = getGrade(totalScore);
+
+    const displayCategories: Record<string, unknown> = {
+      schemaMarkup: {
+        score: Math.round(schemaScore * 10) / 10,
+        max: schemaWeight,
+        percentage: schemaWeight > 0 ? Math.round((schemaScore / schemaWeight) * 100) : 0,
+        breakdown: schemaResult,
+      },
+      semanticStructure: {
+        score: Math.round(semanticScore * 10) / 10,
+        max: semanticWeight,
+        percentage: Math.round((semanticScore / semanticWeight) * 100),
+        details: semanticResult.details,
+      },
+      technicalFoundation: {
+        score: Math.round(technicalScore * 10) / 10,
+        max: technicalWeight,
+        percentage: Math.round((technicalScore / technicalWeight) * 100),
+        details: technicalResult.details,
+      },
+    };
+
+    if (analysisType === "blog") {
+      displayCategories.images = {
+        score: Math.round(imageScore * 10) / 10,
+        max: imageWeight,
+        percentage: imageWeight > 0 ? Math.round((imageScore / imageWeight) * 100) : 0,
+        details: imageResult.details,
+      };
+    }
+
+    for (const [key, value] of Object.entries(aiCategories)) {
+      if (value && typeof value === "object") {
+        const catValue = value as { score?: number; max?: number };
+        const catScore = catValue.score ?? 0;
+        const catMax = catValue.max ?? 1;
+        displayCategories[key] = {
+          score: catScore,
+          max: catMax,
+          percentage: Math.round((catScore / catMax) * 100),
+        };
+      }
+    }
+
+    const schemaRecommendations = schemaResult.scores
+      .filter((s) => !s.found || s.missingFields.length > 0)
+      .slice(0, 3)
+      .map((s, idx) => ({
+        id: `schema-${idx}`,
+        priority: s.found ? "medium" : "critical",
+        title: s.found ? `Complete your ${s.category} schema` : `Add ${s.category} schema markup`,
+        pointsLost: -Math.round((s.maxPoints - s.earnedPoints) * 10) / 10,
+        problem: s.details,
+        howToFix: s.found
+          ? [`Add missing fields: ${s.missingFields.join(", ")}`]
+          : [`Add ${s.category} schema to your page`, `Use JSON-LD format`, `Include: ${s.missingFields.join(", ")}`],
+        codeExample: !s.found
+          ? `<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "${s.category}",\n  ${s.missingFields.map((f) => `"${f}": "..."`).join(",\n  ")}\n}\n</script>`
+          : "",
+        expectedImprovement: `+${Math.round((s.maxPoints - s.earnedPoints) * 10) / 10} points`,
+      }));
+
+    const aiRecommendations = Array.isArray(aiAnalysisResult.recommendations) ? aiAnalysisResult.recommendations : [];
+
+    const allRecommendations = [...schemaRecommendations, ...aiRecommendations].map((rec, idx) => {
+      const recObj = rec as Record<string, unknown>;
+      return {
+        id: (recObj.id as string) || `rec-${idx}`,
+        priority: (recObj.priority as string) || "medium",
+        title: (recObj.title as string) || "Recommendation",
+        pointsLost: (recObj.pointsLost as number) || 0,
+        problem: (recObj.problem as string) || "",
+        howToFix: recObj.howToFix || [],
+        codeExample: (recObj.codeExample as string) || "",
+        expectedImprovement: (recObj.expectedImprovement as string) || "",
+      };
+    });
+
+    allRecommendations.sort((a, b) => {
+      const priorityOrder: Record<string, number> = { critical: 0, medium: 1, good: 2 };
+      return (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
+    });
+
+    let industryAverage = 58;
+    try {
+      const { data: avgData } = await supabaseAdmin
+        .from("test_history")
+        .select("score")
+        .eq("test_type", analysisType)
+        .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+
+      if (avgData && avgData.length > 5) {
+        const scores = avgData.map((d: { score: number }) => d.score);
+        industryAverage = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
+      }
+    } catch (e) {
+      console.warn(`[${testId}] Could not calculate industry average:`, e);
+    }
+
+    console.log(`[${testId}] 📝 BEFORE DATABASE INSERT - About to save results to test_history table`);
+
+    const insertData = {
+      test_id: testId,
+      website: validatedWebsite,
+      test_type: testType,
+      detected_type: detectedType,
+      score: totalScore,
+      grade,
+      categories: displayCategories,
+      recommendations: allRecommendations,
+    };
+
+    console.log(
+      `[${testId}] Insert data: ${JSON.stringify({
+        test_id: testId,
+        website: validatedWebsite,
+        test_type: testType,
+        detected_type: detectedType,
+        score: totalScore,
+        grade,
+        categories_count: Object.keys(displayCategories).length,
+        recommendations_count: allRecommendations.length,
+      })}`,
+    );
+
+    const { data: insertResult, error: insertError } = await supabaseAdmin
+      .from("test_history")
+      .insert(insertData)
+      .select();
+
+    console.log(`[${testId}] 📊 AFTER DATABASE INSERT ATTEMPT`);
+
+    if (insertError) {
+      console.error(`[${testId}] ❌ DATABASE ERROR:`, insertError.message);
+      console.error(`[${testId}] Full error:`, JSON.stringify(insertError, null, 2));
+    } else {
+      console.log(`[${testId}] ✅ SAVED TO DATABASE: ${insertResult?.[0]?.id}`);
+      console.log(`[${testId}] Full insert result: ${JSON.stringify(insertResult, null, 2)}`);
+    }
+
+    await supabaseAdmin.from("test_submissions").insert({
+      email: validatedEmail,
+      ip_address: clientIP,
+      test_id: testId,
+      created_at: new Date().toISOString(),
+    });
+
+    const duration = Date.now() - startTime;
+    console.log(`[${testId}] SUCCESS - Score: ${totalScore}, Grade: ${grade}, Duration: ${duration}ms`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        testId,
+        score: totalScore,
+        grade,
+        detectedType,
+        requestedType: testType,
+        categories: displayCategories,
+        recommendations: allRecommendations,
+        industryAverage,
+        criteriaCount: analysisType === "homepage" ? 47 : 52,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  } catch (error) {
+    console.error("FATAL ERROR:", error);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "An unexpected error occurred",
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+});
