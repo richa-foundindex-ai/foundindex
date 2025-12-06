@@ -103,6 +103,7 @@ const SEOSchema = () => {
       <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
       <script type="application/ld+json">{JSON.stringify(webPageSchema)}</script>
       <script type="application/ld+json">{JSON.stringify(softwareSchema)}</script>
+      <script type="application/ld+json">{JSON.stringify(reviewSchema)}</script>
       <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
     </Helmet>
   );
