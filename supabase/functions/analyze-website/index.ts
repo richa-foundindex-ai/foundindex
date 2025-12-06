@@ -695,7 +695,7 @@ const checkRateLimit = async (
 };
 
 // =============================================================================
-// MAIN HANDLER (REST OF THE CODE STAYS THE SAME)
+// MAIN HANDLER
 // =============================================================================
 
 serve(async (req) => {
@@ -1047,8 +1047,22 @@ Return ONLY valid JSON:
       }
     }
 
+    // FIXED: Filter out BlogPosting recommendations if Article exists
     const schemaRecommendations = schemaResult.scores
-      .filter((s) => !s.found || s.missingFields.length > 0)
+      .filter((s) => {
+        // Don't create recommendations for schemas we intentionally skipped
+        if (!s.found && analysisType === "blog" && s.category === "BlogPosting") {
+          // Check if we have Article schema instead
+          const hasArticle = schemaResult.schemas.some((schema) =>
+            ["Article", "BlogPosting", "NewsArticle", "TechArticle"].includes(schema.type),
+          );
+          if (hasArticle) {
+            console.log(`[recs-debug] Skipping BlogPosting recommendation - Article schema exists`);
+            return false;
+          }
+        }
+        return !s.found || s.missingFields.length > 0;
+      })
       .slice(0, 3)
       .map((s, idx) => ({
         id: `schema-${idx}`,
