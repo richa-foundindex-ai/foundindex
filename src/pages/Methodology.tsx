@@ -3,6 +3,12 @@ import Header from "@/components/layout/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export default function Methodology() {
   return (
@@ -202,6 +208,149 @@ export default function Methodology() {
               <span className="px-3 py-1 bg-muted rounded">Person</span>
               <span className="px-3 py-1 bg-muted rounded">ContactPoint</span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Technical Deep Dive */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Technical Deep Dive</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="q1">
+                <AccordionTrigger className="text-left">
+                  Which AI platforms do you test against?
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-muted-foreground">
+                  <p>
+                    We do <strong>NOT</strong> query live ChatGPT/Claude/Perplexity about your brand (that would be rate-limited and unethical).
+                  </p>
+                  <p>Instead we replicate the parsing pattern modern AI systems use for retrieval:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Headless browser → HTML extraction</li>
+                    <li>Schema.org validation (deterministic)</li>
+                    <li>GPT-4o-mini content understanding</li>
+                  </ul>
+                  <p>This mirrors how AI systems process web content internally.</p>
+                  <p className="text-sm italic">
+                    Our validation: Sites scoring 70+ had significantly higher success rates for AI information extraction in our 143-site analysis.
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="q2">
+                <AccordionTrigger className="text-left">
+                  What's the difference from Semrush AI Visibility?
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-muted-foreground">
+                  <p>
+                    <strong>Semrush</strong> tracks brand mentions AFTER AI knows you (requires established brand).
+                  </p>
+                  <p>
+                    <strong>FoundIndex</strong> optimizes page structure BEFORE/DURING discovery (works for any URL).
+                  </p>
+                  <div className="bg-muted p-3 rounded-md text-sm space-y-1">
+                    <p>Example: When we tested foundindex.com on Semrush → "No data found"</p>
+                    <p>When we tested semrush.com on FoundIndex → 59/100 (missing FAQ schema)</p>
+                  </div>
+                  <p className="font-medium">You need both: FoundIndex to fix structure, Semrush to track growth.</p>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="q3">
+                <AccordionTrigger className="text-left">
+                  Why GPT-4o-mini vs open-source models?
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-muted-foreground">
+                  <p>
+                    Cost at current scale: GPT-4o-mini ~$2-5/month vs self-hosted Llama 70B $500-1000/month GPU hosting.
+                  </p>
+                  <p>Break-even: ~50K tests/month. Using GPT until scale justifies complexity.</p>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="q4">
+                <AccordionTrigger className="text-left">
+                  How accurate is the scoring?
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-muted-foreground">
+                  <p>
+                    Based on 143+ site analysis, we observe strong correlation between scores and AI parsing success. Sites with comprehensive schema markup and clear content structure consistently enable better information extraction.
+                  </p>
+                  <p>We're continuously validating and will publish detailed benchmarks as our dataset grows.</p>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="q5">
+                <AccordionTrigger className="text-left">
+                  What about JavaScript-rendered content?
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-muted-foreground">
+                  <p>Currently parsing static HTML + JSON-LD. Dynamic rendering via headless browser: roadmap for Q1 2026.</p>
+                  <p className="text-sm italic">
+                    Best practice: 80% of schema should be in static markup anyway. For SPAs, use server-side rendering for critical schema.
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="q6">
+                <AccordionTrigger className="text-left">
+                  Why focus on schema instead of training your own model?
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-muted-foreground">
+                  <p>Two reasons:</p>
+                  <ol className="list-decimal pl-5 space-y-2">
+                    <li>
+                      <strong>Technical</strong> — schema.org is the Web's semantic layer used by Google/OpenAI/Microsoft. We validate against the standard, not one vendor's implementation.
+                    </li>
+                    <li>
+                      <strong>Business</strong> — Structural validation costs $5/month. Training custom models costs $10K+ with no accuracy guarantee. We build what's useful now.
+                    </li>
+                  </ol>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="q7">
+                <AccordionTrigger className="text-left">
+                  Do you store my content?
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-muted-foreground">
+                  <p><strong>We store:</strong> URL, timestamp, scores, schema types found, recommendations.</p>
+                  <p><strong>We delete:</strong> Full HTML (after analysis), rendered content, user IP.</p>
+                  <p>GDPR/CCPA compliant. Business model: subscriptions, not data monetization.</p>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="q8">
+                <AccordionTrigger className="text-left">
+                  Does this work for non-English sites?
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-muted-foreground">
+                  <p>Schema validation works universally (language-agnostic).</p>
+                  <p>Content scoring currently optimized for English.</p>
+                  <p className="text-sm italic">Non-English optimization: Q2 2026 when we hit 10% non-English usage.</p>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="q9">
+                <AccordionTrigger className="text-left">
+                  How often should I retest?
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 text-muted-foreground">
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li><strong>After major changes:</strong> Always</li>
+                    <li><strong>Active sites:</strong> Monthly</li>
+                    <li><strong>Stable sites:</strong> Quarterly</li>
+                  </ul>
+                  <p className="text-sm italic">Note: 7-day rate limit per URL to ensure diagnostic use.</p>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+
+            <p className="text-sm text-muted-foreground mt-6">
+              Technical question? <Link to="/contact" className="text-primary hover:underline">Contact us</Link>
+            </p>
           </CardContent>
         </Card>
 
