@@ -864,39 +864,45 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
-    // Check monthly IP rate limit (3 tests per month)
-    const MONTHLY_TESTS_LIMIT = 3;
-    const monthStart = new Date();
-    monthStart.setDate(1);
-    monthStart.setHours(0, 0, 0, 0);
-    
+    // Get client IP for rate limiting
     const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
 
-    const { count: monthlyTestCount, error: countError } = await supabaseAdmin
-      .from("test_submissions")
-      .select("*", { count: "exact", head: true })
-      .eq("ip_address", clientIP)
-      .gte("created_at", monthStart.toISOString());
+    // Blog posts have a 3 per 30 days limit (30-day rolling window)
+    // Homepage tests are UNLIMITED (no IP rate limit for homepage)
+    if (testType === "blog") {
+      const BLOG_TESTS_LIMIT = 3;
+      const ROLLING_WINDOW_DAYS = 30;
+      const thirtyDaysAgo = new Date(Date.now() - ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
-    if (countError) {
-      console.error("Monthly rate limit check failed:", countError);
-    } else if (monthlyTestCount !== null && monthlyTestCount >= MONTHLY_TESTS_LIMIT) {
-      const nextMonth = new Date();
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-      nextMonth.setDate(1);
-      nextMonth.setHours(0, 0, 0, 0);
+      const { data: recentBlogTests, error: blogCountError } = await supabaseAdmin
+        .from("test_submissions")
+        .select("created_at")
+        .eq("ip_address", clientIP)
+        .gte("created_at", thirtyDaysAgo.toISOString())
+        .order("created_at", { ascending: true });
 
-      console.warn(`[rate-limit] IP ${clientIP} exceeded monthly limit: ${monthlyTestCount} tests this month`);
-      
-      return createErrorResponse("RATE_LIMIT_IP", {
-        user_message: `You've used all ${MONTHLY_TESTS_LIMIT} tests this month from your network. Your limit resets on ${formatDateForUser(nextMonth)}.`,
-        next_available_time: nextMonth.toISOString(),
-        suggested_action: "Wait until next month or contact us for more tests",
-        technical_details: `IP: ${clientIP}, Tests this month: ${monthlyTestCount}`,
-      });
+      if (blogCountError) {
+        console.error("Blog rate limit check failed:", blogCountError);
+      } else if (recentBlogTests && recentBlogTests.length >= BLOG_TESTS_LIMIT) {
+        // Calculate reset date: 30 days from FIRST test in this window
+        const firstTestDate = new Date(recentBlogTests[0].created_at);
+        const resetDate = new Date(firstTestDate.getTime() + ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+        console.warn(`[rate-limit] IP ${clientIP} exceeded blog limit: ${recentBlogTests.length} posts in 30 days`);
+        
+        return createErrorResponse("RATE_LIMIT_IP", {
+          user_message: `You've used all 3 blog post tests. You can test again on ${formatDateForUser(resetDate)}.`,
+          next_available_time: resetDate.toISOString(),
+          suggested_action: "Test homepages (unlimited) or wait until reset date",
+          technical_details: `IP: ${clientIP}, Blog posts in 30 days: ${recentBlogTests.length}`,
+        });
+      }
+
+      const remaining = BLOG_TESTS_LIMIT - (recentBlogTests?.length || 0);
+      console.log(`[rate-limit] IP ${clientIP} has ${remaining}/3 blog tests remaining`);
+    } else {
+      console.log(`[rate-limit] Homepage test for IP ${clientIP} - no limit applied`);
     }
-
-    console.log(`[rate-limit] IP ${clientIP} has ${monthlyTestCount || 0}/${MONTHLY_TESTS_LIMIT} tests this month`);
 
     // Check URL cooldown (7 days) and return cached results if within cooldown
     const urlRateCheck = await checkRateLimitWithCache(supabaseAdmin, validatedWebsite);

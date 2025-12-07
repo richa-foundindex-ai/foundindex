@@ -13,15 +13,15 @@ import { analytics } from "@/utils/analytics";
 import { validateAndNormalizeUrl, getErrorMessage } from "@/utils/urlValidation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useTestCounter } from "@/hooks/useTestCounter";
+import { useBlogTestCounter } from "@/hooks/useBlogTestCounter";
 import { RateLimitBanner } from "@/components/landing/RateLimitBanner";
-import { TestCounter } from "@/components/landing/TestCounter";
+import { BlogTestCounter } from "@/components/landing/BlogTestCounter";
 import { isStructuredError, type ErrorResponse } from "@/utils/errorTypes";
 import { ToastAction } from "@/components/ui/toast";
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { incrementTestCount } = useTestCounter();
+  const { incrementBlogTestCount } = useBlogTestCounter();
   const [homepageUrl, setHomepageUrl] = useState("");
   const [blogUrl, setBlogUrl] = useState("");
   const [isLoadingHomepage, setIsLoadingHomepage] = useState(false);
@@ -230,18 +230,23 @@ const Index = () => {
       }
 
       if (data?.testId) {
-        incrementTestCount();
+        // Homepage tests don't count against blog limit
         toast({ title: "Analysis complete!", description: "Loading your results...", duration: 5000 });
-        navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
         navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
       } else {
         throw new Error("No test ID returned");
       }
     } catch (error) {
       console.error("Homepage submit error:", error);
+      // Parse error for user-friendly message
+      const errorMessage = error instanceof Error 
+        ? (error.message.includes("Edge Function") || error.message.includes("2xx") || error.message.includes("non-2xx"))
+          ? "Could not connect to analysis service. Please try again."
+          : error.message
+        : "Please try again or contact us if the problem persists.";
       toast({
         title: "Something went wrong",
-        description: error instanceof Error ? error.message : "Please try again or contact us if the problem persists.",
+        description: errorMessage,
         variant: "destructive",
         duration: Infinity,
       });
@@ -323,7 +328,7 @@ const Index = () => {
 
       if (data?.testId) {
         recordBlogTest();
-        incrementTestCount();
+        incrementBlogTestCount();
         toast({ title: "Analysis complete!", description: "Loading your results...", duration: 5000 });
         navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
       } else {
@@ -331,9 +336,15 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Blog submit error:", error);
+      // Parse error for user-friendly message
+      const errorMessage = error instanceof Error 
+        ? (error.message.includes("Edge Function") || error.message.includes("2xx") || error.message.includes("non-2xx"))
+          ? "Could not connect to analysis service. Please try again."
+          : error.message
+        : "Please try again or contact us if the problem persists.";
       toast({
         title: "Something went wrong",
-        description: error instanceof Error ? error.message : "Please try again or contact us if the problem persists.",
+        description: errorMessage,
         variant: "destructive",
         duration: Infinity,
       });
@@ -721,9 +732,9 @@ const Index = () => {
           </Card>
         </div>
         
-        {/* Test counter */}
+        {/* Blog test counter */}
         <div className="max-w-5xl mx-auto mt-4">
-          <TestCounter />
+          <BlogTestCounter />
         </div>
       </section>
 
