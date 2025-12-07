@@ -54,9 +54,9 @@ const SCHEMA_TYPE_ALIASES: Record<string, string[]> = {
 
 const SCHEMA_REQUIREMENTS: Record<string, { required: string[]; recommended: string[]; points: number }> = {
   Organization: {
-    required: ["name", "url"],
-    recommended: ["logo", "description", "sameAs", "contactPoint", "address"],
-    points: 8,
+    required: ["name"],
+    recommended: ["url", "logo", "description", "sameAs", "contactPoint", "address", "founder"],
+    points: 5,
   },
   Article: {
     required: ["headline", "author", "datePublished"],
@@ -76,26 +76,36 @@ const SCHEMA_REQUIREMENTS: Record<string, { required: string[]; recommended: str
   BreadcrumbList: {
     required: ["itemListElement"],
     recommended: [],
-    points: 3,
+    points: 2,
   },
   ContactPoint: {
     required: ["contactType"],
     recommended: ["telephone", "email", "areaServed"],
-    points: 3,
+    points: 2,
   },
   WebSite: {
-    required: ["name", "url"],
-    recommended: ["potentialAction", "description"],
-    points: 2,
+    required: ["name"],
+    recommended: ["url", "potentialAction", "description"],
+    points: 3,
   },
   WebPage: {
     required: ["name"],
-    recommended: ["description", "url", "breadcrumb"],
-    points: 1,
+    recommended: ["description", "url", "breadcrumb", "mainEntity"],
+    points: 2,
+  },
+  SoftwareApplication: {
+    required: ["name"],
+    recommended: ["description", "applicationCategory", "operatingSystem", "offers", "aggregateRating"],
+    points: 6,
   },
   Product: {
-    required: ["name", "description"],
-    recommended: ["brand", "offers", "image", "sku"],
+    required: ["name"],
+    recommended: ["description", "brand", "offers", "image", "sku"],
+    points: 6,
+  },
+  Service: {
+    required: ["name"],
+    recommended: ["description", "provider", "areaServed", "serviceType"],
     points: 6,
   },
   LocalBusiness: {
@@ -103,15 +113,20 @@ const SCHEMA_REQUIREMENTS: Record<string, { required: string[]; recommended: str
     recommended: ["telephone", "openingHours", "geo", "priceRange"],
     points: 7,
   },
-  Service: {
-    required: ["name", "description"],
-    recommended: ["provider", "areaServed", "serviceType"],
-    points: 6,
-  },
   Person: {
     required: ["name"],
     recommended: ["url", "image", "jobTitle", "sameAs"],
     points: 4,
+  },
+  Review: {
+    required: ["author"],
+    recommended: ["reviewRating", "itemReviewed", "reviewBody"],
+    points: 2,
+  },
+  HowTo: {
+    required: ["name", "step"],
+    recommended: ["description", "image", "totalTime"],
+    points: 3,
   },
 };
 
@@ -371,12 +386,13 @@ function parseSchemaMarkup(html: string, pageType: "homepage" | "blog"): SchemaP
   const jsonLdItems = extractJsonLd(html);
   const allSchemas = parseJsonLdItems(jsonLdItems);
 
+  console.log(`[schema-debug] Extracted ${jsonLdItems.length} JSON-LD blocks`);
   console.log(`[schema-debug] Found ${allSchemas.length} total schemas: ${allSchemas.map((s) => s.type).join(", ")}`);
 
   const schemasToScore =
     pageType === "homepage"
-      ? ["Organization", "WebSite", "WebPage", "FAQPage", "BreadcrumbList", "ContactPoint", "LocalBusiness", "Product"]
-      : ["Article", "BlogPosting", "FAQPage", "BreadcrumbList", "WebPage"];
+      ? ["Organization", "WebSite", "WebPage", "FAQPage", "SoftwareApplication", "Product", "Service", "BreadcrumbList"]
+      : ["Article", "BlogPosting", "FAQPage", "BreadcrumbList", "WebPage", "HowTo"];
 
   const scores: SchemaScore[] = [];
 
@@ -427,6 +443,7 @@ function parseSchemaMarkup(html: string, pageType: "homepage" | "blog"): SchemaP
 // =============================================================================
 
 function analyzeSemanticHtml(html: string, pageType: "homepage" | "blog") {
+  // Check for semantic HTML5 elements
   const checks = {
     hasArticleTag: /<article[\s>]/i.test(html),
     hasSectionTags: /<section[\s>]/i.test(html),
@@ -435,6 +452,27 @@ function analyzeSemanticHtml(html: string, pageType: "homepage" | "blog") {
     hasFigureTags: /<figure[\s>]/i.test(html),
     hasHeaderFooter: /<header[\s>]/i.test(html) && /<footer[\s>]/i.test(html),
     hasMain: /<main[\s>]/i.test(html),
+  };
+
+  // Check heading hierarchy (H1 → H2 → H3, no skipped levels)
+  const hasH1 = /<h1[\s>]/i.test(html);
+  const hasH2 = /<h2[\s>]/i.test(html);
+  const hasH3 = /<h3[\s>]/i.test(html);
+  
+  // Count heading occurrences
+  const h1Count = (html.match(/<h1[\s>]/gi) || []).length;
+  const h2Count = (html.match(/<h2[\s>]/gi) || []).length;
+  const h3Count = (html.match(/<h3[\s>]/gi) || []).length;
+  
+  // Validate heading hierarchy
+  const hasProperH1 = h1Count === 1; // Should have exactly one H1
+  const hasProperHierarchy = hasH1 && (hasH2 || !hasH3); // Don't skip H2 to go to H3
+  const hasGoodHeadingStructure = hasProperH1 && hasH2 && h2Count >= 2; // Multiple H2s indicate good structure
+
+  const headingChecks = {
+    hasProperH1,
+    hasProperHierarchy,
+    hasGoodHeadingStructure,
   };
 
   const weights =
@@ -447,6 +485,9 @@ function analyzeSemanticHtml(html: string, pageType: "homepage" | "blog") {
           hasFigureTags: 2,
           hasHeaderFooter: 3,
           hasMain: 3,
+          hasProperH1: 2,
+          hasProperHierarchy: 2,
+          hasGoodHeadingStructure: 2,
         }
       : {
           hasArticleTag: 4,
@@ -456,18 +497,39 @@ function analyzeSemanticHtml(html: string, pageType: "homepage" | "blog") {
           hasFigureTags: 3,
           hasHeaderFooter: 2,
           hasMain: 2,
+          hasProperH1: 2,
+          hasProperHierarchy: 2,
+          hasGoodHeadingStructure: 2,
         };
 
-  const maxScore = pageType === "homepage" ? 17 : 18;
+  const maxScore = pageType === "homepage" ? 23 : 24;
   let score = 0;
 
-  for (const [key, passed] of Object.entries(checks)) {
+  const allChecks = { ...checks, ...headingChecks };
+
+  for (const [key, passed] of Object.entries(allChecks)) {
     if (passed) {
       score += weights[key as keyof typeof weights] || 0;
     }
   }
 
-  return { score: Math.min(score, maxScore), maxScore, details: checks };
+  console.log(`[semantic-debug] Checks: ${JSON.stringify(allChecks)}, Score: ${score}/${maxScore}`);
+
+  return { 
+    score: Math.min(score, maxScore), 
+    maxScore, 
+    details: { 
+      ...checks, 
+      headings: { 
+        h1Count, 
+        h2Count, 
+        h3Count, 
+        hasProperH1, 
+        hasProperHierarchy, 
+        hasGoodHeadingStructure 
+      } 
+    } 
+  };
 }
 
 // =============================================================================
