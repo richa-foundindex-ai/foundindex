@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   AlertCircle,
   CheckCircle2,
@@ -28,6 +29,7 @@ import {
   MessageSquare,
   TrendingUp,
   Info,
+  X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -238,7 +240,7 @@ const SpeedometerGauge = ({ score }: { score: number }) => {
   );
 };
 
-// Category progress bar with color coding and tooltip
+// Category progress bar with color coding and mobile-friendly tooltip
 const CategoryProgressBar = ({ 
   categoryKey, 
   category, 
@@ -250,25 +252,63 @@ const CategoryProgressBar = ({
 }) => {
   const color = getScoreColor(category.percentage);
   const tooltip = CATEGORY_TOOLTIPS[categoryKey] || `Score for ${displayName}`;
+  const [isOpen, setIsOpen] = useState(false);
+  
+  // Detect if device supports touch
+  const isTouchDevice = typeof window !== 'undefined' && 
+    ('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <span className="text-sm font-medium">{displayName}</span>
-          <TooltipProvider>
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger asChild>
-                <button className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+          {isTouchDevice ? (
+            // Mobile: Use Popover for click-based interaction
+            <Popover open={isOpen} onOpenChange={setIsOpen}>
+              <PopoverTrigger asChild>
+                <button 
+                  className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors p-1"
+                  aria-label={`More info about ${displayName}`}
+                >
                   <Info className="h-3.5 w-3.5" />
-                  <span className="sr-only">More info about {displayName}</span>
                 </button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs text-sm">
-                <p>{tooltip}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+              </PopoverTrigger>
+              <PopoverContent 
+                side="bottom" 
+                align="start"
+                className="w-72 p-3 text-sm"
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <p className="flex-1">{tooltip}</p>
+                  <button 
+                    onClick={() => setIsOpen(false)}
+                    className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                    aria-label="Close tooltip"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            // Desktop: Use Tooltip for hover-based interaction
+            <TooltipProvider>
+              <Tooltip delayDuration={100}>
+                <TooltipTrigger asChild>
+                  <button 
+                    className="inline-flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label={`More info about ${displayName}`}
+                  >
+                    <Info className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs text-sm">
+                  <p>{tooltip}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
         <span className={`text-sm font-semibold ${color.text}`}>
           {category.percentage}%
