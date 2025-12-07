@@ -11,6 +11,28 @@ const corsHeaders = {
 // TYPES
 // =============================================================================
 
+type ErrorType = 
+  | "RATE_LIMIT_IP" 
+  | "RATE_LIMIT_URL" 
+  | "SITE_UNREACHABLE" 
+  | "BOT_BLOCKED" 
+  | "TIMEOUT" 
+  | "API_QUOTA" 
+  | "GENERAL_ERROR";
+
+interface ErrorResponse {
+  success: false;
+  error_type: ErrorType;
+  error_code: string;
+  user_message: string;
+  next_available_time?: string;
+  suggested_action: string;
+  technical_details?: string;
+  cached_test_id?: string;
+  cached_score?: number;
+  cached_created_at?: string;
+}
+
 interface TestSubmission {
   website: string;
   testType: "homepage" | "blog";
@@ -711,20 +733,61 @@ const getGrade = (score: number): string => {
 };
 
 // =============================================================================
-// RATE LIMITING
+// ERROR RESPONSE HELPER
 // =============================================================================
 
-const checkRateLimit = async (
+const createErrorResponse = (
+  type: ErrorType,
+  details: Partial<Omit<ErrorResponse, "success" | "error_type">>
+): Response => {
+  const response: ErrorResponse = {
+    success: false,
+    error_type: type,
+    error_code: details.error_code || `${type}_${Date.now()}`,
+    user_message: details.user_message || "An error occurred",
+    suggested_action: details.suggested_action || "Please try again",
+    ...details,
+  };
+
+  console.error("FoundIndex Error:", response);
+
+  return new Response(JSON.stringify(response), {
+    status: type.startsWith("RATE_LIMIT") ? 429 : 400,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+};
+
+const formatDateForUser = (date: Date): string => {
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  }).format(date);
+};
+
+// =============================================================================
+// RATE LIMITING WITH CACHING
+// =============================================================================
+
+interface CachedTestResult {
+  allowed: boolean;
+  daysRemaining?: number;
+  lastTestDate?: string;
+  cachedTestId?: string;
+  cachedScore?: number;
+  cachedCreatedAt?: string;
+}
+
+const checkRateLimitWithCache = async (
   supabase: any,
   url: string,
-  testType: "homepage" | "blog",
-): Promise<{ allowed: boolean; daysRemaining?: number; lastTestDate?: string }> => {
+): Promise<CachedTestResult> => {
   const COOLDOWN_DAYS = 7;
 
   try {
     const { data, error } = await supabase
       .from("test_history")
-      .select("created_at")
+      .select("test_id, score, created_at")
       .eq("website", url)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -738,7 +801,8 @@ const checkRateLimit = async (
       return { allowed: true };
     }
 
-    const lastTest = new Date((data[0] as any).created_at);
+    const testData = data[0] as { test_id: string; score: number; created_at: string };
+    const lastTest = new Date(testData.created_at);
     const now = new Date();
     const daysSinceLastTest = Math.floor((now.getTime() - lastTest.getTime()) / (1000 * 60 * 60 * 24));
 
@@ -746,7 +810,10 @@ const checkRateLimit = async (
       return {
         allowed: false,
         daysRemaining: COOLDOWN_DAYS - daysSinceLastTest,
-        lastTestDate: lastTest.toISOString().split("T")[0],
+        lastTestDate: lastTest.toISOString(),
+        cachedTestId: testData.test_id,
+        cachedScore: testData.score,
+        cachedCreatedAt: testData.created_at,
       };
     }
 
@@ -797,42 +864,59 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
-    const RATE_LIMIT_TESTS_PER_PERIOD = 10;
-    const RATE_LIMIT_PERIOD_HOURS = 24;
-
+    // Check monthly IP rate limit (3 tests per month)
+    const MONTHLY_TESTS_LIMIT = 3;
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+    
     const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
-    const rateLimitCutoff = new Date(Date.now() - RATE_LIMIT_PERIOD_HOURS * 60 * 60 * 1000).toISOString();
 
-    const { count: recentTestCount, error: countError } = await supabaseAdmin
+    const { count: monthlyTestCount, error: countError } = await supabaseAdmin
       .from("test_submissions")
       .select("*", { count: "exact", head: true })
       .eq("ip_address", clientIP)
-      .gte("created_at", rateLimitCutoff);
+      .gte("created_at", monthStart.toISOString());
 
     if (countError) {
-      console.error("Rate limit check failed:", countError);
-    } else if (recentTestCount !== null && recentTestCount >= RATE_LIMIT_TESTS_PER_PERIOD) {
-      console.warn(
-        `[rate-limit] IP ${clientIP} exceeded limit: ${recentTestCount} tests in last ${RATE_LIMIT_PERIOD_HOURS}h`,
-      );
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Rate limit exceeded. You can run ${RATE_LIMIT_TESTS_PER_PERIOD} tests per ${RATE_LIMIT_PERIOD_HOURS} hours. Please try again later.`,
-          errorType: "rate_limit_exceeded",
-          testsUsed: recentTestCount,
-          testsAllowed: RATE_LIMIT_TESTS_PER_PERIOD,
-        }),
-        {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      console.error("Monthly rate limit check failed:", countError);
+    } else if (monthlyTestCount !== null && monthlyTestCount >= MONTHLY_TESTS_LIMIT) {
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      nextMonth.setDate(1);
+      nextMonth.setHours(0, 0, 0, 0);
+
+      console.warn(`[rate-limit] IP ${clientIP} exceeded monthly limit: ${monthlyTestCount} tests this month`);
+      
+      return createErrorResponse("RATE_LIMIT_IP", {
+        user_message: `You've used all ${MONTHLY_TESTS_LIMIT} tests this month from your network. Your limit resets on ${formatDateForUser(nextMonth)}.`,
+        next_available_time: nextMonth.toISOString(),
+        suggested_action: "Wait until next month or contact us for more tests",
+        technical_details: `IP: ${clientIP}, Tests this month: ${monthlyTestCount}`,
+      });
     }
 
-    console.log(
-      `[rate-limit] IP ${clientIP} has ${recentTestCount || 0}/${RATE_LIMIT_TESTS_PER_PERIOD} tests in period`,
-    );
+    console.log(`[rate-limit] IP ${clientIP} has ${monthlyTestCount || 0}/${MONTHLY_TESTS_LIMIT} tests this month`);
+
+    // Check URL cooldown (7 days) and return cached results if within cooldown
+    const urlRateCheck = await checkRateLimitWithCache(supabaseAdmin, validatedWebsite);
+    
+    if (!urlRateCheck.allowed && urlRateCheck.cachedTestId) {
+      const testDate = new Date(urlRateCheck.cachedCreatedAt!);
+      const nextTestDate = new Date(testDate);
+      nextTestDate.setDate(nextTestDate.getDate() + 7);
+
+      console.log(`[rate-limit] URL ${validatedWebsite} in cooldown, returning cached results`);
+
+      return createErrorResponse("RATE_LIMIT_URL", {
+        user_message: `You tested this URL on ${formatDateForUser(testDate)}. Next test available on ${formatDateForUser(nextTestDate)}.`,
+        next_available_time: nextTestDate.toISOString(),
+        suggested_action: "We will show you the previous results. Made changes? Contact us for a priority retest.",
+        cached_test_id: urlRateCheck.cachedTestId,
+        cached_score: urlRateCheck.cachedScore,
+        cached_created_at: urlRateCheck.cachedCreatedAt,
+      });
+    }
 
     const testId = crypto.randomUUID();
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
@@ -842,15 +926,22 @@ serve(async (req) => {
 
     let websiteHtml = "";
     let fetchSuccess = false;
+    let fetchError: Error | null = null;
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
       const websiteResponse = await fetch(validatedWebsite, {
         headers: {
           "User-Agent": "Mozilla/5.0 (compatible; FoundIndex-Bot/1.0; +https://foundindex.com)",
           Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         },
         redirect: "follow",
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (websiteResponse.ok) {
         websiteHtml = await websiteResponse.text();
@@ -859,20 +950,25 @@ serve(async (req) => {
       } else {
         console.error(`[${testId}] Fetch failed with status: ${websiteResponse.status}`);
       }
-    } catch (fetchError) {
+    } catch (err) {
+      fetchError = err instanceof Error ? err : new Error(String(err));
       console.error(`[${testId}] Fetch failed:`, fetchError);
+      
+      // Check for specific error types
+      if (fetchError.name === "AbortError") {
+        return createErrorResponse("TIMEOUT", {
+          user_message: "The analysis took too long (over 30 seconds). This usually means the site is very slow or blocking access.",
+          suggested_action: "Try again in a few minutes",
+        });
+      }
     }
 
     if (!fetchSuccess || websiteHtml.length < 100) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Unable to access this website",
-          details: `Could not load content from ${validatedWebsite}. The site may be blocking bots, temporarily down, or require login.`,
-          testId,
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      return createErrorResponse("SITE_UNREACHABLE", {
+        user_message: "We could not connect to this website. Please check that the URL is correct and the site is online.",
+        suggested_action: "Verify the URL and try again",
+        technical_details: `Could not load content from ${validatedWebsite}. ${fetchError?.message || "The site may be blocking bots, temporarily down, or require login."}`,
+      });
     }
 
     const spaMarkers = ['id="root"', 'id="app"', "__NEXT_DATA__", "window.__NUXT__"];
@@ -1046,14 +1142,20 @@ Return ONLY valid JSON:
       console.log(`[${testId}] AI analysis complete`);
     } catch (error) {
       console.error(`[${testId}] AI analysis failed:`, error);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "AI analysis failed. Please try again.",
-          details: error instanceof Error ? error.message : "Unknown error",
-        }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      
+      // Check for quota/rate limit errors
+      if (errorMessage.includes("quota") || errorMessage.includes("rate limit") || errorMessage.includes("429")) {
+        return createErrorResponse("API_QUOTA", {
+          user_message: "Our AI service is temporarily at capacity. Please try again in 2-4 hours.",
+          suggested_action: "Try again later or contact us to get notified when it is back",
+        });
+      }
+      
+      return createErrorResponse("GENERAL_ERROR", {
+        user_message: "AI analysis failed. Please try again.",
+        suggested_action: "Try again in a few minutes",
+      });
     }
 
     const aiCategories = (aiAnalysisResult.categories || {}) as Record<string, { score?: number; max?: number }>;
