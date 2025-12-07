@@ -22,7 +22,7 @@ export function RateLimitBanner() {
         <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
           <Info className="h-4 w-4 flex-shrink-0" />
           <span>
-            <strong>Free beta limits:</strong> 3 websites per month • 7-day cooldown per URL • Results in 60 seconds
+            <strong>Free beta limits:</strong> Homepage audits unlimited • Blog posts 3/month • 7-day cooldown per URL
           </span>
         </div>
         <button
