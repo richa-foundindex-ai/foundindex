@@ -13,10 +13,15 @@ import { analytics } from "@/utils/analytics";
 import { validateAndNormalizeUrl, getErrorMessage } from "@/utils/urlValidation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
+import { useTestCounter } from "@/hooks/useTestCounter";
+import { RateLimitBanner } from "@/components/landing/RateLimitBanner";
+import { TestCounter } from "@/components/landing/TestCounter";
+import { isStructuredError, type ErrorResponse } from "@/utils/errorTypes";
+import { ToastAction } from "@/components/ui/toast";
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { incrementTestCount } = useTestCounter();
   const [homepageUrl, setHomepageUrl] = useState("");
   const [blogUrl, setBlogUrl] = useState("");
   const [isLoadingHomepage, setIsLoadingHomepage] = useState(false);
@@ -29,6 +34,81 @@ const Index = () => {
   useEffect(() => {
     analytics.pageView("homepage");
   }, []);
+
+  // Handle structured error responses from the edge function
+  const handleAnalysisError = (errorData: unknown, websiteUrl: string) => {
+    if (isStructuredError(errorData)) {
+      switch (errorData.error_type) {
+        case "RATE_LIMIT_IP":
+          toast({
+            variant: "destructive",
+            title: "Monthly Limit Reached",
+            description: errorData.user_message,
+            duration: Infinity,
+            action: (
+              <ToastAction altText="Contact Us" onClick={() => navigate("/contact")}>
+                Contact Us
+              </ToastAction>
+            ),
+          });
+          break;
+
+        case "RATE_LIMIT_URL":
+          // Show cached results
+          toast({
+            title: "Showing Previous Results",
+            description: errorData.user_message,
+            duration: 8000,
+          });
+          if (errorData.cached_test_id) {
+            navigate(`/results?testId=${errorData.cached_test_id}&url=${encodeURIComponent(websiteUrl)}&cached=true`);
+          }
+          break;
+
+        case "SITE_UNREACHABLE":
+          toast({
+            variant: "destructive",
+            title: "Could Not Reach Website",
+            description: errorData.user_message,
+            duration: Infinity,
+          });
+          break;
+
+        case "TIMEOUT":
+          toast({
+            variant: "destructive",
+            title: "Analysis Timed Out",
+            description: errorData.user_message,
+            duration: Infinity,
+          });
+          break;
+
+        case "API_QUOTA":
+          toast({
+            variant: "destructive",
+            title: "Service Temporarily Unavailable",
+            description: errorData.user_message,
+            duration: Infinity,
+            action: (
+              <ToastAction altText="Contact Us" onClick={() => navigate("/contact")}>
+                Email Me When Fixed
+              </ToastAction>
+            ),
+          });
+          break;
+
+        default:
+          toast({
+            variant: "destructive",
+            title: "Analysis Failed",
+            description: errorData.user_message || "Unable to analyze this website",
+            duration: Infinity,
+          });
+      }
+      return true;
+    }
+    return false;
+  };
 
   const checkRateLimits = async (url: string, testType: "homepage" | "blog") => {
     const { data: recentUrlTests } = await supabase
@@ -134,18 +214,25 @@ const Index = () => {
 
       if (error) throw error;
 
+      // Check for structured error response
       if (data?.success === false) {
-        toast({
-          title: "Analysis failed",
-          description: data.error || "Unable to analyze this website",
-          variant: "destructive",
-        });
+        const handled = handleAnalysisError(data, websiteUrl);
+        if (!handled) {
+          toast({
+            title: "Analysis failed",
+            description: data.error || "Unable to analyze this website",
+            variant: "destructive",
+            duration: Infinity,
+          });
+        }
         setIsLoadingHomepage(false);
         return;
       }
 
       if (data?.testId) {
-        toast({ title: "Analysis complete!", description: "Loading your results..." });
+        incrementTestCount();
+        toast({ title: "Analysis complete!", description: "Loading your results...", duration: 5000 });
+        navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
         navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
       } else {
         throw new Error("No test ID returned");
@@ -154,9 +241,12 @@ const Index = () => {
       console.error("Homepage submit error:", error);
       toast({
         title: "Something went wrong",
-        description: error instanceof Error ? error.message : "Please try again",
+        description: error instanceof Error ? error.message : "Please try again or contact us if the problem persists.",
         variant: "destructive",
+        duration: Infinity,
       });
+      setIsLoadingHomepage(false);
+    } finally {
       setIsLoadingHomepage(false);
     }
   };
@@ -216,19 +306,25 @@ const Index = () => {
 
       if (error) throw error;
 
+      // Check for structured error response
       if (data?.success === false) {
-        toast({
-          title: "Analysis failed",
-          description: data.error || "Unable to analyze this website",
-          variant: "destructive",
-        });
+        const handled = handleAnalysisError(data, websiteUrl);
+        if (!handled) {
+          toast({
+            title: "Analysis failed",
+            description: data.error || "Unable to analyze this website",
+            variant: "destructive",
+            duration: Infinity,
+          });
+        }
         setIsLoadingBlog(false);
         return;
       }
 
       if (data?.testId) {
         recordBlogTest();
-        toast({ title: "Analysis complete!", description: "Loading your results..." });
+        incrementTestCount();
+        toast({ title: "Analysis complete!", description: "Loading your results...", duration: 5000 });
         navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
       } else {
         throw new Error("No test ID returned");
@@ -237,9 +333,12 @@ const Index = () => {
       console.error("Blog submit error:", error);
       toast({
         title: "Something went wrong",
-        description: error instanceof Error ? error.message : "Please try again",
+        description: error instanceof Error ? error.message : "Please try again or contact us if the problem persists.",
         variant: "destructive",
+        duration: Infinity,
       });
+      setIsLoadingBlog(false);
+    } finally {
       setIsLoadingBlog(false);
     }
   };
@@ -248,8 +347,9 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <SEOSchema />
       <Header />
-
-      {/* Hero section */}
+      
+      {/* Rate limit transparency banner */}
+      <RateLimitBanner />
       <header className="container mx-auto px-4 py-12 md:py-24 text-center">
         <p className="text-sm md:text-base font-semibold text-destructive mb-4">
           Your SEO is fine. AI still can't find you.
@@ -619,6 +719,11 @@ const Index = () => {
               </p>
             </CardContent>
           </Card>
+        </div>
+        
+        {/* Test counter */}
+        <div className="max-w-5xl mx-auto mt-4">
+          <TestCounter />
         </div>
       </section>
 
