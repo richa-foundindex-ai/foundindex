@@ -2,29 +2,34 @@ import React from "react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { Clock, RefreshCw } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { CalendarDays, ExternalLink, RefreshCw } from "lucide-react";
 
 interface RetestModalProps {
   open: boolean;
   onOpenChange?: (open: boolean) => void;
   onClose?: () => void;
   url?: string;
-  lastTestedDate?: Date;
-  nextAvailableDate?: Date;
-  testedDate?: string;
-  canRetestDate?: string;
+  lastTestedDate?: Date | string;
+  nextAvailableDate?: Date | string;
   cachedTestId?: string;
   cachedScore?: number;
   attemptsExhausted?: boolean;
 }
 
+/**
+ * RetestModal
+ *
+ * Centered modal shown when a URL is in cooldown or attempts exhausted.
+ * - Shows tested date and canRetest date (formatted to IST)
+ * - Buttons: See previous results, Test new URL, and a link to Contact (underlined)
+ */
 export function RetestModal({
   open,
   onOpenChange,
@@ -32,30 +37,31 @@ export function RetestModal({
   url,
   lastTestedDate,
   nextAvailableDate,
-  testedDate,
-  canRetestDate,
   cachedTestId,
   cachedScore,
   attemptsExhausted = false,
 }: RetestModalProps) {
   const navigate = useNavigate();
 
-  // Support both prop patterns
   const handleOpenChange = (newOpen: boolean) => {
-    if (onOpenChange) onOpenChange(newOpen);
-    if (!newOpen && onClose) onClose();
+    onOpenChange?.(newOpen);
+    if (!newOpen) onClose?.();
   };
 
-  // Use either Date objects or ISO strings
-  const testedDateStr = testedDate || (lastTestedDate ? lastTestedDate.toISOString() : "");
-  const canRetestDateStr = canRetestDate || (nextAvailableDate ? nextAvailableDate.toISOString() : "");
+  const toISO = (d?: Date | string) => {
+    if (!d) return "";
+    return typeof d === "string" ? d : d.toISOString();
+  };
 
-  // Format dates for display in IST
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return "";
-    const date = new Date(dateStr);
+  const testedDateStr = toISO(lastTestedDate);
+  const canRetestDateStr = toISO(nextAvailableDate);
+
+  const formatDateIST = (iso?: string) => {
+    if (!iso) return "";
+    const date = new Date(iso);
     return (
       new Intl.DateTimeFormat("en-IN", {
+        weekday: "long",
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -64,11 +70,10 @@ export function RetestModal({
     );
   };
 
-  // Calculate relative days
-  const getRelativeDays = (dateStr: string): string => {
-    if (!dateStr) return "";
+  const getRelativeDays = (iso?: string) => {
+    if (!iso) return "";
     const now = new Date();
-    const target = new Date(dateStr);
+    const target = new Date(iso);
     const diffMs = target.getTime() - now.getTime();
     const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
@@ -77,9 +82,9 @@ export function RetestModal({
     return `in ${diffDays} days`;
   };
 
-  const testedDateFormatted = formatDate(testedDateStr);
-  const canRetestDateFormatted = formatDate(canRetestDateStr);
-  const relativeDays = getRelativeDays(canRetestDateStr);
+  const testedDateFormatted = formatDateIST(testedDateStr);
+  const canRetestFormatted = formatDateIST(canRetestDateStr);
+  const relative = getRelativeDays(canRetestDateStr);
 
   const handleSeeResults = () => {
     if (cachedTestId) {
@@ -88,16 +93,18 @@ export function RetestModal({
     handleOpenChange(false);
   };
 
-  const handleTestNewUrl = () => {
+  const handleTestNew = () => {
     handleOpenChange(false);
-    // Focus on URL input after modal closes
+    // Clear and focus the first URL-like input after modal closes
     setTimeout(() => {
-      const input = document.querySelector<HTMLInputElement>('input[type="text"], input[placeholder*="URL"]');
+      const input = document.querySelector<HTMLInputElement>(
+        'input[type="url"], input[type="text"], input[placeholder*="URL"]',
+      );
       if (input) {
         input.value = "";
         input.focus();
       }
-    }, 100);
+    }, 120);
   };
 
   return (
@@ -105,7 +112,7 @@ export function RetestModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <RefreshCw className="h-5 w-5 text-primary" />
+            <CalendarDays className="h-5 w-5 text-primary" />
             {attemptsExhausted ? "Test Limit Reached" : "URL Recently Tested"}
           </DialogTitle>
           <DialogDescription className="sr-only">URL cooldown information</DialogDescription>
@@ -113,9 +120,11 @@ export function RetestModal({
 
         <div className="space-y-4 py-4">
           {url && (
-            <p className="text-sm text-muted-foreground break-all">
-              <strong className="text-foreground">{url}</strong>
-            </p>
+            <div className="rounded-md bg-muted/50 p-3 break-words">
+              <p className="text-sm font-medium text-foreground truncate" title={url}>
+                {url}
+              </p>
+            </div>
           )}
 
           {attemptsExhausted ? (
@@ -124,48 +133,67 @@ export function RetestModal({
                 You've tested this URL <strong className="text-foreground">3 times</strong> in the last 7 days.
               </p>
               <p className="text-sm text-muted-foreground">
-                You can test it again on <strong className="text-foreground">{canRetestDateFormatted}</strong>, or test
-                a different URL now.
+                You can test it again on <strong className="text-foreground">{canRetestFormatted || "—"}</strong>
+                {relative && relative !== "now" && (
+                  <>
+                    {" "}
+                    — <span className="text-primary font-medium">{relative}</span>
+                  </>
+                )}
+                .
               </p>
             </>
           ) : (
             <>
               <p className="text-sm text-muted-foreground">
-                This URL was tested on <strong className="text-foreground">{testedDateFormatted}</strong>.
+                This URL was tested on <strong className="text-foreground">{testedDateFormatted || "—"}</strong>.
               </p>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4 flex-shrink-0" />
-                <span>
-                  Same URL can be retested on <strong className="text-foreground">{canRetestDateFormatted}</strong>
-                  {relativeDays && relativeDays !== "now" && (
-                    <>
-                      {" "}
-                      — <span className="text-primary font-medium">{relativeDays}</span>
-                    </>
-                  )}
-                </span>
+
+              <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                <RefreshCw className="h-4 w-4 flex-shrink-0" />
+                <div>
+                  <div>
+                    Same URL can be retested on <strong className="text-foreground">{canRetestFormatted || "—"}</strong>
+                  </div>
+                  {relative && relative !== "now" && <div className="text-primary font-medium mt-1">{relative}</div>}
+                </div>
               </div>
             </>
           )}
 
-          {cachedScore !== undefined && (
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-              <p className="text-sm font-medium text-foreground">
-                Previous score: <span className="text-primary text-lg">{cachedScore}/100</span>
+          {typeof cachedScore === "number" && (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <p className="text-sm">
+                Previous score: <span className="text-primary font-semibold text-lg">{cachedScore}/100</span>
               </p>
             </div>
           )}
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
+        <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2">
           <Button onClick={handleSeeResults} className="w-full sm:w-auto" disabled={!cachedTestId}>
-            See old results
+            <ExternalLink className="mr-2 h-4 w-4" />
+            See previous results
           </Button>
-          <Button variant="outline" onClick={handleTestNewUrl} className="w-full sm:w-auto">
-            Test new URL
+
+          <Button variant="outline" onClick={handleTestNew} className="w-full sm:w-auto">
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Test different URL
           </Button>
+
+          <div className="w-full text-center mt-2 sm:mt-0 sm:ml-2">
+            <Link
+              to="/contact"
+              onClick={() => handleOpenChange(false)}
+              className="text-sm underline underline-offset-2 font-medium text-primary hover:text-primary/90"
+            >
+              Made changes? Reach out to us to retest
+            </Link>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+export default RetestModal;
