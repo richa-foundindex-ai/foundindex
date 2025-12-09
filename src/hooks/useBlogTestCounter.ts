@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 const BLOG_TESTS_LIMIT = 3;
-const ROLLING_WINDOW_DAYS = 30;
+const ROLLING_WINDOW_DAYS = 7; // 7-day rolling window, not 30
 
 interface BlogTestCounterState {
   testsRemaining: number;
@@ -21,15 +20,15 @@ export function useBlogTestCounter() {
     error: null,
   });
 
-  const loadBlogTestCount = useCallback(async () => {
+  const loadBlogTestCount = useCallback(() => {
     try {
-      // Get tests from local storage as fallback tracking
-      const thirtyDaysAgo = new Date(Date.now() - ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+      const sevenDaysAgo = new Date(Date.now() - ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
       
       const stored = localStorage.getItem("fi_blog_tests_v2");
       if (stored) {
         const data = JSON.parse(stored);
-        const recentTests = (data.tests || []).filter((t: number) => t > thirtyDaysAgo.getTime());
+        // Filter to only tests within the 7-day window
+        const recentTests = (data.tests || []).filter((t: number) => t > sevenDaysAgo.getTime());
         
         const testsUsed = recentTests.length;
         const testsRemaining = Math.max(0, BLOG_TESTS_LIMIT - testsUsed);
@@ -80,26 +79,45 @@ export function useBlogTestCounter() {
       }
     };
 
+    // Also listen for custom event for same-tab updates
+    const handleCustomUpdate = () => {
+      loadBlogTestCount();
+    };
+
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("fi_blog_test_updated", handleCustomUpdate);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("fi_blog_test_updated", handleCustomUpdate);
+    };
   }, [loadBlogTestCount]);
 
   const incrementBlogTestCount = useCallback(() => {
     const stored = localStorage.getItem("fi_blog_tests_v2");
     const data = stored ? JSON.parse(stored) : { tests: [] };
-    const tests = [...(data.tests || []), Date.now()];
+    const sevenDaysAgo = Date.now() - ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    
+    // Filter old tests and add new one
+    const recentTests = (data.tests || []).filter((t: number) => t > sevenDaysAgo);
+    const tests = [...recentTests, Date.now()];
     localStorage.setItem("fi_blog_tests_v2", JSON.stringify({ tests }));
     
-    // Reload to update state
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new Event("fi_blog_test_updated"));
+    
+    // Immediately update state
     loadBlogTestCount();
   }, [loadBlogTestCount]);
 
   const formatResetDate = useCallback(() => {
     if (!state.resetDate) return "";
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat("en-IN", {
+      weekday: "long",
       month: "long",
       day: "numeric",
-    }).format(state.resetDate);
+      timeZone: "Asia/Kolkata",
+    }).format(state.resetDate) + " (IST)";
   }, [state.resetDate]);
 
   return {
