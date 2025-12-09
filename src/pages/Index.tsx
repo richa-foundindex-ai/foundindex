@@ -323,7 +323,7 @@ const Index = () => {
             is structured clearly enough for AI to understand, parse, and recommend.
           </p>
 
-          
+          <a
             href="#test-section"
             onClick={(e) => {
               e.preventDefault();
@@ -500,9 +500,9 @@ const Index = () => {
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground text-center md:text-left">
               <div className="order-2 md:order-1">
-                Built by{" "}
-                
-                  href="https://richadeo.com"
+              Built by{" "}
+              <a
+                href="https://richadeo.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-medium text-primary hover:underline"
