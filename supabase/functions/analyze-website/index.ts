@@ -906,16 +906,34 @@ serve(async (req) => {
     const technicalWeight = 8;
     const imageWeight = analysisType === "homepage" ? 0 : 8;
 
+    // Safe score calculations with division-by-zero and NaN checks
     const schemaScore =
       schemaResult.maxScore > 0
         ? (schemaResult.totalScore / schemaResult.maxScore) * schemaWeight
         : 0;
-    const semanticScore = (semanticResult.score / semanticResult.maxScore) * semanticWeight;
-    const technicalScore = (technicalResult.score / technicalResult.maxScore) * technicalWeight;
-    const imageScore = (imageResult.score / imageResult.maxScore) * imageWeight;
+    const semanticScore =
+      semanticResult.maxScore > 0
+        ? (semanticResult.score / semanticResult.maxScore) * semanticWeight
+        : 0;
+    const technicalScore =
+      technicalResult.maxScore > 0
+        ? (technicalResult.score / technicalResult.maxScore) * technicalWeight
+        : 0;
+    const imageScore =
+      imageResult.maxScore > 0
+        ? (imageResult.score / imageResult.maxScore) * imageWeight
+        : 0;
+
+    // Validate all scores are numbers
+    const safeSchemaScore = isNaN(schemaScore) ? 0 : schemaScore;
+    const safeSemanticScore = isNaN(semanticScore) ? 0 : semanticScore;
+    const safeTechnicalScore = isNaN(technicalScore) ? 0 : technicalScore;
+    const safeImageScore = isNaN(imageScore) ? 0 : imageScore;
+
+    console.log(`[${testId}] Scores - Schema: ${safeSchemaScore}, Semantic: ${safeSemanticScore}, Technical: ${safeTechnicalScore}, Image: ${safeImageScore}`);
 
     const deterministicTotal =
-      Math.round((schemaScore + semanticScore + technicalScore + imageScore) * 10) / 10;
+      Math.round((safeSchemaScore + safeSemanticScore + safeTechnicalScore + safeImageScore) * 10) / 10;
 
     const extractedContent = websiteHtml.substring(0, 50000);
 
@@ -1040,41 +1058,53 @@ Return ONLY valid JSON:
       { score?: number; max?: number }
     >;
     const aiTotal = Object.values(aiCategories).reduce((sum: number, cat) => {
-      if (cat && typeof cat === "object" && typeof cat.score === "number") {
+      if (cat && typeof cat === "object" && typeof cat.score === "number" && !isNaN(cat.score)) {
         return sum + cat.score;
       }
       return sum;
     }, 0);
 
-    const totalScore = Math.round(deterministicTotal + aiTotal);
+    console.log(`[${testId}] AI Total: ${aiTotal}, Deterministic Total: ${deterministicTotal}`);
+
+    // Final score calculation with NaN fallback
+    let totalScore = Math.round(deterministicTotal + aiTotal);
+    if (isNaN(totalScore) || totalScore < 0) {
+      console.warn(`[${testId}] Score was NaN or negative, defaulting to 0`);
+      totalScore = 0;
+    }
+    if (totalScore > 100) {
+      totalScore = 100;
+    }
+
+    console.log(`[${testId}] Final score: ${totalScore}`);
     const grade = getGrade(totalScore);
 
     const displayCategories: Record<string, unknown> = {
       schemaMarkup: {
-        score: Math.round(schemaScore * 10) / 10,
+        score: Math.round(safeSchemaScore * 10) / 10,
         max: schemaWeight,
-        percentage: schemaWeight > 0 ? Math.round((schemaScore / schemaWeight) * 100) : 0,
+        percentage: schemaWeight > 0 ? Math.round((safeSchemaScore / schemaWeight) * 100) : 0,
         breakdown: schemaResult,
       },
       semanticStructure: {
-        score: Math.round(semanticScore * 10) / 10,
+        score: Math.round(safeSemanticScore * 10) / 10,
         max: semanticWeight,
-        percentage: Math.round((semanticScore / semanticWeight) * 100),
+        percentage: semanticWeight > 0 ? Math.round((safeSemanticScore / semanticWeight) * 100) : 0,
         details: semanticResult.details,
       },
       technicalFoundation: {
-        score: Math.round(technicalScore * 10) / 10,
+        score: Math.round(safeTechnicalScore * 10) / 10,
         max: technicalWeight,
-        percentage: Math.round((technicalScore / technicalWeight) * 100),
+        percentage: technicalWeight > 0 ? Math.round((safeTechnicalScore / technicalWeight) * 100) : 0,
         details: technicalResult.details,
       },
     };
 
     if (analysisType === "blog") {
       displayCategories.images = {
-        score: Math.round(imageScore * 10) / 10,
+        score: Math.round(safeImageScore * 10) / 10,
         max: imageWeight,
-        percentage: imageWeight > 0 ? Math.round((imageScore / imageWeight) * 100) : 0,
+        percentage: imageWeight > 0 ? Math.round((safeImageScore / imageWeight) * 100) : 0,
         details: imageResult.details,
       };
     }
