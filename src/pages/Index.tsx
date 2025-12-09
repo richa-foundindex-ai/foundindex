@@ -383,6 +383,38 @@ const Index = () => {
     } catch (err: unknown) {
       console.error("[BlogSubmit] Catch block error:", err);
       
+      // Try to extract structured error from exception
+      let errorData = null;
+      if (err && typeof err === "object") {
+        const errObj = err as any;
+        console.log("[BlogSubmit] Error object in catch:", JSON.stringify(errObj, null, 2));
+        
+        // Check various places where error data might be
+        if (errObj.error_type && errObj.user_message) {
+          errorData = errObj;
+        } else if (errObj.context?.body) {
+          try {
+            errorData = typeof errObj.context.body === "string" 
+              ? JSON.parse(errObj.context.body) 
+              : errObj.context.body;
+          } catch (e) {}
+        } else if (errObj.message) {
+          const jsonMatch = errObj.message.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              errorData = JSON.parse(jsonMatch[0]);
+            } catch (e) {}
+          }
+        }
+      }
+
+      console.log("[BlogSubmit] Extracted error data:", errorData);
+
+      if (errorData && errorData.error_type) {
+        const handled = handleAnalysisError(errorData, websiteUrl, "blog");
+        if (handled) return;
+      }
+      
       toast({
         title: "Unable to analyze blog post",
         description: "Please check the URL and try again.",
