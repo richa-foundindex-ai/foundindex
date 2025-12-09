@@ -388,8 +388,10 @@ const UnlockEmailDialog = ({ open, onOpenChange, onUnlock, website, testId }: Un
         // Don't throw - still unlock for user but log the error
       }
 
-      // Store in localStorage
-      localStorage.setItem("fi_unlocked_email", email.trim().toLowerCase());
+      // Store in localStorage and cookie for repeat visitor recognition
+      const normalizedEmail = email.trim().toLowerCase();
+      localStorage.setItem("fi_unlocked_email", normalizedEmail);
+      document.cookie = `foundindex_email=${normalizedEmail}; max-age=2592000; path=/`; // 30 days
 
       toast({
         title: "Results unlocked!",
@@ -401,7 +403,9 @@ const UnlockEmailDialog = ({ open, onOpenChange, onUnlock, website, testId }: Un
     } catch (err) {
       console.error("Unlock error:", err);
       // Still unlock even if save fails
-      localStorage.setItem("fi_unlocked_email", email.trim().toLowerCase());
+      const normalizedEmail = email.trim().toLowerCase();
+      localStorage.setItem("fi_unlocked_email", normalizedEmail);
+      document.cookie = `foundindex_email=${normalizedEmail}; max-age=2592000; path=/`; // 30 days
       onUnlock();
       onOpenChange(false);
     } finally {
@@ -909,18 +913,30 @@ const Results = () => {
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [copiedShare, setCopiedShare] = useState(false);
 
-  // Check if already unlocked
-  // BETA TESTING: Set to false to always show blur, change to true for production
-  const BETA_ALWAYS_SHOW_BLUR = true;
-
-  useEffect(() => {
-    if (BETA_ALWAYS_SHOW_BLUR) {
-      // During beta testing, always start locked to verify blur works
-      setIsUnlocked(false);
-      return;
+  // Helper function to get cookie value
+  const getCookie = (name: string): string | null => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      return parts.pop()?.split(';').shift() || null;
     }
+    return null;
+  };
 
-    const savedEmail = localStorage.getItem("fi_unlocked_email");
+  // Check if already unlocked via localStorage or cookie (repeat visitor recognition)
+  useEffect(() => {
+    // Check localStorage first (fastest)
+    let savedEmail = localStorage.getItem("fi_unlocked_email");
+    
+    // Check cookie if localStorage empty
+    if (!savedEmail) {
+      savedEmail = getCookie("foundindex_email");
+      // If found in cookie but not localStorage, sync to localStorage
+      if (savedEmail) {
+        localStorage.setItem("fi_unlocked_email", savedEmail);
+      }
+    }
+    
     if (savedEmail) {
       setIsUnlocked(true);
     }
