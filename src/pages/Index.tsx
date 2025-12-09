@@ -249,9 +249,21 @@ const Index = () => {
     } catch (error: unknown) {
       console.error("Homepage submit error:", error);
       
-      // Try to parse error response body for 429 rate limit errors
+      // Try to parse error response body for rate limit errors
       let errorBody: unknown = null;
-      if (error && typeof error === 'object' && 'context' in error) {
+      
+      // Check if error message contains JSON (edge function error format)
+      if (error instanceof Error && error.message) {
+        const jsonMatch = error.message.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            errorBody = JSON.parse(jsonMatch[0]);
+          } catch {}
+        }
+      }
+      
+      // Also try context.body if available
+      if (!errorBody && error && typeof error === 'object' && 'context' in error) {
         const ctx = (error as { context?: { body?: string } }).context;
         if (ctx?.body) {
           try {
@@ -260,21 +272,16 @@ const Index = () => {
         }
       }
       
-      // Check if it's a structured error response
+      // Check if it's a structured error response (rate limit)
       if (errorBody && handleAnalysisError(errorBody, websiteUrl)) {
         setIsLoadingHomepage(false);
         return;
       }
       
-      // Parse error for user-friendly message
-      const errorMessage = error instanceof Error 
-        ? (error.message.includes("Edge Function") || error.message.includes("2xx") || error.message.includes("non-2xx"))
-          ? "Could not connect to analysis service. Please try again."
-          : error.message
-        : "Please try again or contact us if the problem persists.";
+      // Show user-friendly error - NEVER show technical details
       toast({
-        title: "Something went wrong",
-        description: errorMessage,
+        title: "Unable to analyze website",
+        description: "Please check the URL and try again. If the problem persists, contact us.",
         variant: "destructive",
         duration: Infinity,
       });
@@ -358,9 +365,21 @@ const Index = () => {
     } catch (error: unknown) {
       console.error("Blog submit error:", error);
       
-      // Try to parse error response body for 429 rate limit errors
+      // Try to parse error response body for rate limit errors
       let errorBody: unknown = null;
-      if (error && typeof error === 'object' && 'context' in error) {
+      
+      // Check if error message contains JSON (edge function error format)
+      if (error instanceof Error && error.message) {
+        const jsonMatch = error.message.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            errorBody = JSON.parse(jsonMatch[0]);
+          } catch {}
+        }
+      }
+      
+      // Also try context.body if available
+      if (!errorBody && error && typeof error === 'object' && 'context' in error) {
         const ctx = (error as { context?: { body?: string } }).context;
         if (ctx?.body) {
           try {
@@ -369,21 +388,16 @@ const Index = () => {
         }
       }
       
-      // Check if it's a structured error response
-      if (errorBody && handleAnalysisError(errorBody, websiteUrl)) {
+      // Check if it's a structured error response (rate limit)
+      if (errorBody && handleAnalysisError(errorBody, blogUrl)) {
         setIsLoadingBlog(false);
         return;
       }
       
-      // Parse error for user-friendly message
-      const errorMessage = error instanceof Error 
-        ? (error.message.includes("Edge Function") || error.message.includes("2xx") || error.message.includes("non-2xx"))
-          ? "Could not connect to analysis service. Please try again."
-          : error.message
-        : "Please try again or contact us if the problem persists.";
+      // Show user-friendly error - NEVER show technical details
       toast({
-        title: "Something went wrong",
-        description: errorMessage,
+        title: "Unable to analyze blog post",
+        description: "Please check the URL and try again. If the problem persists, contact us.",
         variant: "destructive",
         duration: Infinity,
       });
