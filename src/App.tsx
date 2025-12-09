@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,14 +16,18 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Component to dismiss toasts on route change
+// Component to dismiss toasts on route change (only when navigating away)
 function ToastDismissOnNavigate() {
   const location = useLocation();
   const { dismiss } = useToast();
+  const previousPathRef = React.useRef(location.pathname);
 
   useEffect(() => {
-    // Dismiss all toasts when route changes
-    dismiss();
+    // Only dismiss toasts when NAVIGATING to a different route, not on mount
+    if (previousPathRef.current !== location.pathname) {
+      dismiss();
+      previousPathRef.current = location.pathname;
+    }
   }, [location.pathname, dismiss]);
 
   return null;
