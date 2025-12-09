@@ -39,9 +39,19 @@ const toastVariants = cva(
 
 const Toast = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & VariantProps<typeof toastVariants>
->(({ className, variant, ...props }, ref) => {
-  return <ToastPrimitives.Root ref={ref} className={cn(toastVariants({ variant }), className)} {...props} />;
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Root> & VariantProps<typeof toastVariants> & { duration?: number }
+>(({ className, variant, duration, ...props }, ref) => {
+  // Force destructive toasts to stay visible until dismissed
+  const effectiveDuration = variant === "destructive" ? Infinity : (duration ?? 5000);
+  
+  return (
+    <ToastPrimitives.Root 
+      ref={ref} 
+      className={cn(toastVariants({ variant }), className)} 
+      duration={effectiveDuration}
+      {...props} 
+    />
+  );
 });
 Toast.displayName = ToastPrimitives.Root.displayName;
 
