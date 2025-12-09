@@ -8,21 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Loader2,
-  AlertCircle,
-  Zap,
-  Target,
-  TrendingUp,
-  Shield,
-  CheckCircle,
-  AlertTriangle,
-  ClipboardList,
-  BarChart3,
-  Search,
-  CheckSquare,
-  Check,
-} from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { analytics } from "@/utils/analytics";
 import { validateAndNormalizeUrl, getErrorMessage } from "@/utils/urlValidation";
 import { supabase } from "@/integrations/supabase/client";
@@ -64,7 +50,7 @@ const Index = () => {
     analytics.pageView("homepage");
   }, []);
 
-  // --- Normalized helper: accept many variant names from backend
+  // Normalized helper: accept many variant names from backend
   const normalizeRateLimitPayload = (p: any) => {
     if (!p) return null;
     return {
@@ -82,14 +68,13 @@ const Index = () => {
     };
   };
 
-  // ---------- handleAnalysisError: centralized consumer for structured backend errors ----------
+  // handleAnalysisError: centralized consumer for structured backend errors
   const handleAnalysisError = (errorData: unknown, websiteUrl: string) => {
     if (!isStructuredError(errorData)) return false;
     const e = errorData as any;
 
     switch (e.error_type) {
       case "RATE_LIMIT_IP": {
-        // If backend included ipCount/ipLimit, use them; otherwise use user_message fallback.
         const ipCount = e.ipCount || e.ip_count;
         const ipLimit = e.ipLimit || e.ip_limit;
         const description =
@@ -113,14 +98,11 @@ const Index = () => {
       }
 
       case "RATE_LIMIT_URL": {
-        // Normalize payload shape and open modal
         const payload = normalizeRateLimitPayload(e);
-        // compute testedAt/canRetestAt robustly
         let testedIso = payload?.testedAt;
         let canRetestIso = payload?.canRetestAt;
 
         if (!testedIso && canRetestIso) {
-          // compute testedAt = canRetestAt - 7 days
           testedIso = new Date(new Date(canRetestIso).getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
         }
         if (!canRetestIso && testedIso) {
@@ -187,13 +169,11 @@ const Index = () => {
     return true;
   };
 
-  // ---------- handleHomepageSubmit ----------
+  // handleHomepageSubmit
   const handleHomepageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setHomepageError(null);
     setHomepageSuggestion(null);
-
-    // dismiss existing toasts before starting analysis
     dismiss?.();
 
     if (!homepageUrl.trim()) {
@@ -217,57 +197,41 @@ const Index = () => {
       const { data, error } = await supabase.functions.invoke("analyze-website", {
         body: { website: websiteUrl, testType: "homepage" },
       });
+
       if (error) throw error;
 
-      // server signals handled errors with { success: false }
+      // CHECK SUCCESS FIRST
+      if (data?.success === true && data?.testId) {
+        toast({
+          title: "Analysis complete!",
+          description: "Loading your results...",
+          duration: 2000,
+        });
+        navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
+        return;
+      }
+
+      // THEN handle errors
       if (data?.success === false) {
         const handled = handleAnalysisError(data, websiteUrl);
         if (!handled) {
           toast({
             title: "Analysis failed",
-            description: data.error || "Unable to analyze this website",
+            description: data.error || data.user_message || "Unable to analyze this website",
             variant: "destructive",
             duration: 5000,
           });
         }
-        setIsLoadingHomepage(false);
         return;
       }
 
-      if (data?.testId) {
-        toast({ title: "Analysis complete!", description: "Loading your results...", duration: 2000 });
-        navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
-      } else {
-        throw new Error("No test ID returned");
-      }
+      throw new Error("Unexpected response format");
     } catch (err: unknown) {
       console.error("Homepage submit error:", err);
 
-      // Try to parse embedded JSON payloads (edge function sometimes puts JSON in message)
-      let errorBody: unknown = null;
-      if (err instanceof Error && err.message) {
-        const jsonMatch = err.message.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          try {
-            errorBody = JSON.parse(jsonMatch[0]);
-          } catch {}
-        }
-      }
-      if (!errorBody && err && typeof err === "object" && "context" in err) {
-        try {
-          const ctx = (err as any).context;
-          if (ctx?.body) errorBody = JSON.parse(ctx.body);
-        } catch {}
-      }
-
-      if (errorBody && handleAnalysisError(errorBody, websiteUrl)) {
-        setIsLoadingHomepage(false);
-        return;
-      }
-
       toast({
         title: "Unable to analyze website",
-        description: "Please check the URL and try again. If it keeps failing, contact us.",
+        description: "Please check the URL and try again.",
         variant: "destructive",
         duration: 5000,
       });
@@ -276,12 +240,11 @@ const Index = () => {
     }
   };
 
-  // ---------- handleBlogSubmit ----------
+  // handleBlogSubmit
   const handleBlogSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBlogError(null);
     setBlogSuggestion(null);
-
     dismiss?.();
 
     if (!blogUrl.trim()) {
@@ -305,57 +268,42 @@ const Index = () => {
       const { data, error } = await supabase.functions.invoke("analyze-website", {
         body: { website: websiteUrl, testType: "blog" },
       });
+
       if (error) throw error;
 
+      // CHECK SUCCESS FIRST
+      if (data?.success === true && data?.testId) {
+        incrementBlogTestCount();
+        toast({
+          title: "Analysis complete!",
+          description: "Loading your results...",
+          duration: 2000,
+        });
+        navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
+        return;
+      }
+
+      // THEN handle errors
       if (data?.success === false) {
         const handled = handleAnalysisError(data, websiteUrl);
         if (!handled) {
           toast({
             title: "Analysis failed",
-            description: data.error || "Unable to analyze this website",
+            description: data.error || data.user_message || "Unable to analyze this blog post",
             variant: "destructive",
             duration: 5000,
           });
         }
-        setIsLoadingBlog(false);
         return;
       }
 
-      if (data?.testId) {
-        // increment local counter and analytics
-        incrementBlogTestCount();
-        toast({ title: "Analysis complete!", description: "Loading your results...", duration: 2000 });
-        navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
-      } else {
-        throw new Error("No test ID returned");
-      }
+      throw new Error("Unexpected response format");
     } catch (err: unknown) {
       console.error("Blog submit error:", err);
 
-      let errorBody: unknown = null;
-      if (err instanceof Error && err.message) {
-        const jsonMatch = err.message.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          try {
-            errorBody = JSON.parse(jsonMatch[0]);
-          } catch {}
-        }
-      }
-      if (!errorBody && err && typeof err === "object" && "context" in err) {
-        try {
-          const ctx = (err as any).context;
-          if (ctx?.body) errorBody = JSON.parse(ctx.body);
-        } catch {}
-      }
-
-      if (errorBody && handleAnalysisError(errorBody, websiteUrl)) {
-        setIsLoadingBlog(false);
-        return;
-      }
-
       toast({
         title: "Unable to analyze blog post",
-        description: "Please check the URL and try again. If it persists, contact us.",
+        description: "Please check the URL and try again.",
         variant: "destructive",
         duration: 5000,
       });
@@ -383,7 +331,7 @@ const Index = () => {
           structured clearly enough for AI to understand, parse, and recommend.
         </p>
 
-        <a
+        
           href="#test-section"
           onClick={(e) => {
             e.preventDefault();
@@ -554,7 +502,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* rest of page content kept as-is */}
       <Testimonials />
       <FAQ />
 
@@ -563,7 +510,7 @@ const Index = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground text-center md:text-left">
             <div className="order-2 md:order-1">
               Built by{" "}
-              <a
+              
                 href="https://richadeo.com"
                 target="_blank"
                 rel="noopener noreferrer"
