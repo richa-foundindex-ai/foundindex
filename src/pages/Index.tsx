@@ -325,27 +325,59 @@ const Index = () => {
       console.log("[BlogSubmit] Response data:", data);
       console.log("[BlogSubmit] Response error:", error);
 
-      // Handle error responses - check data first as it may contain the error info
-      if (data && data.success === false) {
-        console.log("[BlogSubmit] ERROR DATA FROM BACKEND:", JSON.stringify(data, null, 2));
+      // PRIORITY 1: Check for RATE_LIMIT_IP in data (backend returns error in data)
+      if (data?.error_type === "RATE_LIMIT_IP") {
+        console.log("[BlogSubmit] RATE_LIMIT_IP detected in data:", data.user_message);
+        toast({
+          variant: "destructive",
+          title: "Blog test limit reached",
+          description: data.user_message || "You've reached your blog test limit.",
+          duration: Infinity,
+        });
+        return;
+      }
+
+      // PRIORITY 2: Check for RATE_LIMIT_IP in error object (Supabase may wrap it)
+      if (error) {
+        let errorData: any = null;
         
-        // If backend returns error_type and user_message, show it directly for RATE_LIMIT_IP
-        if (data.error_type === "RATE_LIMIT_IP" && data.user_message) {
-          console.log("[BlogSubmit] RATE_LIMIT_IP - Showing user_message:", data.user_message);
+        // Try to extract from error.context.body (common Supabase pattern)
+        if (error.context?.body) {
+          try {
+            errorData = typeof error.context.body === "string" 
+              ? JSON.parse(error.context.body) 
+              : error.context.body;
+          } catch (e) {}
+        }
+        
+        // Try to extract from error.message (JSON embedded in message)
+        if (!errorData && error.message) {
+          const jsonMatch = error.message.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              errorData = JSON.parse(jsonMatch[0]);
+            } catch (e) {}
+          }
+        }
+        
+        console.log("[BlogSubmit] Extracted error data from error object:", errorData);
+        
+        if (errorData?.error_type === "RATE_LIMIT_IP") {
+          console.log("[BlogSubmit] RATE_LIMIT_IP from error object:", errorData.user_message);
           toast({
             variant: "destructive",
             title: "Blog test limit reached",
-            description: data.user_message,
+            description: errorData.user_message || "You've reached your blog test limit.",
             duration: Infinity,
           });
           return;
         }
-        
-        // For other error types, use handleAnalysisError
-        if (data.error_type) {
-          const handled = handleAnalysisError(data, websiteUrl, "blog");
-          if (handled) return;
-        }
+      }
+
+      // Handle other error responses in data
+      if (data && data.success === false && data.error_type) {
+        const handled = handleAnalysisError(data, websiteUrl, "blog");
+        if (handled) return;
       }
 
       if (error) {
