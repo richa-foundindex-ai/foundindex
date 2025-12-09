@@ -3,7 +3,7 @@ import * as React from "react";
 import type { ToastActionElement, ToastProps } from "@/components/ui/toast";
 
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 100; // ← CRITICAL FIX: Changed from 1000000 to 100ms
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -151,7 +151,7 @@ function toast({ duration, ...props }: Toast & { duration?: number }) {
       ...props,
       id,
       open: true,
-      duration: effectiveDuration, // ← This ensures duration is passed to Radix
+      duration: effectiveDuration,
       onOpenChange: (open) => {
         if (!open) dismiss();
       },
