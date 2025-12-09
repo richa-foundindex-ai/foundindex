@@ -44,19 +44,469 @@ interface TestSubmission {
   email?: string;
 }
 
-/* (other interfaces omitted for brevity in this header - they remain the same as your file) */
+interface SchemaScore {
+  category: string;
+  found: boolean;
+  earnedPoints: number;
+  maxPoints: number;
+  missingFields: string[];
+  details: string;
+}
+
+interface SchemaResult {
+  totalScore: number;
+  maxScore: number;
+  scores: SchemaScore[];
+  schemas: { type: string; data: Record<string, unknown> }[];
+}
+
+interface AnalysisResult {
+  score: number;
+  maxScore: number;
+  details: string[];
+}
 
 // =============================================================================
-// (All helper functions like SCHEMA parsing, semantic, technical, images, etc.)
-// (I am keeping your existing analyzer logic intact — only rate-limit + response changes below)
+// VALIDATION HELPERS
 // =============================================================================
 
-// ... KEEP ALL existing analyzer functions exactly as in your current file up to createErrorResponse ...
-// (For brevity in this patch message I'm reusing your functions verbatim. In your copy-paste, leave them as-is.)
-// The file prior to the RATE LIMITING section remains unchanged (extractJsonLd, parseJsonLdItems, parseSchemaMarkup, analyzeSemanticHtml, analyzeTechnical, analyzeImages, helpers, etc.)
+const validateEmail = (email: string | undefined): string => {
+  if (!email) return "";
+  const trimmed = email.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(trimmed) ? trimmed : "";
+};
+
+const validateWebsite = (website: string): string => {
+  if (!website) throw new Error("Website URL is required");
+
+  let url = website.trim();
+
+  // Add https:// if no protocol
+  if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    url = "https://" + url;
+  }
+
+  try {
+    const parsed = new URL(url);
+    return parsed.href;
+  } catch {
+    throw new Error("Invalid website URL");
+  }
+};
 
 // =============================================================================
-// ERROR RESPONSE HELPERS (UPDATED)
+// PAGE TYPE DETECTION
+// =============================================================================
+
+const detectPageType = (
+  url: string,
+  html: string,
+  requestedType: "homepage" | "blog"
+): "homepage" | "blog" => {
+  const urlLower = url.toLowerCase();
+  const htmlLower = html.toLowerCase();
+
+  // Check for blog indicators in URL
+  const blogUrlPatterns = [
+    "/blog/",
+    "/post/",
+    "/article/",
+    "/news/",
+    "/posts/",
+    "/articles/",
+  ];
+  const hasBlogUrl = blogUrlPatterns.some((p) => urlLower.includes(p));
+
+  // Check for blog indicators in HTML
+  const blogHtmlPatterns = [
+    'type="article"',
+    "blogposting",
+    "newsarticle",
+    "article:published",
+    'class="post"',
+    'class="article"',
+    'class="blog-post"',
+  ];
+  const hasBlogHtml = blogHtmlPatterns.some((p) => htmlLower.includes(p));
+
+  // Check for homepage indicators
+  const isRootPath =
+    new URL(url).pathname === "/" || new URL(url).pathname === "";
+
+  if (isRootPath && requestedType === "homepage") {
+    return "homepage";
+  }
+
+  if (hasBlogUrl || hasBlogHtml) {
+    return "blog";
+  }
+
+  return requestedType;
+};
+
+// =============================================================================
+// GRADE HELPER
+// =============================================================================
+
+const getGrade = (score: number): string => {
+  if (score >= 90) return "A";
+  if (score >= 80) return "B";
+  if (score >= 70) return "C";
+  if (score >= 60) return "D";
+  return "F";
+};
+
+// =============================================================================
+// SCHEMA MARKUP PARSING
+// =============================================================================
+
+const extractJsonLd = (html: string): Record<string, unknown>[] => {
+  const schemas: Record<string, unknown>[] = [];
+  const regex = /<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    try {
+      const content = match[1].trim();
+      const parsed = JSON.parse(content);
+
+      if (Array.isArray(parsed)) {
+        schemas.push(...parsed);
+      } else if (parsed["@graph"]) {
+        schemas.push(...(parsed["@graph"] as Record<string, unknown>[]));
+      } else {
+        schemas.push(parsed);
+      }
+    } catch {
+      // Invalid JSON-LD, skip
+    }
+  }
+
+  return schemas;
+};
+
+const parseSchemaMarkup = (
+  html: string,
+  pageType: "homepage" | "blog"
+): SchemaResult => {
+  const schemas = extractJsonLd(html);
+  const scores: SchemaScore[] = [];
+
+  const schemaTypes = schemas.map((s) => ({
+    type: (s["@type"] as string) || "Unknown",
+    data: s,
+  }));
+
+  // Define required schemas based on page type
+  const requiredSchemas =
+    pageType === "homepage"
+      ? [
+          {
+            type: "Organization",
+            maxPoints: 5,
+            requiredFields: ["name", "url", "logo"],
+          },
+          {
+            type: "WebSite",
+            maxPoints: 3,
+            requiredFields: ["name", "url"],
+          },
+          {
+            type: "WebPage",
+            maxPoints: 2,
+            requiredFields: ["name", "description"],
+          },
+        ]
+      : [
+          {
+            type: "BlogPosting",
+            maxPoints: 6,
+            requiredFields: ["headline", "datePublished", "author"],
+            alternativeTypes: ["Article", "NewsArticle", "TechArticle"],
+          },
+          {
+            type: "BreadcrumbList",
+            maxPoints: 2,
+            requiredFields: ["itemListElement"],
+          },
+        ];
+
+  let totalScore = 0;
+  let maxScore = 0;
+
+  for (const required of requiredSchemas) {
+    const alternativeTypes = (required as { alternativeTypes?: string[] })
+      .alternativeTypes || [required.type];
+    const allTypes = [required.type, ...alternativeTypes];
+
+    const foundSchema = schemas.find((s) => {
+      const schemaType = s["@type"];
+      if (Array.isArray(schemaType)) {
+        return schemaType.some((t) => allTypes.includes(t));
+      }
+      return allTypes.includes(schemaType as string);
+    });
+
+    maxScore += required.maxPoints;
+
+    if (foundSchema) {
+      const missingFields = required.requiredFields.filter(
+        (f) => !foundSchema[f]
+      );
+      const earnedPoints =
+        required.maxPoints *
+        (1 - missingFields.length / required.requiredFields.length);
+
+      totalScore += earnedPoints;
+
+      scores.push({
+        category: required.type,
+        found: true,
+        earnedPoints: Math.round(earnedPoints * 10) / 10,
+        maxPoints: required.maxPoints,
+        missingFields,
+        details:
+          missingFields.length > 0
+            ? `${required.type} found but missing: ${missingFields.join(", ")}`
+            : `${required.type} complete`,
+      });
+    } else {
+      scores.push({
+        category: required.type,
+        found: false,
+        earnedPoints: 0,
+        maxPoints: required.maxPoints,
+        missingFields: required.requiredFields,
+        details: `${required.type} schema not found`,
+      });
+    }
+  }
+
+  // Bonus schemas
+  const bonusSchemas = [
+    { type: "FAQPage", points: 4 },
+    { type: "Review", points: 2 },
+    { type: "Product", points: 3 },
+    { type: "SoftwareApplication", points: 6 },
+  ];
+
+  for (const bonus of bonusSchemas) {
+    const found = schemas.some((s) => s["@type"] === bonus.type);
+    if (found) {
+      totalScore += bonus.points;
+      maxScore += bonus.points;
+      scores.push({
+        category: bonus.type,
+        found: true,
+        earnedPoints: bonus.points,
+        maxPoints: bonus.points,
+        missingFields: [],
+        details: `${bonus.type} bonus schema found`,
+      });
+    }
+  }
+
+  return {
+    totalScore: Math.round(totalScore * 10) / 10,
+    maxScore,
+    scores,
+    schemas: schemaTypes,
+  };
+};
+
+// =============================================================================
+// SEMANTIC HTML ANALYSIS
+// =============================================================================
+
+const analyzeSemanticHtml = (
+  html: string,
+  pageType: "homepage" | "blog"
+): AnalysisResult => {
+  const details: string[] = [];
+  let score = 0;
+  const maxScore = pageType === "homepage" ? 12 : 14;
+
+  // Check for semantic elements
+  const semanticChecks = [
+    { tag: "<header", points: 1, name: "Header element" },
+    { tag: "<nav", points: 1, name: "Navigation element" },
+    { tag: "<main", points: 2, name: "Main element" },
+    { tag: "<article", points: 2, name: "Article element" },
+    { tag: "<section", points: 1, name: "Section elements" },
+    { tag: "<footer", points: 1, name: "Footer element" },
+  ];
+
+  for (const check of semanticChecks) {
+    if (html.toLowerCase().includes(check.tag)) {
+      score += check.points;
+      details.push(`✓ ${check.name} found`);
+    } else {
+      details.push(`✗ ${check.name} missing`);
+    }
+  }
+
+  // Check heading hierarchy
+  const h1Count = (html.match(/<h1/gi) || []).length;
+  if (h1Count === 1) {
+    score += 2;
+    details.push("✓ Single H1 tag (correct)");
+  } else if (h1Count === 0) {
+    details.push("✗ No H1 tag found");
+  } else {
+    score += 1;
+    details.push(`⚠ Multiple H1 tags (${h1Count} found)`);
+  }
+
+  // Check for proper heading structure
+  const hasH2 = /<h2/i.test(html);
+  const hasH3 = /<h3/i.test(html);
+  if (hasH2 && hasH3) {
+    score += 2;
+    details.push("✓ Good heading hierarchy (H2, H3)");
+  } else if (hasH2 || hasH3) {
+    score += 1;
+    details.push("⚠ Partial heading hierarchy");
+  }
+
+  return { score: Math.min(score, maxScore), maxScore, details };
+};
+
+// =============================================================================
+// TECHNICAL ANALYSIS
+// =============================================================================
+
+const analyzeTechnical = (url: string, html: string): AnalysisResult => {
+  const details: string[] = [];
+  let score = 0;
+  const maxScore = 8;
+
+  // Check for HTTPS
+  if (url.startsWith("https://")) {
+    score += 2;
+    details.push("✓ HTTPS enabled");
+  } else {
+    details.push("✗ Not using HTTPS");
+  }
+
+  // Check for meta viewport
+  if (/<meta[^>]*name\s*=\s*["']viewport["']/i.test(html)) {
+    score += 1;
+    details.push("✓ Viewport meta tag present");
+  } else {
+    details.push("✗ Viewport meta tag missing");
+  }
+
+  // Check for meta description
+  if (/<meta[^>]*name\s*=\s*["']description["']/i.test(html)) {
+    score += 1;
+    details.push("✓ Meta description present");
+  } else {
+    details.push("✗ Meta description missing");
+  }
+
+  // Check for title tag
+  if (/<title[^>]*>[\s\S]+<\/title>/i.test(html)) {
+    score += 1;
+    details.push("✓ Title tag present");
+  } else {
+    details.push("✗ Title tag missing");
+  }
+
+  // Check for canonical URL
+  if (/<link[^>]*rel\s*=\s*["']canonical["']/i.test(html)) {
+    score += 1;
+    details.push("✓ Canonical URL present");
+  } else {
+    details.push("✗ Canonical URL missing");
+  }
+
+  // Check for Open Graph tags
+  if (/<meta[^>]*property\s*=\s*["']og:/i.test(html)) {
+    score += 1;
+    details.push("✓ Open Graph tags present");
+  } else {
+    details.push("✗ Open Graph tags missing");
+  }
+
+  // Check for language attribute
+  if (/<html[^>]*lang\s*=/i.test(html)) {
+    score += 1;
+    details.push("✓ HTML lang attribute present");
+  } else {
+    details.push("✗ HTML lang attribute missing");
+  }
+
+  return { score: Math.min(score, maxScore), maxScore, details };
+};
+
+// =============================================================================
+// IMAGE ANALYSIS
+// =============================================================================
+
+const analyzeImages = (
+  html: string,
+  pageType: "homepage" | "blog"
+): AnalysisResult => {
+  const details: string[] = [];
+  let score = 0;
+  const maxScore = pageType === "blog" ? 8 : 0;
+
+  if (pageType !== "blog") {
+    return { score: 0, maxScore: 0, details: ["Image analysis N/A for homepage"] };
+  }
+
+  // Count images
+  const imgTags = html.match(/<img[^>]*>/gi) || [];
+  const totalImages = imgTags.length;
+
+  if (totalImages === 0) {
+    details.push("⚠ No images found in content");
+    return { score: 0, maxScore, details };
+  }
+
+  // Check for alt attributes
+  let imagesWithAlt = 0;
+  let imagesWithDescriptiveAlt = 0;
+
+  for (const img of imgTags) {
+    const altMatch = img.match(/alt\s*=\s*["']([^"']*)["']/i);
+    if (altMatch) {
+      imagesWithAlt++;
+      if (altMatch[1].length > 10) {
+        imagesWithDescriptiveAlt++;
+      }
+    }
+  }
+
+  const altPercentage = (imagesWithAlt / totalImages) * 100;
+  const descriptiveAltPercentage = (imagesWithDescriptiveAlt / totalImages) * 100;
+
+  if (altPercentage === 100) {
+    score += 4;
+    details.push("✓ All images have alt attributes");
+  } else if (altPercentage >= 75) {
+    score += 2;
+    details.push(`⚠ ${Math.round(altPercentage)}% of images have alt attributes`);
+  } else {
+    details.push(`✗ Only ${Math.round(altPercentage)}% of images have alt attributes`);
+  }
+
+  if (descriptiveAltPercentage >= 75) {
+    score += 4;
+    details.push("✓ Most alt texts are descriptive");
+  } else if (descriptiveAltPercentage >= 50) {
+    score += 2;
+    details.push("⚠ Some alt texts could be more descriptive");
+  } else {
+    details.push("✗ Alt texts are too short or missing");
+  }
+
+  return { score: Math.min(score, maxScore), maxScore, details };
+};
+
+// =============================================================================
+// ERROR RESPONSE HELPERS
 // =============================================================================
 
 const formatDateForUser = (date: Date): string => {
@@ -70,12 +520,9 @@ const formatDateForUser = (date: Date): string => {
   );
 };
 
-/**
- * Generic error response — use for normal errors. Default status: 429 for RATE_LIMIT types, 400 for others.
- */
 const createErrorResponse = (
   type: ErrorType,
-  details: Partial<Omit<ErrorResponse, "success" | "error_type">>,
+  details: Partial<Omit<ErrorResponse, "success" | "error_type">>
 ): Response => {
   const response: ErrorResponse = {
     success: false,
@@ -104,11 +551,6 @@ const createErrorResponse = (
   });
 };
 
-/**
- * Special helper for URL cooldown responses.
- * We return HTTP 200 here (so frontend supabase.functions.invoke sees `data` reliably)
- * but include success:false and error_type: "RATE_LIMIT_URL" — frontend will open the modal.
- */
 const createUrlCooldownResponse = (payload: {
   test_id: string;
   testedAt: string;
@@ -123,20 +565,24 @@ const createUrlCooldownResponse = (payload: {
   const response: ErrorResponse = {
     success: false,
     error_type: "RATE_LIMIT_URL",
-    user_message: payload.user_message || `This URL was tested on ${formatDateForUser(new Date(payload.testedAt))}.`,
+    user_message:
+      payload.user_message ||
+      `This URL was tested on ${formatDateForUser(new Date(payload.testedAt))}.`,
     test_id: payload.test_id,
     testedAt: payload.testedAt,
     canRetestAt: payload.canRetestAt,
-    cached_score: typeof payload.cached_score === "number" ? payload.cached_score : undefined,
+    cached_score:
+      typeof payload.cached_score === "number" ? payload.cached_score : undefined,
     cached_created_at: payload.cached_created_at,
     attempts_exhausted: !!payload.attempts_exhausted,
     next_available_time: payload.next_available_time,
-    suggested_action: payload.suggested_action || "You can view previous results or retest after the cooldown.",
+    suggested_action:
+      payload.suggested_action ||
+      "You can view previous results or retest after the cooldown.",
   };
 
   console.warn("URL cooldown response:", response);
 
-  // Return 200 so client receives the body as `data` in supabase.functions.invoke
   return new Response(JSON.stringify(response), {
     status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -144,7 +590,7 @@ const createUrlCooldownResponse = (payload: {
 };
 
 // =============================================================================
-// RATE LIMITING WITH CACHING (UNCHANGED LOGIC EXCEPT WINDOW LENGTHS)
+// RATE LIMITING WITH CACHING
 // =============================================================================
 
 interface CachedTestResult {
@@ -156,7 +602,10 @@ interface CachedTestResult {
   cachedCreatedAt?: string;
 }
 
-const checkRateLimitWithCache = async (supabase: any, url: string): Promise<CachedTestResult> => {
+const checkRateLimitWithCache = async (
+  supabase: any,
+  url: string
+): Promise<CachedTestResult> => {
   const COOLDOWN_DAYS = 7;
 
   try {
@@ -176,10 +625,16 @@ const checkRateLimitWithCache = async (supabase: any, url: string): Promise<Cach
       return { allowed: true };
     }
 
-    const testData = data[0] as { test_id: string; score: number; created_at: string };
+    const testData = data[0] as {
+      test_id: string;
+      score: number;
+      created_at: string;
+    };
     const lastTest = new Date(testData.created_at);
     const now = new Date();
-    const daysSinceLastTest = Math.floor((now.getTime() - lastTest.getTime()) / (1000 * 60 * 60 * 24));
+    const daysSinceLastTest = Math.floor(
+      (now.getTime() - lastTest.getTime()) / (1000 * 60 * 60 * 24)
+    );
 
     if (daysSinceLastTest < COOLDOWN_DAYS) {
       return {
@@ -214,10 +669,16 @@ serve(async (req) => {
     const { email, website, testType }: TestSubmission = await req.json();
 
     if (!testType || !["homepage", "blog"].includes(testType)) {
-      return new Response(JSON.stringify({ success: false, error: "testType must be 'homepage' or 'blog'" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "testType must be 'homepage' or 'blog'",
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const validatedEmail = validateEmail(email);
@@ -226,25 +687,39 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
+    console.log("[INIT] Supabase URL:", supabaseUrl ? "SET" : "MISSING");
+    console.log("[INIT] Supabase Key:", supabaseKey ? `SET (length: ${supabaseKey.length})` : "MISSING");
+
     if (!supabaseUrl || !supabaseKey) {
       console.error("[INIT] Missing Supabase credentials!");
       return new Response(
-        JSON.stringify({ success: false, error: "Server configuration error. Please contact support." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({
+          success: false,
+          error: "Server configuration error. Please contact support.",
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
     // Get client IP for rate limiting
-    const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
+    const clientIP =
+      req.headers.get("x-forwarded-for")?.split(",")[0] ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
 
     // Blog posts have a 3 per 7 days limit (rolling window)
     // Homepage tests are UNLIMITED (no IP rate limit for homepage)
     if (testType === "blog") {
       const BLOG_TESTS_LIMIT = 3;
-      const ROLLING_WINDOW_DAYS = 7; // changed to 7 days to match frontend expectations
-      const windowStart = new Date(Date.now() - ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+      const ROLLING_WINDOW_DAYS = 7;
+      const windowStart = new Date(
+        Date.now() - ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000
+      );
 
       const { data: recentBlogTests, error: blogCountError } = await supabaseAdmin
         .from("test_submissions")
@@ -256,12 +731,13 @@ serve(async (req) => {
       if (blogCountError) {
         console.error("Blog rate limit check failed:", blogCountError);
       } else if (recentBlogTests && recentBlogTests.length >= BLOG_TESTS_LIMIT) {
-        // Calculate reset date: ROLLING_WINDOW_DAYS from FIRST test in this window
         const firstTestDate = new Date(recentBlogTests[0].created_at);
-        const resetDate = new Date(firstTestDate.getTime() + ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+        const resetDate = new Date(
+          firstTestDate.getTime() + ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000
+        );
 
         console.warn(
-          `[rate-limit] IP ${clientIP} exceeded blog limit: ${recentBlogTests.length} posts in ${ROLLING_WINDOW_DAYS} days`,
+          `[rate-limit] IP ${clientIP} exceeded blog limit: ${recentBlogTests.length} posts in ${ROLLING_WINDOW_DAYS} days`
         );
 
         return createErrorResponse("RATE_LIMIT_IP", {
@@ -273,21 +749,27 @@ serve(async (req) => {
       }
 
       const remaining = BLOG_TESTS_LIMIT - (recentBlogTests?.length || 0);
-      console.log(`[rate-limit] IP ${clientIP} has ${remaining}/${3} blog tests remaining`);
+      console.log(
+        `[rate-limit] IP ${clientIP} has ${remaining}/${BLOG_TESTS_LIMIT} blog tests remaining`
+      );
     } else {
       console.log(`[rate-limit] Homepage test for IP ${clientIP} - no limit applied`);
     }
 
     // Check URL cooldown (7 days) and return cached results if within cooldown
-    const urlRateCheck = await checkRateLimitWithCache(supabaseAdmin, validatedWebsite);
+    const urlRateCheck = await checkRateLimitWithCache(
+      supabaseAdmin,
+      validatedWebsite
+    );
 
     if (!urlRateCheck.allowed && urlRateCheck.cachedTestId) {
       const testDate = new Date(urlRateCheck.cachedCreatedAt!);
       const nextTestDate = new Date(testDate.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      console.log(`[rate-limit] URL ${validatedWebsite} in cooldown, returning cached results`);
+      console.log(
+        `[rate-limit] URL ${validatedWebsite} in cooldown, returning cached results`
+      );
 
-      // Return a structured RATE_LIMIT_URL payload but with HTTP 200 — frontend expects data to be present.
       return createUrlCooldownResponse({
         test_id: urlRateCheck.cachedTestId!,
         testedAt: testDate.toISOString(),
@@ -297,15 +779,12 @@ serve(async (req) => {
         attempts_exhausted: false,
         user_message: `This URL was tested on ${formatDateForUser(testDate)}. Same URL can be retested on ${formatDateForUser(nextTestDate)}.`,
         next_available_time: nextTestDate.toISOString(),
-        suggested_action: "We will show you the previous results. Made changes? Contact us for a priority retest.",
+        suggested_action:
+          "We will show you the previous results. Made changes? Contact us for a priority retest.",
       });
     }
 
-    // ... (remaining analysis flow unchanged) ...
-    // Keep the rest of your code from fetching website, Jina rendering fallback, AI call, scoring, DB inserts, etc.
-    // But ensure we use the same variable names and return the final success payload exactly as before.
-
-    // --- Begin original analysis / AI / scoring / inserts ---
+    // Start actual analysis
     const testId = crypto.randomUUID();
     const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
     const modelName = Deno.env.get("OPENAI_MODEL_NAME") || "gpt-4o-mini";
@@ -322,7 +801,8 @@ serve(async (req) => {
 
       const websiteResponse = await fetch(validatedWebsite, {
         headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; FoundIndex-Bot/1.0; +https://foundindex.com)",
+          "User-Agent":
+            "Mozilla/5.0 (compatible; FoundIndex-Bot/1.0; +https://foundindex.com)",
           Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         },
         redirect: "follow",
@@ -336,14 +816,15 @@ serve(async (req) => {
         fetchSuccess = true;
         console.log(`[${testId}] Fetched ${websiteHtml.length} chars`);
       } else {
-        console.error(`[${testId}] Fetch failed with status: ${websiteResponse.status}`);
+        console.error(
+          `[${testId}] Fetch failed with status: ${websiteResponse.status}`
+        );
       }
     } catch (err) {
       fetchError = err instanceof Error ? err : new Error(String(err));
       console.error(`[${testId}] Fetch failed:`, fetchError);
 
-      // Check for specific error types
-      if ((fetchError as any)?.name === "AbortError") {
+      if ((fetchError as { name?: string })?.name === "AbortError") {
         return createErrorResponse("TIMEOUT", {
           user_message:
             "The analysis took too long (over 30 seconds). This usually means the site is very slow or blocking access.",
@@ -396,7 +877,6 @@ serve(async (req) => {
     }
 
     if (isLikelyJSRendered && textContent.length < 200) {
-      // Keep this response as-is (returns success:false etc.) - frontend can handle it
       return new Response(
         JSON.stringify({
           success: false,
@@ -404,7 +884,10 @@ serve(async (req) => {
             "Unable to analyze JavaScript-rendered website. Ensure your content is server-rendered for AI visibility.",
           testId,
         }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -424,16 +907,18 @@ serve(async (req) => {
     const imageWeight = analysisType === "homepage" ? 0 : 8;
 
     const schemaScore =
-      schemaResult.maxScore > 0 ? (schemaResult.totalScore / schemaResult.maxScore) * schemaWeight : 0;
+      schemaResult.maxScore > 0
+        ? (schemaResult.totalScore / schemaResult.maxScore) * schemaWeight
+        : 0;
     const semanticScore = (semanticResult.score / semanticResult.maxScore) * semanticWeight;
     const technicalScore = (technicalResult.score / technicalResult.maxScore) * technicalWeight;
     const imageScore = (imageResult.score / imageResult.maxScore) * imageWeight;
 
-    const deterministicTotal = Math.round((schemaScore + semanticScore + technicalScore + imageScore) * 10) / 10;
+    const deterministicTotal =
+      Math.round((schemaScore + semanticScore + technicalScore + imageScore) * 10) / 10;
 
     const extractedContent = websiteHtml.substring(0, 50000);
 
-    // Build analysisPrompt (same as your original code)
     const analysisPrompt =
       analysisType === "homepage"
         ? `Analyze this business homepage for AI search visibility.
@@ -532,10 +1017,14 @@ Return ONLY valid JSON:
       console.error(`[${testId}] AI analysis failed:`, error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
 
-      // Check for quota/rate limit errors
-      if (errorMessage.includes("quota") || errorMessage.includes("rate limit") || errorMessage.includes("429")) {
+      if (
+        errorMessage.includes("quota") ||
+        errorMessage.includes("rate limit") ||
+        errorMessage.includes("429")
+      ) {
         return createErrorResponse("API_QUOTA", {
-          user_message: "Our AI service is temporarily at capacity. Please try again in 2-4 hours.",
+          user_message:
+            "Our AI service is temporarily at capacity. Please try again in 2-4 hours.",
           suggested_action: "Try again later or contact us to get notified when it is back",
         });
       }
@@ -546,11 +1035,13 @@ Return ONLY valid JSON:
       });
     }
 
-    // Compose final results (same as your original code)
-    const aiCategories = (aiAnalysisResult.categories || {}) as Record<string, { score?: number; max?: number }>;
+    const aiCategories = (aiAnalysisResult.categories || {}) as Record<
+      string,
+      { score?: number; max?: number }
+    >;
     const aiTotal = Object.values(aiCategories).reduce((sum: number, cat) => {
-      if (cat && typeof cat === "object" && typeof (cat as any).score === "number") {
-        return sum + ((cat as any).score as number);
+      if (cat && typeof cat === "object" && typeof cat.score === "number") {
+        return sum + cat.score;
       }
       return sum;
     }, 0);
@@ -588,7 +1079,6 @@ Return ONLY valid JSON:
       };
     }
 
-    // Map AI categories into displayCategories
     for (const [key, value] of Object.entries(aiCategories)) {
       if (value && typeof value === "object") {
         const catValue = value as { score?: number; max?: number };
@@ -602,12 +1092,12 @@ Return ONLY valid JSON:
       }
     }
 
-    // Schema recommendations + AI recs composition (as in original)
     const schemaRecommendations = schemaResult.scores
-      .filter((s) => {
+      .filter((s: SchemaScore) => {
         if (!s.found && analysisType === "blog" && s.category === "BlogPosting") {
-          const hasArticle = schemaResult.schemas.some((schema) =>
-            ["Article", "BlogPosting", "NewsArticle", "TechArticle"].includes(schema.type),
+          const hasArticle = schemaResult.schemas.some(
+            (schema: { type: string }) =>
+              ["Article", "BlogPosting", "NewsArticle", "TechArticle"].includes(schema.type)
           );
           if (hasArticle) {
             return false;
@@ -616,36 +1106,46 @@ Return ONLY valid JSON:
         return !s.found || s.missingFields.length > 0;
       })
       .slice(0, 3)
-      .map((s, idx) => ({
+      .map((s: SchemaScore, idx: number) => ({
         id: `schema-${idx}`,
         priority: s.found ? "medium" : "critical",
-        title: s.found ? `Complete your ${s.category} schema` : `Add ${s.category} schema markup`,
+        title: s.found
+          ? `Complete your ${s.category} schema`
+          : `Add ${s.category} schema markup`,
         pointsLost: -Math.round((s.maxPoints - s.earnedPoints) * 10) / 10,
         problem: s.details,
         howToFix: s.found
           ? [`Add missing fields: ${s.missingFields.join(", ")}`]
-          : [`Add ${s.category} schema to your page`, `Use JSON-LD format`, `Include: ${s.missingFields.join(", ")}`],
+          : [
+              `Add ${s.category} schema to your page`,
+              `Use JSON-LD format`,
+              `Include: ${s.missingFields.join(", ")}`,
+            ],
         codeExample: !s.found
-          ? `<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "${s.category}",\n  ${s.missingFields.map((f) => `"${f}": "..."`).join(",\n  ")}\n}\n</script>`
+          ? `<script type="application/ld+json">\n{\n  "@context": "https://schema.org",\n  "@type": "${s.category}",\n  ${s.missingFields.map((f: string) => `"${f}": "..."`).join(",\n  ")}\n}\n</script>`
           : "",
         expectedImprovement: `+${Math.round((s.maxPoints - s.earnedPoints) * 10) / 10} points`,
       }));
 
-    const aiRecommendations = Array.isArray(aiAnalysisResult.recommendations) ? aiAnalysisResult.recommendations : [];
+    const aiRecommendations = Array.isArray(aiAnalysisResult.recommendations)
+      ? aiAnalysisResult.recommendations
+      : [];
 
-    const allRecommendations = [...schemaRecommendations, ...aiRecommendations].map((rec, idx) => {
-      const recObj = rec as Record<string, unknown>;
-      return {
-        id: (recObj.id as string) || `rec-${idx}`,
-        priority: (recObj.priority as string) || "medium",
-        title: (recObj.title as string) || "Recommendation",
-        pointsLost: (recObj.pointsLost as number) || 0,
-        problem: (recObj.problem as string) || "",
-        howToFix: recObj.howToFix || [],
-        codeExample: (recObj.codeExample as string) || "",
-        expectedImprovement: (recObj.expectedImprovement as string) || "",
-      };
-    });
+    const allRecommendations = [...schemaRecommendations, ...aiRecommendations].map(
+      (rec, idx) => {
+        const recObj = rec as Record<string, unknown>;
+        return {
+          id: (recObj.id as string) || `rec-${idx}`,
+          priority: (recObj.priority as string) || "medium",
+          title: (recObj.title as string) || "Recommendation",
+          pointsLost: (recObj.pointsLost as number) || 0,
+          problem: (recObj.problem as string) || "",
+          howToFix: recObj.howToFix || [],
+          codeExample: (recObj.codeExample as string) || "",
+          expectedImprovement: (recObj.expectedImprovement as string) || "",
+        };
+      }
+    );
 
     allRecommendations.sort((a, b) => {
       const priorityOrder: Record<string, number> = { critical: 0, medium: 1, good: 2 };
@@ -658,11 +1158,16 @@ Return ONLY valid JSON:
         .from("test_history")
         .select("score")
         .eq("test_type", analysisType)
-        .gte("created_at", new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
+        .gte(
+          "created_at",
+          new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+        );
 
       if (avgData && avgData.length > 5) {
         const scores = avgData.map((d: { score: number }) => d.score);
-        industryAverage = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
+        industryAverage = Math.round(
+          scores.reduce((a: number, b: number) => a + b, 0) / scores.length
+        );
       }
     } catch (e) {
       console.warn(`[${testId}] Could not calculate industry average:`, e);
@@ -699,7 +1204,9 @@ Return ONLY valid JSON:
     });
 
     const duration = Date.now() - startTime;
-    console.log(`[${testId}] SUCCESS - Score: ${totalScore}, Grade: ${grade}, Duration: ${duration}ms`);
+    console.log(
+      `[${testId}] SUCCESS - Score: ${totalScore}, Grade: ${grade}, Duration: ${duration}ms`
+    );
 
     return new Response(
       JSON.stringify({
@@ -714,7 +1221,7 @@ Return ONLY valid JSON:
         industryAverage,
         criteriaCount: analysisType === "homepage" ? 47 : 52,
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("FATAL ERROR:", error);
@@ -723,7 +1230,10 @@ Return ONLY valid JSON:
         success: false,
         error: "An unexpected error occurred",
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
     );
   }
 });
