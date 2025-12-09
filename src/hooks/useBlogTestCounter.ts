@@ -57,47 +57,14 @@ export function useBlogTestCounter() {
   }, []);
 
   const loadFromLocalStorage = useCallback(() => {
-    try {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      
-      const stored = localStorage.getItem("fi_blog_tests_v2");
-      if (stored) {
-        const data = JSON.parse(stored);
-        const recentTests = (data.tests || []).filter((t: number) => t > sevenDaysAgo.getTime());
-        
-        const testsUsed = recentTests.length;
-        const testsRemaining = Math.max(0, BLOG_TESTS_LIMIT - testsUsed);
-        
-        let resetDate: Date | null = null;
-        if (testsUsed >= BLOG_TESTS_LIMIT && recentTests.length > 0) {
-          const sortedTests = [...recentTests].sort((a, b) => a - b);
-          const oldestTest = sortedTests[0];
-          resetDate = new Date(oldestTest + 7 * 24 * 60 * 60 * 1000);
-        }
-        
-        localStorage.setItem("fi_blog_tests_v2", JSON.stringify({ tests: recentTests }));
-        
-        setState({
-          testsUsed,
-          testsRemaining,
-          resetDate,
-          loading: false,
-          error: null,
-        });
-      } else {
-        localStorage.setItem("fi_blog_tests_v2", JSON.stringify({ tests: [] }));
-        setState({
-          testsUsed: 0,
-          testsRemaining: BLOG_TESTS_LIMIT,
-          resetDate: null,
-          loading: false,
-          error: null,
-        });
-      }
-    } catch (e) {
-      console.error("[useBlogTestCounter] LocalStorage error:", e);
-      setState((prev) => ({ ...prev, loading: false, error: "Failed to load counter" }));
-    }
+    // Fallback: just show default values, don't rely on localStorage for counting
+    setState({
+      testsUsed: 0,
+      testsRemaining: BLOG_TESTS_LIMIT,
+      resetDate: null,
+      loading: false,
+      error: null,
+    });
   }, []);
 
   const refresh = useCallback(() => {
