@@ -134,8 +134,13 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">;
 
-function toast({ ...props }: Toast) {
+function toast({ duration, ...props }: Toast & { duration?: number }) {
   const id = genId();
+
+  // Default to Infinity for destructive toasts, 5000ms for others
+  const effectiveDuration = duration !== undefined 
+    ? duration 
+    : (props.variant === "destructive" ? Infinity : 5000);
 
   const update = (props: ToasterToast) =>
     dispatch({
@@ -150,6 +155,7 @@ function toast({ ...props }: Toast) {
       ...props,
       id,
       open: true,
+      duration: effectiveDuration,
       onOpenChange: (open) => {
         if (!open) dismiss();
       },
