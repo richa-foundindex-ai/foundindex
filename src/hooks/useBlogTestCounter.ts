@@ -26,9 +26,12 @@ export function useBlogTestCounter() {
       
       const { data, error } = await supabase.functions.invoke("get-blog-test-count");
       
+      console.log("[useBlogTestCounter] Raw response:", { data, error });
+      
       if (error) {
         console.error("[useBlogTestCounter] Backend error:", error);
-        throw error;
+        setState(prev => ({ ...prev, loading: false, error: "Failed to fetch count" }));
+        return;
       }
 
       if (data?.success) {
@@ -36,7 +39,7 @@ export function useBlogTestCounter() {
         const testsRemaining = data.testsRemaining ?? Math.max(0, BLOG_TESTS_LIMIT - testsUsed);
         const resetDate = data.resetDate ? new Date(data.resetDate) : null;
 
-        console.log(`[useBlogTestCounter] Backend response - Used: ${testsUsed}, Remaining: ${testsRemaining}`);
+        console.log(`[useBlogTestCounter] Backend data - Used: ${testsUsed}, Remaining: ${testsRemaining}, Reset: ${resetDate}`);
 
         setState({
           testsUsed,
@@ -48,23 +51,25 @@ export function useBlogTestCounter() {
         return;
       }
 
-      throw new Error("Invalid response from backend");
+      // If success is false or missing, still use the data if available
+      if (data?.testsUsed !== undefined) {
+        console.log(`[useBlogTestCounter] Using data despite success flag - Used: ${data.testsUsed}`);
+        setState({
+          testsUsed: data.testsUsed,
+          testsRemaining: data.testsRemaining ?? Math.max(0, BLOG_TESTS_LIMIT - data.testsUsed),
+          resetDate: data.resetDate ? new Date(data.resetDate) : null,
+          loading: false,
+          error: null,
+        });
+        return;
+      }
+
+      console.error("[useBlogTestCounter] Invalid response from backend:", data);
+      setState(prev => ({ ...prev, loading: false, error: "Invalid response" }));
     } catch (e) {
       console.error("[useBlogTestCounter] Error fetching from backend:", e);
-      // Fallback to localStorage if backend fails
-      loadFromLocalStorage();
+      setState(prev => ({ ...prev, loading: false, error: "Network error" }));
     }
-  }, []);
-
-  const loadFromLocalStorage = useCallback(() => {
-    // Fallback: just show default values, don't rely on localStorage for counting
-    setState({
-      testsUsed: 0,
-      testsRemaining: BLOG_TESTS_LIMIT,
-      resetDate: null,
-      loading: false,
-      error: null,
-    });
   }, []);
 
   const refresh = useCallback(() => {
@@ -89,15 +94,6 @@ export function useBlogTestCounter() {
   }, [fetchFromBackend]);
 
   const incrementBlogTestCount = useCallback(() => {
-    // Update localStorage for immediate feedback
-    const stored = localStorage.getItem("fi_blog_tests_v2");
-    const data = stored ? JSON.parse(stored) : { tests: [] };
-    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    
-    const recentTests = (data.tests || []).filter((t: number) => t > sevenDaysAgo);
-    const tests = [...recentTests, Date.now()];
-    localStorage.setItem("fi_blog_tests_v2", JSON.stringify({ tests }));
-    
     // Dispatch custom event for same-tab updates
     window.dispatchEvent(new Event("fi_blog_test_updated"));
     
