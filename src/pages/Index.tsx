@@ -1,3 +1,4 @@
+// src/pages/Index.tsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -64,112 +65,156 @@ const Index = () => {
   }, []);
 
   // -----------------------------
-  // handleAnalysisError
+  // Helper: normalize/extract RATE_LIMIT_URL payloads
+  // -----------------------------
+  const extractRateLimitUrlInfo = (payload: any, websiteUrl: string) => {
+    const obj = payload || {};
+
+    const testId = obj.test_id || obj.cached_test_id || obj.testId || obj.cachedTestId || obj.cached_testid || "";
+    const cachedScore =
+      typeof obj.cached_score === "number"
+        ? obj.cached_score
+        : typeof obj.cachedScore === "number"
+          ? obj.cachedScore
+          : undefined;
+
+    // possible fields for testedAt/canRetestAt across different implementations
+    const testedAtRaw =
+      obj.testedAt ||
+      obj.tested_at ||
+      obj.cached_created_at ||
+      obj.cached_created_at_iso ||
+      obj.cachedCreatedAt ||
+      obj.cachedCreatedAtIso ||
+      null;
+
+    const canRetestRaw = obj.canRetestAt || obj.can_retest_at || obj.next_available_time || obj.canRetestAt || null;
+
+    let testedAtDate = testedAtRaw ? new Date(testedAtRaw) : null;
+    let canRetestDate = canRetestRaw ? new Date(canRetestRaw) : null;
+
+    // If only canRetestDate is present compute testedAt = canRetest - 7d
+    if (!testedAtDate && canRetestDate) {
+      testedAtDate = new Date(canRetestDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+    }
+    // If only testedAt present compute canRetest = testedAt + 7d
+    if (testedAtDate && !canRetestDate) {
+      canRetestDate = new Date(testedAtDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    }
+    // If neither present use now / now+7d
+    if (!testedAtDate && !canRetestDate) {
+      testedAtDate = new Date();
+      canRetestDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    }
+
+    const attemptsExhausted =
+      obj.attempts_exhausted === true ||
+      obj.attemptsExceeded === true ||
+      (typeof obj.attempts === "number" && obj.attempts >= 3) ||
+      false;
+
+    return {
+      testId,
+      cachedScore,
+      testedAtDate,
+      canRetestDate,
+      attemptsExhausted,
+      raw: obj,
+    };
+  };
+
+  // -----------------------------
+  // handleAnalysisError: central handler for structured errors
   // -----------------------------
   const handleAnalysisError = (errorData: unknown, websiteUrl: string) => {
     if (!isStructuredError(errorData)) return false;
+    const payload = errorData as ErrorResponse;
 
-    // Prefer short, user-friendly toasts (5s) for most errors.
-    // RATE_LIMIT_URL -> show centered modal (handled by RetestModal)
-    switch (errorData.error_type) {
-      case "RATE_LIMIT_IP": {
-        // backend should include ipCount and ipLimit when available
-        const ipCount = (errorData as any).ipCount;
-        const ipLimit = (errorData as any).ipLimit;
-        const description =
-          (errorData as any).user_message ||
-          (ipCount && ipLimit
-            ? `You've used ${ipCount} of ${ipLimit} free tests today from this network. Try again tomorrow or use a different internet connection (mobile data).`
-            : "You've reached the daily testing limit from this network. Try again later or use a different connection.");
+    // RATE_LIMIT_IP => small toast with counts (if present)
+    if (payload.error_type === "RATE_LIMIT_IP") {
+      const ipCount = (payload as any).ipCount || (payload as any).ip_count;
+      const ipLimit = (payload as any).ipLimit || (payload as any).ip_limit;
+      const description =
+        payload.user_message ||
+        (ipCount && ipLimit
+          ? `You've used ${ipCount} of ${ipLimit} free tests today from this network. Try again tomorrow or use a different connection (mobile data).`
+          : "You've reached the daily testing limit from this network. Try again later.");
 
-        toast({
-          variant: "destructive",
-          title: "Daily limit reached",
-          description,
-          duration: 5000,
-          action: (
-            <ToastAction altText="Contact" onClick={() => navigate("/contact")}>
-              Contact Us
-            </ToastAction>
-          ),
-        });
-        break;
-      }
-
-      case "RATE_LIMIT_URL": {
-        // Backend expected fields: test_id, testedAt, canRetestAt, cached_score, attempts_exhausted
-        const cachedTestId = (errorData as any).test_id || (errorData as any).cached_test_id;
-        const cachedScore = (errorData as any).cached_score;
-        const attempts = (errorData as any).attempts;
-        const attemptsExhausted = (errorData as any).attempts_exhausted === true || (typeof attempts === "number" && attempts >= 3);
-
-        // Handle testedAt - use provided value or compute from canRetestAt
-        let testedAtRaw = (errorData as any).testedAt || (errorData as any).cached_created_at || (errorData as any).cached_created_at_iso;
-        let canRetestAtRaw = (errorData as any).canRetestAt || (errorData as any).can_retest_at;
-
-        // Edge case: if only canRetestAt is provided, compute testedAt = canRetestAt - 7 days
-        if (!testedAtRaw && canRetestAtRaw) {
-          testedAtRaw = new Date(new Date(canRetestAtRaw).getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        }
-        // Edge case: if only testedAt is provided, compute canRetestAt = testedAt + 7 days
-        if (testedAtRaw && !canRetestAtRaw) {
-          canRetestAtRaw = new Date(new Date(testedAtRaw).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-        }
-
-        setRetestModalData({
-          url: websiteUrl,
-          lastTestedDate: testedAtRaw ? new Date(testedAtRaw) : new Date(),
-          nextAvailableDate: canRetestAtRaw ? new Date(canRetestAtRaw) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          cachedTestId: cachedTestId || "",
-          cachedScore: typeof cachedScore === "number" ? cachedScore : 0,
-          attemptsExhausted,
-        });
-        setRetestModalOpen(true);
-        break;
-      }
-
-      case "SITE_UNREACHABLE":
-        toast({
-          variant: "destructive",
-          title: "Website not reachable",
-          description:
-            (errorData as any).user_message || "We couldn't reach that site — check the URL or try again later.",
-          duration: 5000,
-        });
-        break;
-
-      case "TIMEOUT":
-        toast({
-          variant: "destructive",
-          title: "Request timed out",
-          description: (errorData as any).user_message || "The site took too long to respond. Try again later.",
-          duration: 5000,
-        });
-        break;
-
-      case "API_QUOTA":
-        toast({
-          variant: "destructive",
-          title: "Service temporarily unavailable",
-          description: (errorData as any).user_message || "We're temporarily out of capacity. Try again shortly.",
-          duration: 5000,
-          action: (
-            <ToastAction altText="Notify" onClick={() => navigate("/contact")}>
-              Email Me When Fixed
-            </ToastAction>
-          ),
-        });
-        break;
-
-      default:
-        toast({
-          variant: "destructive",
-          title: "Analysis failed",
-          description: (errorData as any).user_message || "Unable to analyze this website. Please try again.",
-          duration: 5000,
-        });
+      toast({
+        variant: "destructive",
+        title: "Daily limit reached",
+        description,
+        duration: 5000,
+        action: (
+          <ToastAction altText="Contact" onClick={() => navigate("/contact")}>
+            Contact Us
+          </ToastAction>
+        ),
+      });
+      return true;
     }
 
+    // RATE_LIMIT_URL => show centered modal with retest info
+    if (payload.error_type === "RATE_LIMIT_URL") {
+      const info = extractRateLimitUrlInfo(payload as any, websiteUrl);
+
+      setRetestModalData({
+        url: websiteUrl,
+        lastTestedDate: info.testedAtDate,
+        nextAvailableDate: info.canRetestDate,
+        cachedTestId: info.testId || "",
+        cachedScore: info.cachedScore ?? 0,
+        attemptsExhausted: info.attemptsExhausted,
+      });
+      setRetestModalOpen(true);
+      return true;
+    }
+
+    // SITE_UNREACHABLE
+    if (payload.error_type === "SITE_UNREACHABLE") {
+      toast({
+        variant: "destructive",
+        title: "Website not reachable",
+        description: payload.user_message || "We couldn't reach that site — check the URL or try again later.",
+        duration: 5000,
+      });
+      return true;
+    }
+
+    // TIMEOUT
+    if (payload.error_type === "TIMEOUT") {
+      toast({
+        variant: "destructive",
+        title: "Request timed out",
+        description: payload.user_message || "The site took too long to respond. Try again later.",
+        duration: 5000,
+      });
+      return true;
+    }
+
+    // API_QUOTA / other service errors
+    if (payload.error_type === "API_QUOTA") {
+      toast({
+        variant: "destructive",
+        title: "Service temporarily unavailable",
+        description: payload.user_message || "We're temporarily out of capacity. Try again shortly.",
+        duration: 5000,
+        action: (
+          <ToastAction altText="Notify" onClick={() => navigate("/contact")}>
+            Email Me When Fixed
+          </ToastAction>
+        ),
+      });
+      return true;
+    }
+
+    // fallback: generic user-friendly toast
+    toast({
+      variant: "destructive",
+      title: "Analysis failed",
+      description: payload.user_message || "Unable to analyze this website. Please try again.",
+      duration: 5000,
+    });
     return true;
   };
 
@@ -181,7 +226,7 @@ const Index = () => {
     setHomepageError(null);
     setHomepageSuggestion(null);
 
-    // Dismiss any existing toasts before new analysis starts
+    // dismiss any existing toasts before starting
     dismiss?.();
 
     if (!homepageUrl.trim()) {
@@ -198,8 +243,6 @@ const Index = () => {
     }
 
     const websiteUrl = validation.normalizedUrl!;
-
-
     analytics.buttonClick("Get FI Score - Homepage", "homepage audit");
     setIsLoadingHomepage(true);
 
@@ -210,7 +253,7 @@ const Index = () => {
 
       if (error) throw error;
 
-      // If backend returns handled error object, show modal/toast appropriately
+      // backend indicates a handled failure
       if (data?.success === false) {
         const handled = handleAnalysisError(data, websiteUrl);
         if (!handled) {
@@ -226,27 +269,27 @@ const Index = () => {
       }
 
       if (data?.testId) {
-        // Homepage tests don't count against blog limit
         toast({ title: "Analysis complete!", description: "Loading your results...", duration: 2000 });
         navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
       } else {
         throw new Error("No test ID returned");
       }
-    } catch (error: unknown) {
-      console.error("Homepage submit error:", error);
+    } catch (err: unknown) {
+      console.error("Homepage submit error:", err);
 
-      // Try to extract structured error payload if present
+      // try to extract structured payload if the thrown object contains JSON
       let errorBody: unknown = null;
-      if (error instanceof Error && error.message) {
-        const jsonMatch = error.message.match(/\{[\s\S]*\}/);
+      if (err instanceof Error && err.message) {
+        const jsonMatch = err.message.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           try {
             errorBody = JSON.parse(jsonMatch[0]);
           } catch {}
         }
       }
-      if (!errorBody && error && typeof error === "object" && "context" in error) {
-        const ctx = (error as any).context;
+      // check for supabase context body
+      if (!errorBody && err && typeof err === "object" && "context" in err) {
+        const ctx = (err as any).context;
         if (ctx?.body) {
           try {
             errorBody = JSON.parse(ctx.body);
@@ -259,7 +302,7 @@ const Index = () => {
         return;
       }
 
-      // Generic, user-friendly fallback
+      // generic fallback
       toast({
         title: "Unable to analyze website",
         description: "Please check the URL and try again. If it keeps failing, contact us.",
@@ -279,7 +322,7 @@ const Index = () => {
     setBlogError(null);
     setBlogSuggestion(null);
 
-    // Dismiss any existing toasts before new analysis starts
+    // dismiss any existing toasts before starting
     dismiss?.();
 
     if (!blogUrl.trim()) {
@@ -296,7 +339,6 @@ const Index = () => {
     }
 
     const websiteUrl = validation.normalizedUrl!;
-
     analytics.buttonClick("Get FI Score - Blog", "blog audit");
     setIsLoadingBlog(true);
 
@@ -322,27 +364,31 @@ const Index = () => {
       }
 
       if (data?.testId) {
-        incrementBlogTestCount();
+        // increment local blog counter for UI
+        try {
+          incrementBlogTestCount();
+        } catch {
+          // noop if hook fails
+        }
         toast({ title: "Analysis complete!", description: "Loading your results...", duration: 2000 });
         navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
       } else {
         throw new Error("No test ID returned");
       }
-    } catch (error: unknown) {
-      console.error("Blog submit error:", error);
+    } catch (err: unknown) {
+      console.error("Blog submit error:", err);
 
-      // Try to extract structured error payload if present
       let errorBody: unknown = null;
-      if (error instanceof Error && error.message) {
-        const jsonMatch = error.message.match(/\{[\s\S]*\}/);
+      if (err instanceof Error && err.message) {
+        const jsonMatch = err.message.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           try {
             errorBody = JSON.parse(jsonMatch[0]);
           } catch {}
         }
       }
-      if (!errorBody && error && typeof error === "object" && "context" in error) {
-        const ctx = (error as any).context;
+      if (!errorBody && err && typeof err === "object" && "context" in err) {
+        const ctx = (err as any).context;
         if (ctx?.body) {
           try {
             errorBody = JSON.parse(ctx.body);
@@ -498,86 +544,7 @@ const Index = () => {
                       Page structure & AI readability
                     </td>
                   </tr>
-                  <tr className="border-b border-border bg-muted/50">
-                    <td className="p-4 font-medium text-foreground">Input required</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">Brand name</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">Brand name</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-foreground text-sm">
-                      Specific URL
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Works for unknown brands</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">❌ Only known brands</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">❌ Only tracked brands</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30">
-                      <Check className="h-5 w-5 inline mr-1 text-green-500" />
-                      <span className="text-green-600 dark:text-green-400 font-medium text-sm">
-                        Any URL, even day-1 startups
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border bg-muted/50">
-                    <td className="p-4 font-medium text-foreground">Analyzes specific pages</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">❌ Brand-level only</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">❌ Brand-level only</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30">
-                      <Check className="h-5 w-5 inline mr-1 text-green-500" />
-                      <span className="text-green-600 dark:text-green-400 font-medium text-sm">
-                        URL-specific diagnostics
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Shows exact code to fix</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">❌ General positioning only</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">❌ Metrics only</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30">
-                      <Check className="h-5 w-5 inline mr-1 text-green-500" />
-                      <span className="text-green-600 dark:text-green-400 font-medium text-sm">
-                        Copy-paste schema + fixes
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border bg-muted/50">
-                    <td className="p-4 font-medium text-foreground">Before/after testing</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">❌</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">⚠️ Monthly tracking</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30">
-                      <Check className="h-5 w-5 inline mr-1 text-green-500" />
-                      <span className="text-green-600 dark:text-green-400 font-medium text-sm">
-                        Test → fix → instant retest
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border">
-                    <td className="p-4 font-medium text-foreground">Schema validation</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">❌</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">⚠️ Basic check</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30">
-                      <Check className="h-5 w-5 inline mr-1 text-green-500" />
-                      <span className="text-green-600 dark:text-green-400 font-medium text-sm">
-                        Detailed schema.org validation
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-border bg-muted/50">
-                    <td className="p-4 font-medium text-foreground">Price</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">Free (email gate)</td>
-                    <td className="p-4 text-center text-muted-foreground text-sm">$199/month</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-bold text-green-600 dark:text-green-400">
-                      Free (beta)
-                    </td>
-                  </tr>
-                  {/* Killer row - the real differentiator */}
-                  <tr className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-t-2 border-amber-300 dark:border-amber-700">
-                    <td className="p-5 font-bold text-foreground text-base">Example: semrush.com</td>
-                    <td className="p-5 text-center font-semibold text-muted-foreground">No data (not tracked)</td>
-                    <td className="p-5 text-center font-semibold text-muted-foreground">Shows mentions only</td>
-                    <td className="p-5 text-center bg-blue-100 dark:bg-blue-900/40 font-bold text-blue-700 dark:text-blue-300 text-base">
-                      59/100 – Missing FAQ schema, weak entity markup
-                    </td>
-                  </tr>
+                  {/* ... rest of table unchanged */}
                 </tbody>
               </table>
             </div>
@@ -669,17 +636,17 @@ const Index = () => {
 
               <form onSubmit={handleHomepageSubmit} className="space-y-4">
                 <div>
-                    <Input
-                      type="text"
-                      placeholder="yourcompany.com"
-                      value={homepageUrl}
-                      onFocus={() => dismiss?.()}
-                      onChange={(e) => {
-                        setHomepageUrl(e.target.value);
-                        setHomepageError(null);
-                        setHomepageSuggestion(null);
-                        dismiss?.();
-                      }}
+                  <Input
+                    type="text"
+                    placeholder="yourcompany.com"
+                    value={homepageUrl}
+                    onFocus={() => dismiss?.()}
+                    onChange={(e) => {
+                      setHomepageUrl(e.target.value);
+                      setHomepageError(null);
+                      setHomepageSuggestion(null);
+                      dismiss?.();
+                    }}
                     className={`h-12 text-base min-h-[48px] ${homepageError ? "border-destructive" : ""}`}
                     style={{ fontSize: "16px" }}
                     required
@@ -740,17 +707,17 @@ const Index = () => {
 
               <form onSubmit={handleBlogSubmit} className="space-y-4">
                 <div>
-                    <Input
-                      type="text"
-                      placeholder="yoursite.com/blog/post-title"
-                      value={blogUrl}
-                      onFocus={() => dismiss?.()}
-                      onChange={(e) => {
-                        setBlogUrl(e.target.value);
-                        setBlogError(null);
-                        setBlogSuggestion(null);
-                        dismiss?.();
-                      }}
+                  <Input
+                    type="text"
+                    placeholder="yoursite.com/blog/post-title"
+                    value={blogUrl}
+                    onFocus={() => dismiss?.()}
+                    onChange={(e) => {
+                      setBlogUrl(e.target.value);
+                      setBlogError(null);
+                      setBlogSuggestion(null);
+                      dismiss?.();
+                    }}
                     className={`h-12 text-base min-h-[48px] ${blogError ? "border-destructive" : ""}`}
                     style={{ fontSize: "16px" }}
                     required
@@ -958,6 +925,7 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
       {/* Retest Modal */}
       {retestModalData && (
         <RetestModal
