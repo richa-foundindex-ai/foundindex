@@ -189,7 +189,6 @@ const Index = () => {
 
 
     analytics.buttonClick("Get FI Score - Homepage", "homepage audit");
-    analytics.buttonClick("Get FI Score - Homepage", "homepage audit");
     setIsLoadingHomepage(true);
 
     try {
@@ -658,15 +657,17 @@ const Index = () => {
 
               <form onSubmit={handleHomepageSubmit} className="space-y-4">
                 <div>
-                  <Input
-                    type="text"
-                    placeholder="yourcompany.com"
-                    value={homepageUrl}
-                    onChange={(e) => {
-                      setHomepageUrl(e.target.value);
-                      setHomepageError(null);
-                      setHomepageSuggestion(null);
-                    }}
+                    <Input
+                      type="text"
+                      placeholder="yourcompany.com"
+                      value={homepageUrl}
+                      onFocus={() => dismiss?.()}
+                      onChange={(e) => {
+                        setHomepageUrl(e.target.value);
+                        setHomepageError(null);
+                        setHomepageSuggestion(null);
+                        dismiss?.();
+                      }}
                     className={`h-12 text-base min-h-[48px] ${homepageError ? "border-destructive" : ""}`}
                     style={{ fontSize: "16px" }}
                     required
@@ -727,15 +728,17 @@ const Index = () => {
 
               <form onSubmit={handleBlogSubmit} className="space-y-4">
                 <div>
-                  <Input
-                    type="text"
-                    placeholder="yoursite.com/blog/post-title"
-                    value={blogUrl}
-                    onChange={(e) => {
-                      setBlogUrl(e.target.value);
-                      setBlogError(null);
-                      setBlogSuggestion(null);
-                    }}
+                    <Input
+                      type="text"
+                      placeholder="yoursite.com/blog/post-title"
+                      value={blogUrl}
+                      onFocus={() => dismiss?.()}
+                      onChange={(e) => {
+                        setBlogUrl(e.target.value);
+                        setBlogError(null);
+                        setBlogSuggestion(null);
+                        dismiss?.();
+                      }}
                     className={`h-12 text-base min-h-[48px] ${blogError ? "border-destructive" : ""}`}
                     style={{ fontSize: "16px" }}
                     required
