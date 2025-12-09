@@ -341,12 +341,47 @@ const Index = () => {
     } catch (err: unknown) {
       console.error("Blog submit error:", err);
 
-      toast({
-        title: "Unable to analyze blog post",
-        description: "Please check the URL and try again.",
-        variant: "destructive",
-        duration: 5000,
-      });
+      // Try to extract structured error from the exception
+      let errorParsed = false;
+      if (err && typeof err === "object") {
+        const errObj = err as any;
+        // Check if error has context.body (supabase functions error format)
+        if (errObj.context?.body) {
+          try {
+            const body = typeof errObj.context.body === "string" 
+              ? JSON.parse(errObj.context.body) 
+              : errObj.context.body;
+            if (body && body.error_type) {
+              errorParsed = handleAnalysisError(body, websiteUrl, "blog");
+            }
+          } catch (parseErr) {
+            console.error("Failed to parse error body:", parseErr);
+          }
+        }
+        // Also check error.message for JSON
+        if (!errorParsed && errObj.message) {
+          const jsonMatch = errObj.message.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            try {
+              const parsed = JSON.parse(jsonMatch[0]);
+              if (parsed && parsed.error_type) {
+                errorParsed = handleAnalysisError(parsed, websiteUrl, "blog");
+              }
+            } catch (parseErr) {
+              console.error("Failed to parse error message JSON:", parseErr);
+            }
+          }
+        }
+      }
+
+      if (!errorParsed) {
+        toast({
+          title: "Unable to analyze blog post",
+          description: "Please check the URL and try again.",
+          variant: "destructive",
+          duration: 5000,
+        });
+      }
     } finally {
       setIsLoadingBlog(false);
     }
