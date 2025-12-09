@@ -67,12 +67,60 @@ const Index = () => {
     };
   };
 
-  const handleAnalysisError = (errorData: unknown, websiteUrl: string) => {
+  const handleAnalysisError = (errorData: unknown, websiteUrl: string, testType?: string) => {
     if (!isStructuredError(errorData)) return false;
     const e = errorData as any;
 
     switch (e.error_type) {
+      case "RATE_LIMIT_BLOG": {
+        // Blog-specific rate limit (3 per 7 days)
+        const nextAvailable = e.next_available_time || e.canRetestAt;
+        let resetDateStr = "";
+        if (nextAvailable) {
+          resetDateStr = new Intl.DateTimeFormat("en-IN", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            timeZone: "Asia/Kolkata",
+          }).format(new Date(nextAvailable)) + " (IST)";
+        }
+
+        toast({
+          variant: "destructive",
+          title: "Blog test limit reached",
+          description: `You've tested 3 blog posts in the last 7 days. You can test more blog posts on ${resetDateStr || "next week"}. Homepage tests are unlimited!`,
+          duration: 10000,
+        });
+        break;
+      }
+
       case "RATE_LIMIT_IP": {
+        // Check if this is actually a blog rate limit based on context
+        const blogCount = e.blogCount || e.blog_count;
+        const blogLimit = e.blogLimit || e.blog_limit || 3;
+        const nextAvailable = e.next_available_time || e.canRetestAt;
+
+        if (testType === "blog" && (blogCount !== undefined || e.is_blog_limit)) {
+          let resetDateStr = "";
+          if (nextAvailable) {
+            resetDateStr = new Intl.DateTimeFormat("en-IN", {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+              timeZone: "Asia/Kolkata",
+            }).format(new Date(nextAvailable)) + " (IST)";
+          }
+
+          toast({
+            variant: "destructive",
+            title: "Blog test limit reached",
+            description: `You've tested ${blogCount || blogLimit} blog posts in the last 7 days. You can test more on ${resetDateStr || "next week"}. Homepage tests are unlimited!`,
+            duration: 10000,
+          });
+          break;
+        }
+
+        // Generic IP rate limit
         const ipCount = e.ipCount || e.ip_count;
         const ipLimit = e.ipLimit || e.ip_limit;
         const description =
@@ -277,7 +325,7 @@ const Index = () => {
       }
 
       if (data?.success === false) {
-        const handled = handleAnalysisError(data, websiteUrl);
+        const handled = handleAnalysisError(data, websiteUrl, "blog");
         if (!handled) {
           toast({
             title: "Analysis failed",
