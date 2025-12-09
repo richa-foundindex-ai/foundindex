@@ -95,12 +95,23 @@ const Index = () => {
       }
 
       case "RATE_LIMIT_IP": {
+        // If backend provides user_message, use it directly (it has the correct info)
+        if (e.user_message && testType === "blog") {
+          toast({
+            variant: "destructive",
+            title: "Blog test limit reached",
+            description: e.user_message,
+            duration: 10000,
+          });
+          break;
+        }
+
         // Check if this is actually a blog rate limit based on context
         const blogCount = e.blogCount || e.blog_count;
         const blogLimit = e.blogLimit || e.blog_limit || 3;
         const nextAvailable = e.next_available_time || e.canRetestAt;
 
-        if (testType === "blog" && (blogCount !== undefined || e.is_blog_limit)) {
+        if (testType === "blog" && (blogCount !== undefined || e.is_blog_limit || nextAvailable)) {
           let resetDateStr = "";
           if (nextAvailable) {
             resetDateStr = new Intl.DateTimeFormat("en-IN", {
@@ -114,7 +125,7 @@ const Index = () => {
           toast({
             variant: "destructive",
             title: "Blog test limit reached",
-            description: `You've tested ${blogCount || blogLimit} blog posts in the last 7 days. You can test more on ${resetDateStr || "next week"}. Homepage tests are unlimited!`,
+            description: `You've tested 3 blog posts in the last 7 days. You can test more on ${resetDateStr || "next week"}. Homepage tests are unlimited!`,
             duration: 10000,
           });
           break;
@@ -133,7 +144,7 @@ const Index = () => {
           variant: "destructive",
           title: "Daily limit reached",
           description,
-          duration: 5000,
+          duration: 10000,
           action: (
             <ToastAction altText="Contact" onClick={() => navigate("/contact")}>
               Contact Us
