@@ -29,25 +29,26 @@ Deno.serve(async (req) => {
     // Calculate the rolling window start
     const windowStart = new Date(Date.now() - ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
-    // Query test_submissions for blog tests from this IP in the rolling window
-    // Join with test_history to get test_type
-    const { data: recentBlogTests, error } = await supabase
+    // Query test_history directly for blog tests in the rolling window
+    // We need to match by joining with test_submissions to get IP
+    // But since there's no FK, we'll query test_history for blog tests and match test_ids
+    
+    // First get all test_ids from this IP in the window
+    const { data: submissions, error: subError } = await supabase
       .from("test_submissions")
-      .select(`
-        created_at,
-        test_id,
-        test_history!inner(test_type)
-      `)
+      .select("test_id, created_at")
       .eq("ip_address", clientIp)
-      .eq("test_history.test_type", "blog")
       .gte("created_at", windowStart.toISOString())
       .order("created_at", { ascending: true });
 
-    console.log(`[get-blog-test-count] Query results for IP ${clientIp}:`, recentBlogTests);
+    if (subError) {
+      console.error("[get-blog-test-count] Submissions query error:", subError);
+    }
 
-    if (error) {
-      console.error("[get-blog-test-count] Database error:", error);
-      // Return default values on error
+    console.log(`[get-blog-test-count] Submissions for IP ${clientIp}:`, submissions);
+
+    if (!submissions || submissions.length === 0) {
+      // No submissions from this IP
       return new Response(
         JSON.stringify({
           success: true,
@@ -59,18 +60,35 @@ Deno.serve(async (req) => {
       );
     }
 
-    const testsUsed = recentBlogTests?.length || 0;
-    const testsRemaining = Math.max(0, BLOG_LIMIT - testsUsed);
+    // Get the test_ids
+    const testIds = submissions.map(s => s.test_id);
 
-    // Calculate reset date: oldest test + 7 days (rolling window)
-    let resetDate: string | null = null;
-    if (testsUsed >= BLOG_LIMIT && recentBlogTests && recentBlogTests.length > 0) {
-      const oldestTest = new Date(recentBlogTests[0].created_at);
-      resetDate = new Date(oldestTest.getTime() + ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
-      console.log(`[get-blog-test-count] Oldest test: ${oldestTest.toISOString()}, Reset date: ${resetDate}`);
+    // Now query test_history to find which of these are blog tests
+    const { data: blogTests, error: blogError } = await supabase
+      .from("test_history")
+      .select("test_id, created_at")
+      .in("test_id", testIds)
+      .eq("test_type", "blog")
+      .order("created_at", { ascending: true });
+
+    if (blogError) {
+      console.error("[get-blog-test-count] Blog tests query error:", blogError);
     }
 
-    console.log(`[get-blog-test-count] IP: ${clientIp}, Used: ${testsUsed}, Remaining: ${testsRemaining}, Reset: ${resetDate}`);
+    console.log(`[get-blog-test-count] Blog tests found:`, blogTests);
+
+    const testsUsed = blogTests?.length || 0;
+    const testsRemaining = Math.max(0, BLOG_LIMIT - testsUsed);
+
+    // Calculate reset date: oldest blog test + 7 days (rolling window)
+    let resetDate: string | null = null;
+    if (testsUsed >= BLOG_LIMIT && blogTests && blogTests.length > 0) {
+      const oldestTest = new Date(blogTests[0].created_at);
+      resetDate = new Date(oldestTest.getTime() + ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000).toISOString();
+      console.log(`[get-blog-test-count] Oldest blog test: ${oldestTest.toISOString()}, Reset date: ${resetDate}`);
+    }
+
+    console.log(`[get-blog-test-count] IP: ${clientIp}, Blog tests used: ${testsUsed}, Remaining: ${testsRemaining}, Reset: ${resetDate}`);
 
     return new Response(
       JSON.stringify({
