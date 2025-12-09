@@ -305,226 +305,228 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <SEOSchema />
-      <Header />
+    <>
+      <div className="min-h-screen bg-background">
+        <SEOSchema />
+        <Header />
 
-      <RateLimitBanner />
+        <RateLimitBanner />
 
-      <header className="container mx-auto px-4 py-12 md:py-24 text-center">
-        <p className="text-sm md:text-base font-semibold text-destructive mb-4">
-          Your SEO is fine. AI still can&apos;t find you.
-        </p>
-        <h1 className="text-[2rem] md:text-6xl font-bold mb-6 text-foreground leading-tight px-2">
-          Score your website&apos;s visibility to AI search engines
-        </h1>
-        <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-3xl mx-auto px-4">
-          ChatGPT, Perplexity, and Claude don&apos;t rank pages—they cite sources. FoundIndex analyzes if your website is
-          structured clearly enough for AI to understand, parse, and recommend.
-        </p>
+        <header className="container mx-auto px-4 py-12 md:py-24 text-center">
+          <p className="text-sm md:text-base font-semibold text-destructive mb-4">
+            Your SEO is fine. AI still can&apos;t find you.
+          </p>
+          <h1 className="text-[2rem] md:text-6xl font-bold mb-6 text-foreground leading-tight px-2">
+            Score your website&apos;s visibility to AI search engines
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-3xl mx-auto px-4">
+            ChatGPT, Perplexity, and Claude don&apos;t rank pages—they cite sources. FoundIndex analyzes if your
+            website is structured clearly enough for AI to understand, parse, and recommend.
+          </p>
 
-        
-          href="#test-section"
-          onClick={(e) => {
-            e.preventDefault();
-            document.getElementById("test-section")?.scrollIntoView({ behavior: "smooth" });
-          }}
-          className="inline-block"
-        >
-          <Button
-            size="lg"
-            className="h-14 px-10 text-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+          
+            href="#test-section"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById("test-section")?.scrollIntoView({ behavior: "smooth" });
+            }}
+            className="inline-block"
           >
-            Test your site free
-          </Button>
-        </a>
-      </header>
+            <Button
+              size="lg"
+              className="h-14 px-10 text-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              Test your site free
+            </Button>
+          </a>
+        </header>
 
-      <section className="container mx-auto px-4 py-12 md:py-16">
-        <div
-          id="test-section"
-          className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto scroll-mt-8"
-        >
-          <Card className="relative bg-gradient-to-br from-blue-50 to-background dark:from-blue-950/20 border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 transition-all duration-300">
-            <CardContent className="p-8">
-              <div className="text-6xl mb-4">🏠</div>
-              <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-2xl font-bold text-foreground">Homepage audit</h2>
-                <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                  ✨ Unlimited
-                </span>
-              </div>
-              <p className="text-muted-foreground mb-6">Test if AI can understand what your business does</p>
-
-              <form onSubmit={handleHomepageSubmit} className="space-y-4">
-                <div>
-                  <Input
-                    type="text"
-                    placeholder="yourcompany.com"
-                    value={homepageUrl}
-                    onFocus={() => dismiss?.()}
-                    onChange={(e) => {
-                      setHomepageUrl(e.target.value);
-                      setHomepageError(null);
-                      setHomepageSuggestion(null);
-                      dismiss?.();
-                    }}
-                    className={`h-12 text-base min-h-[48px] ${homepageError ? "border-destructive" : ""}`}
-                    style={{ fontSize: "16px" }}
-                    required
-                    aria-label="Homepage URL"
-                  />
-                  {homepageError && (
-                    <div className="flex items-start gap-2 text-sm text-destructive mt-2">
-                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <span>{homepageError}</span>
-                        {homepageSuggestion && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setHomepageUrl(homepageSuggestion);
-                              setHomepageError(null);
-                              setHomepageSuggestion(null);
-                            }}
-                            className="ml-1 text-primary hover:underline font-medium"
-                          >
-                            Use &quot;{homepageSuggestion}&quot;?
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
+        <section className="container mx-auto px-4 py-12 md:py-16">
+          <div
+            id="test-section"
+            className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto scroll-mt-8"
+          >
+            <Card className="relative bg-gradient-to-br from-blue-50 to-background dark:from-blue-950/20 border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 transition-all duration-300">
+              <CardContent className="p-8">
+                <div className="text-6xl mb-4">🏠</div>
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-2xl font-bold text-foreground">Homepage audit</h2>
+                  <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                    ✨ Unlimited
+                  </span>
                 </div>
-                <Button
-                  type="submit"
-                  className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700 text-white"
-                  disabled={isLoadingHomepage}
-                >
-                  {isLoadingHomepage ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing (~60s)
-                    </>
-                  ) : (
-                    "Get your FI score"
-                  )}
-                </Button>
-              </form>
+                <p className="text-muted-foreground mb-6">Test if AI can understand what your business does</p>
 
-              <p className="text-sm text-muted-foreground mt-4 text-center">
-                Unlimited tests • <span className="font-bold text-foreground">Free during beta</span>
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="relative bg-gradient-to-br from-purple-50 to-background dark:from-purple-950/20 border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 transition-all duration-300">
-            <Badge className="absolute top-4 right-4 bg-amber-500 text-white">Most popular</Badge>
-            <CardContent className="p-8">
-              <div className="text-6xl mb-4">📝</div>
-              <h2 className="text-2xl font-bold mb-3 text-foreground">Blog post audit</h2>
-              <p className="text-muted-foreground mb-6">Test if AI can extract and cite your answers</p>
-
-              <form onSubmit={handleBlogSubmit} className="space-y-4">
-                <div>
-                  <Input
-                    type="text"
-                    placeholder="yoursite.com/blog/post-title"
-                    value={blogUrl}
-                    onFocus={() => dismiss?.()}
-                    onChange={(e) => {
-                      setBlogUrl(e.target.value);
-                      setBlogError(null);
-                      setBlogSuggestion(null);
-                      dismiss?.();
-                    }}
-                    className={`h-12 text-base min-h-[48px] ${blogError ? "border-destructive" : ""}`}
-                    style={{ fontSize: "16px" }}
-                    required
-                    aria-label="Blog post URL"
-                  />
-                  {blogError && (
-                    <div className="flex items-start gap-2 text-sm text-destructive mt-2">
-                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <span>{blogError}</span>
-                        {blogSuggestion && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setBlogUrl(blogSuggestion);
-                              setBlogError(null);
-                              setBlogSuggestion(null);
-                            }}
-                            className="ml-1 text-primary hover:underline font-medium"
-                          >
-                            Use &quot;{blogSuggestion}&quot;?
-                          </button>
-                        )}
+                <form onSubmit={handleHomepageSubmit} className="space-y-4">
+                  <div>
+                    <Input
+                      type="text"
+                      placeholder="yourcompany.com"
+                      value={homepageUrl}
+                      onFocus={() => dismiss?.()}
+                      onChange={(e) => {
+                        setHomepageUrl(e.target.value);
+                        setHomepageError(null);
+                        setHomepageSuggestion(null);
+                        dismiss?.();
+                      }}
+                      className={`h-12 text-base min-h-[48px] ${homepageError ? "border-destructive" : ""}`}
+                      style={{ fontSize: "16px" }}
+                      required
+                      aria-label="Homepage URL"
+                    />
+                    {homepageError && (
+                      <div className="flex items-start gap-2 text-sm text-destructive mt-2">
+                        <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span>{homepageError}</span>
+                          {homepageSuggestion && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setHomepageUrl(homepageSuggestion);
+                                setHomepageError(null);
+                                setHomepageSuggestion(null);
+                              }}
+                              className="ml-1 text-primary hover:underline font-medium"
+                            >
+                              Use &quot;{homepageSuggestion}&quot;?
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full h-12 text-base bg-purple-600 hover:bg-purple-700 text-white"
-                  disabled={isLoadingBlog}
-                >
-                  {isLoadingBlog ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing (~60s)
-                    </>
-                  ) : (
-                    "Get your FI score"
-                  )}
-                </Button>
-              </form>
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={isLoadingHomepage}
+                  >
+                    {isLoadingHomepage ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing (~60s)
+                      </>
+                    ) : (
+                      "Get your FI score"
+                    )}
+                  </Button>
+                </form>
 
-              <p className="text-sm text-muted-foreground mt-4 text-center">
-                3 posts/week · <span className="font-bold text-foreground">Free during beta</span>
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+                <p className="text-sm text-muted-foreground mt-4 text-center">
+                  Unlimited tests • <span className="font-bold text-foreground">Free during beta</span>
+                </p>
+              </CardContent>
+            </Card>
 
-        <div className="max-w-5xl mx-auto mt-4">
-          <BlogTestCounter />
-        </div>
-      </section>
+            <Card className="relative bg-gradient-to-br from-purple-50 to-background dark:from-purple-950/20 border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 transition-all duration-300">
+              <Badge className="absolute top-4 right-4 bg-amber-500 text-white">Most popular</Badge>
+              <CardContent className="p-8">
+                <div className="text-6xl mb-4">📝</div>
+                <h2 className="text-2xl font-bold mb-3 text-foreground">Blog post audit</h2>
+                <p className="text-muted-foreground mb-6">Test if AI can extract and cite your answers</p>
 
-      <Testimonials />
-      <FAQ />
+                <form onSubmit={handleBlogSubmit} className="space-y-4">
+                  <div>
+                    <Input
+                      type="text"
+                      placeholder="yoursite.com/blog/post-title"
+                      value={blogUrl}
+                      onFocus={() => dismiss?.()}
+                      onChange={(e) => {
+                        setBlogUrl(e.target.value);
+                        setBlogError(null);
+                        setBlogSuggestion(null);
+                        dismiss?.();
+                      }}
+                      className={`h-12 text-base min-h-[48px] ${blogError ? "border-destructive" : ""}`}
+                      style={{ fontSize: "16px" }}
+                      required
+                      aria-label="Blog post URL"
+                    />
+                    {blogError && (
+                      <div className="flex items-start gap-2 text-sm text-destructive mt-2">
+                        <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <span>{blogError}</span>
+                          {blogSuggestion && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBlogUrl(blogSuggestion);
+                                setBlogError(null);
+                                setBlogSuggestion(null);
+                              }}
+                              className="ml-1 text-primary hover:underline font-medium"
+                            >
+                              Use &quot;{blogSuggestion}&quot;?
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full h-12 text-base bg-purple-600 hover:bg-purple-700 text-white"
+                    disabled={isLoadingBlog}
+                  >
+                    {isLoadingBlog ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing (~60s)
+                      </>
+                    ) : (
+                      "Get your FI score"
+                    )}
+                  </Button>
+                </form>
 
-      <footer className="border-t border-border bg-muted py-8">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground text-center md:text-left">
-            <div className="order-2 md:order-1">
-              Built by{" "}
-              
-                href="https://richadeo.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-medium text-primary hover:underline"
-              >
-                Richa Deo
-              </a>
-            </div>
-            <div className="flex flex-wrap justify-center gap-4 md:gap-6 order-1 md:order-2">
-              <a href="/privacy" className="hover:text-foreground transition-colors">
-                Privacy
-              </a>
-              <a href="/privacy" className="hover:text-foreground transition-colors">
-                Terms
-              </a>
-              <a href="/contact" className="hover:text-foreground transition-colors">
-                Contact
-              </a>
-            </div>
-            <div className="order-3">© 2025 FoundIndex</div>
+                <p className="text-sm text-muted-foreground mt-4 text-center">
+                  3 posts/week · <span className="font-bold text-foreground">Free during beta</span>
+                </p>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      </footer>
+
+          <div className="max-w-5xl mx-auto mt-4">
+            <BlogTestCounter />
+          </div>
+        </section>
+
+        <Testimonials />
+        <FAQ />
+
+        <footer className="border-t border-border bg-muted py-8">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground text-center md:text-left">
+              <div className="order-2 md:order-1">
+                Built by{" "}
+                
+                  href="https://richadeo.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-primary hover:underline"
+                >
+                  Richa Deo
+                </a>
+              </div>
+              <div className="flex flex-wrap justify-center gap-4 md:gap-6 order-1 md:order-2">
+                <a href="/privacy" className="hover:text-foreground transition-colors">
+                  Privacy
+                </a>
+                <a href="/privacy" className="hover:text-foreground transition-colors">
+                  Terms
+                </a>
+                <a href="/contact" className="hover:text-foreground transition-colors">
+                  Contact
+                </a>
+              </div>
+              <div className="order-3">© 2025 FoundIndex</div>
+            </div>
+          </div>
+        </footer>
+      </div>
 
       {retestModalData && (
         <RetestModal
@@ -538,7 +540,7 @@ const Index = () => {
           attemptsExhausted={!!retestModalData.attemptsExhausted}
         />
       )}
-    </div>
+    </>
   );
 };
 
