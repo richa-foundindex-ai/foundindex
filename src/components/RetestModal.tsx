@@ -109,83 +109,100 @@ export function RetestModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             <CalendarDays className="h-5 w-5 text-primary" />
             {attemptsExhausted ? "Test Limit Reached" : "URL Recently Tested"}
           </DialogTitle>
           <DialogDescription className="sr-only">URL cooldown information</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
+        <div className="space-y-5 py-2">
+          {/* URL Display */}
           {url && (
-            <div className="rounded-md bg-muted/50 p-3 break-words">
-              <p className="text-sm font-medium text-foreground truncate" title={url}>
+            <div className="rounded-lg bg-muted/60 px-4 py-3">
+              <p className="text-sm font-medium text-foreground break-all" title={url}>
                 {url}
               </p>
             </div>
           )}
 
-          {attemptsExhausted ? (
-            <>
-              <p className="text-sm text-muted-foreground">
-                You've tested this URL <strong className="text-foreground">3 times</strong> in the last 7 days.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                You can test it again on <strong className="text-foreground">{canRetestFormatted || "—"}</strong>
-                {relative && relative !== "now" && (
-                  <>
-                    {" "}
-                    — <span className="text-primary font-medium">{relative}</span>
-                  </>
-                )}
-                .
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-sm text-muted-foreground">
-                This URL was tested on <strong className="text-foreground">{testedDateFormatted || "—"}</strong>.
-              </p>
-
-              <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                <RefreshCw className="h-4 w-4 flex-shrink-0" />
-                <div>
-                  <div>
-                    Same URL can be retested on <strong className="text-foreground">{canRetestFormatted || "—"}</strong>
+          {/* Date Information */}
+          <div className="space-y-3">
+            {attemptsExhausted ? (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  You've tested this URL <span className="font-semibold text-foreground">3 times</span> in the last 7 days.
+                </p>
+                <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-background p-3">
+                  <RefreshCw className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">
+                      You can test again on:
+                    </p>
+                    <p className="text-sm font-semibold text-foreground">
+                      {canRetestFormatted || "—"}
+                    </p>
+                    {relative && relative !== "now" && (
+                      <p className="text-xs font-medium text-primary">{relative}</p>
+                    )}
                   </div>
-                  {relative && relative !== "now" && <div className="text-primary font-medium mt-1">{relative}</div>}
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            ) : (
+              <>
+                <div className="text-sm text-muted-foreground">
+                  <span>Tested on </span>
+                  <span className="font-semibold text-foreground">{testedDateFormatted || "—"}</span>
+                </div>
 
+                <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-background p-3">
+                  <RefreshCw className="h-4 w-4 mt-0.5 text-primary flex-shrink-0" />
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">
+                      Retest available on:
+                    </p>
+                    <p className="text-sm font-semibold text-foreground">
+                      {canRetestFormatted || "—"}
+                    </p>
+                    {relative && relative !== "now" && (
+                      <p className="text-xs font-medium text-primary">{relative}</p>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Previous Score */}
           {typeof cachedScore === "number" && (
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-              <p className="text-sm">
-                Previous score: <span className="text-primary font-semibold text-lg">{cachedScore}/100</span>
-              </p>
+            <div className="rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Previous score</span>
+                <span className="text-xl font-bold text-primary">{cachedScore}/100</span>
+              </div>
             </div>
           )}
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2">
-          <Button onClick={handleSeeResults} className="w-full sm:w-auto" disabled={!cachedTestId}>
-            <ExternalLink className="mr-2 h-4 w-4" />
-            See previous results
-          </Button>
-
-          <Button variant="outline" onClick={handleTestNew} className="w-full sm:w-auto">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Test different URL
-          </Button>
-
-          <div className="w-full text-center mt-2 sm:mt-0 sm:ml-2">
+        <DialogFooter className="flex-col gap-3 pt-2 sm:flex-row">
+          <div className="flex flex-col gap-2 w-full sm:flex-row sm:justify-end">
+            <Button onClick={handleSeeResults} className="w-full sm:w-auto" disabled={!cachedTestId}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              See previous results
+            </Button>
+            <Button variant="outline" onClick={handleTestNew} className="w-full sm:w-auto">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Test different URL
+            </Button>
+          </div>
+          
+          <div className="w-full text-center pt-2 border-t border-border/50">
             <Link
               to="/contact"
               onClick={() => handleOpenChange(false)}
-              className="text-sm underline underline-offset-2 font-medium text-primary hover:text-primary/90"
+              className="text-sm text-muted-foreground hover:text-primary underline underline-offset-4 transition-colors"
             >
               Made changes? Reach out to us to retest
             </Link>
