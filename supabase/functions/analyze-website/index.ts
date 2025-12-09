@@ -11,13 +11,13 @@ const corsHeaders = {
 // TYPES
 // =============================================================================
 
-type ErrorType = 
-  | "RATE_LIMIT_IP" 
-  | "RATE_LIMIT_URL" 
-  | "SITE_UNREACHABLE" 
-  | "BOT_BLOCKED" 
-  | "TIMEOUT" 
-  | "API_QUOTA" 
+type ErrorType =
+  | "RATE_LIMIT_IP"
+  | "RATE_LIMIT_URL"
+  | "SITE_UNREACHABLE"
+  | "BOT_BLOCKED"
+  | "TIMEOUT"
+  | "API_QUOTA"
   | "GENERAL_ERROR";
 
 interface ErrorResponse {
@@ -331,7 +331,9 @@ function scoreSchemaType(type: string, items: SchemaItem[]): SchemaScore {
 
   // FIXED: Check for type aliases
   const aliases = SCHEMA_TYPE_ALIASES[type] || [type];
-  console.log(`[alias-debug] Scoring ${type}, aliases: ${JSON.stringify(aliases)}, found schemas: ${items.map(s => s.type).join(', ')}`);
+  console.log(
+    `[alias-debug] Scoring ${type}, aliases: ${JSON.stringify(aliases)}, found schemas: ${items.map((s) => s.type).join(", ")}`,
+  );
   const matchingItems = items.filter((item) => aliases.includes(item.type));
 
   if (matchingItems.length === 0) {
@@ -480,12 +482,12 @@ function analyzeSemanticHtml(html: string, pageType: "homepage" | "blog") {
   const hasH1 = /<h1[\s>]/i.test(html);
   const hasH2 = /<h2[\s>]/i.test(html);
   const hasH3 = /<h3[\s>]/i.test(html);
-  
+
   // Count heading occurrences
   const h1Count = (html.match(/<h1[\s>]/gi) || []).length;
   const h2Count = (html.match(/<h2[\s>]/gi) || []).length;
   const h3Count = (html.match(/<h3[\s>]/gi) || []).length;
-  
+
   // Validate heading hierarchy
   const hasProperH1 = h1Count === 1; // Should have exactly one H1
   const hasProperHierarchy = hasH1 && (hasH2 || !hasH3); // Don't skip H2 to go to H3
@@ -537,20 +539,20 @@ function analyzeSemanticHtml(html: string, pageType: "homepage" | "blog") {
 
   console.log(`[semantic-debug] Checks: ${JSON.stringify(allChecks)}, Score: ${score}/${maxScore}`);
 
-  return { 
-    score: Math.min(score, maxScore), 
-    maxScore, 
-    details: { 
-      ...checks, 
-      headings: { 
-        h1Count, 
-        h2Count, 
-        h3Count, 
-        hasProperH1, 
-        hasProperHierarchy, 
-        hasGoodHeadingStructure 
-      } 
-    } 
+  return {
+    score: Math.min(score, maxScore),
+    maxScore,
+    details: {
+      ...checks,
+      headings: {
+        h1Count,
+        h2Count,
+        h3Count,
+        hasProperH1,
+        hasProperHierarchy,
+        hasGoodHeadingStructure,
+      },
+    },
   };
 }
 
@@ -738,7 +740,7 @@ const getGrade = (score: number): string => {
 
 const createErrorResponse = (
   type: ErrorType,
-  details: Partial<Omit<ErrorResponse, "success" | "error_type">>
+  details: Partial<Omit<ErrorResponse, "success" | "error_type">>,
 ): Response => {
   const response: ErrorResponse = {
     success: false,
@@ -778,10 +780,7 @@ interface CachedTestResult {
   cachedCreatedAt?: string;
 }
 
-const checkRateLimitWithCache = async (
-  supabase: any,
-  url: string,
-): Promise<CachedTestResult> => {
+const checkRateLimitWithCache = async (supabase: any, url: string): Promise<CachedTestResult> => {
   const COOLDOWN_DAYS = 7;
 
   try {
@@ -889,9 +888,9 @@ serve(async (req) => {
         const resetDate = new Date(firstTestDate.getTime() + ROLLING_WINDOW_DAYS * 24 * 60 * 60 * 1000);
 
         console.warn(`[rate-limit] IP ${clientIP} exceeded blog limit: ${recentBlogTests.length} posts in 30 days`);
-        
+
         return createErrorResponse("RATE_LIMIT_IP", {
-          user_message: `You've used all 3 blog post tests. You can test again on ${formatDateForUser(resetDate)}.`,
+          user_message: `You've tested 3 blog posts in the last 7 days. You can test more on ${formatDateForUser(resetDate)} (IST). Homepage tests are unlimited!`,
           next_available_time: resetDate.toISOString(),
           suggested_action: "Test homepages (unlimited) or wait until reset date",
           technical_details: `IP: ${clientIP}, Blog posts in 30 days: ${recentBlogTests.length}`,
@@ -906,7 +905,7 @@ serve(async (req) => {
 
     // Check URL cooldown (7 days) and return cached results if within cooldown
     const urlRateCheck = await checkRateLimitWithCache(supabaseAdmin, validatedWebsite);
-    
+
     if (!urlRateCheck.allowed && urlRateCheck.cachedTestId) {
       const testDate = new Date(urlRateCheck.cachedCreatedAt!);
       const nextTestDate = new Date(testDate);
@@ -915,7 +914,7 @@ serve(async (req) => {
       console.log(`[rate-limit] URL ${validatedWebsite} in cooldown, returning cached results`);
 
       return createErrorResponse("RATE_LIMIT_URL", {
-        user_message: `You tested this URL on ${formatDateForUser(testDate)}. Next test available on ${formatDateForUser(nextTestDate)}.`,
+        user_message: `This URL was tested on ${formatDateForUser(testDate)} (IST). Same URL can be retested on ${formatDateForUser(nextTestDate)} (IST).`,
         next_available_time: nextTestDate.toISOString(),
         suggested_action: "We will show you the previous results. Made changes? Contact us for a priority retest.",
         cached_test_id: urlRateCheck.cachedTestId,
@@ -959,11 +958,12 @@ serve(async (req) => {
     } catch (err) {
       fetchError = err instanceof Error ? err : new Error(String(err));
       console.error(`[${testId}] Fetch failed:`, fetchError);
-      
+
       // Check for specific error types
       if (fetchError.name === "AbortError") {
         return createErrorResponse("TIMEOUT", {
-          user_message: "The analysis took too long (over 30 seconds). This usually means the site is very slow or blocking access.",
+          user_message:
+            "The analysis took too long (over 30 seconds). This usually means the site is very slow or blocking access.",
           suggested_action: "Try again in a few minutes",
         });
       }
@@ -971,7 +971,8 @@ serve(async (req) => {
 
     if (!fetchSuccess || websiteHtml.length < 100) {
       return createErrorResponse("SITE_UNREACHABLE", {
-        user_message: "We could not connect to this website. Please check that the URL is correct and the site is online.",
+        user_message:
+          "We could not connect to this website. Please check that the URL is correct and the site is online.",
         suggested_action: "Verify the URL and try again",
         technical_details: `Could not load content from ${validatedWebsite}. ${fetchError?.message || "The site may be blocking bots, temporarily down, or require login."}`,
       });
@@ -1149,7 +1150,7 @@ Return ONLY valid JSON:
     } catch (error) {
       console.error(`[${testId}] AI analysis failed:`, error);
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      
+
       // Check for quota/rate limit errors
       if (errorMessage.includes("quota") || errorMessage.includes("rate limit") || errorMessage.includes("429")) {
         return createErrorResponse("API_QUOTA", {
@@ -1157,7 +1158,7 @@ Return ONLY valid JSON:
           suggested_action: "Try again later or contact us to get notified when it is back",
         });
       }
-      
+
       return createErrorResponse("GENERAL_ERROR", {
         user_message: "AI analysis failed. Please try again.",
         suggested_action: "Try again in a few minutes",
