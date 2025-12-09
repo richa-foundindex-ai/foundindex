@@ -66,15 +66,15 @@ const Index = () => {
           break;
 
         case "RATE_LIMIT_URL":
-          // Show cached results
-          toast({
-            title: "Showing Previous Results",
-            description: errorData.user_message,
-            duration: 8000,
+          // Show modal instead of toast for URL rate limit
+          setRetestModalData({
+            url: websiteUrl,
+            lastTestedDate: new Date(errorData.cached_created_at || ""),
+            nextAvailableDate: new Date(errorData.next_available_time || ""),
+            cachedTestId: errorData.cached_test_id || "",
+            cachedScore: errorData.cached_score || 0,
           });
-          if (errorData.cached_test_id) {
-            navigate(`/results?testId=${errorData.cached_test_id}&url=${encodeURIComponent(websiteUrl)}&cached=true`);
-          }
+          setRetestModalOpen(true);
           break;
 
         case "SITE_UNREACHABLE":
@@ -246,8 +246,26 @@ const Index = () => {
       } else {
         throw new Error("No test ID returned");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Homepage submit error:", error);
+      
+      // Try to parse error response body for 429 rate limit errors
+      let errorBody: unknown = null;
+      if (error && typeof error === 'object' && 'context' in error) {
+        const ctx = (error as { context?: { body?: string } }).context;
+        if (ctx?.body) {
+          try {
+            errorBody = JSON.parse(ctx.body);
+          } catch {}
+        }
+      }
+      
+      // Check if it's a structured error response
+      if (errorBody && handleAnalysisError(errorBody, websiteUrl)) {
+        setIsLoadingHomepage(false);
+        return;
+      }
+      
       // Parse error for user-friendly message
       const errorMessage = error instanceof Error 
         ? (error.message.includes("Edge Function") || error.message.includes("2xx") || error.message.includes("non-2xx"))
@@ -337,8 +355,26 @@ const Index = () => {
       } else {
         throw new Error("No test ID returned");
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Blog submit error:", error);
+      
+      // Try to parse error response body for 429 rate limit errors
+      let errorBody: unknown = null;
+      if (error && typeof error === 'object' && 'context' in error) {
+        const ctx = (error as { context?: { body?: string } }).context;
+        if (ctx?.body) {
+          try {
+            errorBody = JSON.parse(ctx.body);
+          } catch {}
+        }
+      }
+      
+      // Check if it's a structured error response
+      if (errorBody && handleAnalysisError(errorBody, websiteUrl)) {
+        setIsLoadingBlog(false);
+        return;
+      }
+      
       // Parse error for user-friendly message
       const errorMessage = error instanceof Error 
         ? (error.message.includes("Edge Function") || error.message.includes("2xx") || error.message.includes("non-2xx"))
