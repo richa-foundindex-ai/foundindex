@@ -8,7 +8,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, AlertCircle, Zap, Target, TrendingUp, Shield, CheckCircle, AlertTriangle, ClipboardList, BarChart3, Search, CheckSquare, X, Check } from "lucide-react";
+import {
+  Loader2,
+  AlertCircle,
+  Zap,
+  Target,
+  TrendingUp,
+  Shield,
+  CheckCircle,
+  AlertTriangle,
+  ClipboardList,
+  BarChart3,
+  Search,
+  CheckSquare,
+  X,
+  Check,
+} from "lucide-react";
 import { analytics } from "@/utils/analytics";
 import { validateAndNormalizeUrl, getErrorMessage } from "@/utils/urlValidation";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +45,7 @@ interface RetestModalData {
 
 const Index = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
   const { incrementBlogTestCount } = useBlogTestCounter();
   const [homepageUrl, setHomepageUrl] = useState("");
   const [blogUrl, setBlogUrl] = useState("");
@@ -47,139 +62,115 @@ const Index = () => {
     analytics.pageView("homepage");
   }, []);
 
-  // Handle structured error responses from the edge function
+  // -----------------------------
+  // handleAnalysisError
+  // -----------------------------
   const handleAnalysisError = (errorData: unknown, websiteUrl: string) => {
-    if (isStructuredError(errorData)) {
-      switch (errorData.error_type) {
-        case "RATE_LIMIT_IP":
-          toast({
-            variant: "destructive",
-            title: "Monthly Limit Reached",
-            description: errorData.user_message,
-            duration: Infinity,
-            action: (
-              <ToastAction altText="Contact Us" onClick={() => navigate("/contact")}>
-                Contact Us
-              </ToastAction>
-            ),
-          });
-          break;
+    if (!isStructuredError(errorData)) return false;
 
-        case "RATE_LIMIT_URL":
-          // Show modal instead of toast for URL rate limit
-          setRetestModalData({
-            url: websiteUrl,
-            lastTestedDate: new Date(errorData.cached_created_at || ""),
-            nextAvailableDate: new Date(errorData.next_available_time || ""),
-            cachedTestId: errorData.cached_test_id || "",
-            cachedScore: errorData.cached_score || 0,
-          });
-          setRetestModalOpen(true);
-          break;
+    // Prefer short, user-friendly toasts (5s) for most errors.
+    // RATE_LIMIT_URL -> show centered modal (handled by RetestModal)
+    switch (errorData.error_type) {
+      case "RATE_LIMIT_IP": {
+        // backend should include ipCount and ipLimit when available
+        const ipCount = (errorData as any).ipCount;
+        const ipLimit = (errorData as any).ipLimit;
+        const description =
+          (errorData as any).user_message ||
+          (ipCount && ipLimit
+            ? `You've used ${ipCount} of ${ipLimit} free tests today from this network. Try again tomorrow or use a different internet connection (mobile data).`
+            : "You've reached the daily testing limit from this network. Try again later or use a different connection.");
 
-        case "SITE_UNREACHABLE":
-          toast({
-            variant: "destructive",
-            title: "Could Not Reach Website",
-            description: errorData.user_message,
-            duration: Infinity,
-          });
-          break;
-
-        case "TIMEOUT":
-          toast({
-            variant: "destructive",
-            title: "Analysis Timed Out",
-            description: errorData.user_message,
-            duration: Infinity,
-          });
-          break;
-
-        case "API_QUOTA":
-          toast({
-            variant: "destructive",
-            title: "Service Temporarily Unavailable",
-            description: errorData.user_message,
-            duration: Infinity,
-            action: (
-              <ToastAction altText="Contact Us" onClick={() => navigate("/contact")}>
-                Email Me When Fixed
-              </ToastAction>
-            ),
-          });
-          break;
-
-        default:
-          toast({
-            variant: "destructive",
-            title: "Analysis Failed",
-            description: errorData.user_message || "Unable to analyze this website",
-            duration: Infinity,
-          });
+        toast({
+          variant: "destructive",
+          title: "Daily limit reached",
+          description,
+          duration: 5000,
+          action: (
+            <ToastAction altText="Contact" onClick={() => navigate("/contact")}>
+              Contact Us
+            </ToastAction>
+          ),
+        });
+        break;
       }
-      return true;
-    }
-    return false;
-  };
 
-  const checkRateLimits = async (url: string, testType: "homepage" | "blog") => {
-    const { data: recentUrlTests } = await supabase
-      .from("test_history")
-      .select("test_id, score, created_at")
-      .eq("website", url)
-      .gte("created_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-      .order("created_at", { ascending: false })
-      .limit(1);
+      case "RATE_LIMIT_URL": {
+        // Backend expected fields: cached_test_id, cached_created_at, can_retest_at, cached_score
+        const cachedTestId = (errorData as any).cached_test_id || (errorData as any).test_id;
+        const testedAt =
+          (errorData as any).testedAt ||
+          (errorData as any).cached_created_at ||
+          (errorData as any).cached_created_at_iso;
+        const canRetestAt = (errorData as any).canRetestAt || (errorData as any).can_retest_at;
+        const cachedScore = (errorData as any).cached_score;
 
-    if (recentUrlTests && recentUrlTests.length > 0) {
-      const test = recentUrlTests[0];
-      const testDate = new Date(test.created_at);
-      const nextAvailableDate = new Date(testDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-      const daysAgo = Math.floor((Date.now() - testDate.getTime()) / (24 * 60 * 60 * 1000));
-      const daysRemaining = 7 - daysAgo;
-      return {
-        blocked: true,
-        reason: "url_cooldown" as const,
-        existingTestId: test.test_id,
-        existingScore: test.score,
-        testedAt: testDate,
-        nextAvailable: nextAvailableDate,
-        daysAgo,
-        daysRemaining,
-        message: `This URL was tested ${daysAgo} day${daysAgo === 1 ? "" : "s"} ago. You can retest in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}.`,
-      };
-    }
-
-    if (testType === "blog") {
-      const weekStart = new Date();
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-      weekStart.setHours(0, 0, 0, 0);
-
-      const blogTestsThisWeek = JSON.parse(localStorage.getItem("fi_blog_tests") || "[]");
-      const validTests = blogTestsThisWeek.filter((t: number) => t > weekStart.getTime());
-
-      if (validTests.length >= 3) {
-        return {
-          blocked: true,
-          reason: "weekly_limit",
-          message: "You've reached the 3 blog post limit this week. Limit resets on Sunday.",
-        };
+        setRetestModalData({
+          url: websiteUrl,
+          lastTestedDate: testedAt ? new Date(testedAt) : new Date(),
+          nextAvailableDate: canRetestAt ? new Date(canRetestAt) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          cachedTestId: cachedTestId || "",
+          cachedScore: typeof cachedScore === "number" ? cachedScore : 0,
+        });
+        setRetestModalOpen(true);
+        break;
       }
+
+      case "SITE_UNREACHABLE":
+        toast({
+          variant: "destructive",
+          title: "Website not reachable",
+          description:
+            (errorData as any).user_message || "We couldn't reach that site — check the URL or try again later.",
+          duration: 5000,
+        });
+        break;
+
+      case "TIMEOUT":
+        toast({
+          variant: "destructive",
+          title: "Request timed out",
+          description: (errorData as any).user_message || "The site took too long to respond. Try again later.",
+          duration: 5000,
+        });
+        break;
+
+      case "API_QUOTA":
+        toast({
+          variant: "destructive",
+          title: "Service temporarily unavailable",
+          description: (errorData as any).user_message || "We're temporarily out of capacity. Try again shortly.",
+          duration: 5000,
+          action: (
+            <ToastAction altText="Notify" onClick={() => navigate("/contact")}>
+              Email Me When Fixed
+            </ToastAction>
+          ),
+        });
+        break;
+
+      default:
+        toast({
+          variant: "destructive",
+          title: "Analysis failed",
+          description: (errorData as any).user_message || "Unable to analyze this website. Please try again.",
+          duration: 5000,
+        });
     }
 
-    return { blocked: false };
+    return true;
   };
 
-  const recordBlogTest = () => {
-    const blogTests = JSON.parse(localStorage.getItem("fi_blog_tests") || "[]");
-    blogTests.push(Date.now());
-    localStorage.setItem("fi_blog_tests", JSON.stringify(blogTests.slice(-10)));
-  };
-
+  // -----------------------------
+  // handleHomepageSubmit
+  // -----------------------------
   const handleHomepageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setHomepageError(null);
     setHomepageSuggestion(null);
+
+    // Dismiss any existing toasts before new analysis starts
+    dismiss?.();
 
     if (!homepageUrl.trim()) {
       setHomepageError("Please enter a website URL");
@@ -196,10 +187,10 @@ const Index = () => {
 
     const websiteUrl = validation.normalizedUrl!;
 
+    // Local rate checks (fast UX) — keep existing checkRateLimits logic
     const rateCheck = await checkRateLimits(websiteUrl, "homepage");
     if (rateCheck.blocked) {
       if (rateCheck.reason === "url_cooldown" && rateCheck.existingTestId) {
-        // Show modal instead of toast
         setRetestModalData({
           url: websiteUrl,
           lastTestedDate: rateCheck.testedAt!,
@@ -209,7 +200,12 @@ const Index = () => {
         });
         setRetestModalOpen(true);
       } else {
-        toast({ title: "Rate limit reached", description: rateCheck.message, variant: "destructive", duration: Infinity });
+        toast({
+          title: "Rate limit reached",
+          description: rateCheck.message,
+          variant: "destructive",
+          duration: 5000,
+        });
       }
       return;
     }
@@ -224,7 +220,7 @@ const Index = () => {
 
       if (error) throw error;
 
-      // Check for structured error response
+      // If backend returns handled error object, show modal/toast appropriately
       if (data?.success === false) {
         const handled = handleAnalysisError(data, websiteUrl);
         if (!handled) {
@@ -232,7 +228,7 @@ const Index = () => {
             title: "Analysis failed",
             description: data.error || "Unable to analyze this website",
             variant: "destructive",
-            duration: Infinity,
+            duration: 5000,
           });
         }
         setIsLoadingHomepage(false);
@@ -241,18 +237,16 @@ const Index = () => {
 
       if (data?.testId) {
         // Homepage tests don't count against blog limit
-        toast({ title: "Analysis complete!", description: "Loading your results...", duration: 5000 });
+        toast({ title: "Analysis complete!", description: "Loading your results...", duration: 2000 });
         navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
       } else {
         throw new Error("No test ID returned");
       }
     } catch (error: unknown) {
       console.error("Homepage submit error:", error);
-      
-      // Try to parse error response body for rate limit errors
+
+      // Try to extract structured error payload if present
       let errorBody: unknown = null;
-      
-      // Check if error message contains JSON (edge function error format)
       if (error instanceof Error && error.message) {
         const jsonMatch = error.message.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
@@ -261,40 +255,42 @@ const Index = () => {
           } catch {}
         }
       }
-      
-      // Also try context.body if available
-      if (!errorBody && error && typeof error === 'object' && 'context' in error) {
-        const ctx = (error as { context?: { body?: string } }).context;
+      if (!errorBody && error && typeof error === "object" && "context" in error) {
+        const ctx = (error as any).context;
         if (ctx?.body) {
           try {
             errorBody = JSON.parse(ctx.body);
           } catch {}
         }
       }
-      
-      // Check if it's a structured error response (rate limit)
+
       if (errorBody && handleAnalysisError(errorBody, websiteUrl)) {
         setIsLoadingHomepage(false);
         return;
       }
-      
-      // Show user-friendly error - NEVER show technical details
+
+      // Generic, user-friendly fallback
       toast({
         title: "Unable to analyze website",
-        description: "Please check the URL and try again. If the problem persists, contact us.",
+        description: "Please check the URL and try again. If it keeps failing, contact us.",
         variant: "destructive",
-        duration: Infinity,
+        duration: 5000,
       });
-      setIsLoadingHomepage(false);
     } finally {
       setIsLoadingHomepage(false);
     }
   };
 
+  // -----------------------------
+  // handleBlogSubmit
+  // -----------------------------
   const handleBlogSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBlogError(null);
     setBlogSuggestion(null);
+
+    // Dismiss any existing toasts before new analysis starts
+    dismiss?.();
 
     if (!blogUrl.trim()) {
       setBlogError("Please enter a blog post URL");
@@ -314,7 +310,6 @@ const Index = () => {
     const rateCheck = await checkRateLimits(websiteUrl, "blog");
     if (rateCheck.blocked) {
       if (rateCheck.reason === "url_cooldown" && rateCheck.existingTestId) {
-        // Show modal instead of toast
         setRetestModalData({
           url: websiteUrl,
           lastTestedDate: rateCheck.testedAt!,
@@ -324,7 +319,7 @@ const Index = () => {
         });
         setRetestModalOpen(true);
       } else {
-        toast({ title: "Rate limit reached", description: rateCheck.message, variant: "destructive", duration: Infinity });
+        toast({ title: "Rate limit reached", description: rateCheck.message, variant: "destructive", duration: 5000 });
       }
       return;
     }
@@ -339,7 +334,6 @@ const Index = () => {
 
       if (error) throw error;
 
-      // Check for structured error response
       if (data?.success === false) {
         const handled = handleAnalysisError(data, websiteUrl);
         if (!handled) {
@@ -347,7 +341,7 @@ const Index = () => {
             title: "Analysis failed",
             description: data.error || "Unable to analyze this website",
             variant: "destructive",
-            duration: Infinity,
+            duration: 5000,
           });
         }
         setIsLoadingBlog(false);
@@ -355,20 +349,19 @@ const Index = () => {
       }
 
       if (data?.testId) {
+        // record blog test locally + increment hook
         recordBlogTest();
         incrementBlogTestCount();
-        toast({ title: "Analysis complete!", description: "Loading your results...", duration: 5000 });
+        toast({ title: "Analysis complete!", description: "Loading your results...", duration: 2000 });
         navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
       } else {
         throw new Error("No test ID returned");
       }
     } catch (error: unknown) {
       console.error("Blog submit error:", error);
-      
-      // Try to parse error response body for rate limit errors
+
+      // Try to extract structured error payload if present
       let errorBody: unknown = null;
-      
-      // Check if error message contains JSON (edge function error format)
       if (error instanceof Error && error.message) {
         const jsonMatch = error.message.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
@@ -377,31 +370,26 @@ const Index = () => {
           } catch {}
         }
       }
-      
-      // Also try context.body if available
-      if (!errorBody && error && typeof error === 'object' && 'context' in error) {
-        const ctx = (error as { context?: { body?: string } }).context;
+      if (!errorBody && error && typeof error === "object" && "context" in error) {
+        const ctx = (error as any).context;
         if (ctx?.body) {
           try {
             errorBody = JSON.parse(ctx.body);
           } catch {}
         }
       }
-      
-      // Check if it's a structured error response (rate limit)
-      if (errorBody && handleAnalysisError(errorBody, blogUrl)) {
+
+      if (errorBody && handleAnalysisError(errorBody, websiteUrl)) {
         setIsLoadingBlog(false);
         return;
       }
-      
-      // Show user-friendly error - NEVER show technical details
+
       toast({
         title: "Unable to analyze blog post",
-        description: "Please check the URL and try again. If the problem persists, contact us.",
+        description: "Please check the URL and try again. If it persists, contact us.",
         variant: "destructive",
-        duration: Infinity,
+        duration: 5000,
       });
-      setIsLoadingBlog(false);
     } finally {
       setIsLoadingBlog(false);
     }
@@ -411,7 +399,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <SEOSchema />
       <Header />
-      
+
       {/* Rate limit transparency banner */}
       <RateLimitBanner />
       <header className="container mx-auto px-4 py-12 md:py-24 text-center">
@@ -424,22 +412,29 @@ const Index = () => {
         </h1>
 
         <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-3xl mx-auto px-4">
-          ChatGPT, Perplexity, and Claude don't rank pages—they cite sources. FoundIndex analyzes if your website is structured clearly enough for AI to understand, parse, and recommend.
+          ChatGPT, Perplexity, and Claude don't rank pages—they cite sources. FoundIndex analyzes if your website is
+          structured clearly enough for AI to understand, parse, and recommend.
         </p>
 
         {/* Social proof row */}
         <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 mb-8">
           <div className="flex items-center gap-2 text-sm md:text-base">
             <CheckCircle className="h-5 w-5 text-green-500" />
-            <span><strong>217+</strong> websites tested</span>
+            <span>
+              <strong>217+</strong> websites tested
+            </span>
           </div>
           <div className="flex items-center gap-2 text-sm md:text-base">
             <CheckCircle className="h-5 w-5 text-green-500" />
-            <span><strong>47</strong> criteria analyzed</span>
+            <span>
+              <strong>47</strong> criteria analyzed
+            </span>
           </div>
           <div className="flex items-center gap-2 text-sm md:text-base">
             <CheckCircle className="h-5 w-5 text-green-500" />
-            <span><strong>60 seconds</strong> to score</span>
+            <span>
+              <strong>60 seconds</strong> to score
+            </span>
           </div>
         </div>
 
@@ -448,7 +443,7 @@ const Index = () => {
           href="#test-section"
           onClick={(e) => {
             e.preventDefault();
-            document.getElementById('test-section')?.scrollIntoView({ behavior: 'smooth' });
+            document.getElementById("test-section")?.scrollIntoView({ behavior: "smooth" });
           }}
           className="inline-block"
         >
@@ -470,7 +465,8 @@ const Index = () => {
               <h3 className="font-bold text-foreground">The Problem</h3>
             </div>
             <p className="text-muted-foreground text-sm">
-              Google ranks pages. AI cites sources. Your SEO strategy doesn't prepare you for ChatGPT, Perplexity, or Claude—which now drive 10%+ of search queries.
+              Google ranks pages. AI cites sources. Your SEO strategy doesn't prepare you for ChatGPT, Perplexity, or
+              Claude—which now drive 10%+ of search queries.
             </p>
           </article>
 
@@ -480,7 +476,8 @@ const Index = () => {
               <h3 className="font-bold text-foreground">What We Check</h3>
             </div>
             <p className="text-muted-foreground text-sm">
-              Schema markup, semantic structure, content clarity, authority signals, and 40+ other criteria that determine if AI can parse and cite your content.
+              Schema markup, semantic structure, content clarity, authority signals, and 40+ other criteria that
+              determine if AI can parse and cite your content.
             </p>
           </article>
 
@@ -490,7 +487,8 @@ const Index = () => {
               <h3 className="font-bold text-foreground">What You Get</h3>
             </div>
             <p className="text-muted-foreground text-sm">
-              A 0-100 score with prioritized recommendations and copy-paste code examples. Fix issues in minutes, not months. Retest to track improvement.
+              A 0-100 score with prioritized recommendations and copy-paste code examples. Fix issues in minutes, not
+              months. Retest to track improvement.
             </p>
           </article>
         </div>
@@ -499,11 +497,10 @@ const Index = () => {
       {/* Comparison Section - How FoundIndex is Different */}
       <section className="bg-muted py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl md:text-4xl font-bold text-center mb-4 text-foreground">
-            Not Another Brand Monitor
-          </h2>
+          <h2 className="text-2xl md:text-4xl font-bold text-center mb-4 text-foreground">Not Another Brand Monitor</h2>
           <p className="text-center text-muted-foreground mb-12 max-w-3xl mx-auto text-lg">
-            Most AI visibility tools tell you IF you're being mentioned. FoundIndex tells you WHY you're not—and how to fix it.
+            Most AI visibility tools tell you IF you're being mentioned. FoundIndex tells you WHY you're not—and how to
+            fix it.
           </p>
 
           {/* Comparison Table */}
@@ -526,62 +523,95 @@ const Index = () => {
                     <td className="p-4 font-medium text-foreground">What it measures</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">Brand mentions in AI answers</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">Brand share of voice across AI</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-foreground text-sm">Page structure & AI readability</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-foreground text-sm">
+                      Page structure & AI readability
+                    </td>
                   </tr>
                   <tr className="border-b border-border bg-muted/50">
                     <td className="p-4 font-medium text-foreground">Input required</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">Brand name</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">Brand name</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-foreground text-sm">Specific URL</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-medium text-foreground text-sm">
+                      Specific URL
+                    </td>
                   </tr>
                   <tr className="border-b border-border">
                     <td className="p-4 font-medium text-foreground">Works for unknown brands</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">❌ Only known brands</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">❌ Only tracked brands</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 inline mr-1 text-green-500" /><span className="text-green-600 dark:text-green-400 font-medium text-sm">Any URL, even day-1 startups</span></td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30">
+                      <Check className="h-5 w-5 inline mr-1 text-green-500" />
+                      <span className="text-green-600 dark:text-green-400 font-medium text-sm">
+                        Any URL, even day-1 startups
+                      </span>
+                    </td>
                   </tr>
                   <tr className="border-b border-border bg-muted/50">
                     <td className="p-4 font-medium text-foreground">Analyzes specific pages</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">❌ Brand-level only</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">❌ Brand-level only</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 inline mr-1 text-green-500" /><span className="text-green-600 dark:text-green-400 font-medium text-sm">URL-specific diagnostics</span></td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30">
+                      <Check className="h-5 w-5 inline mr-1 text-green-500" />
+                      <span className="text-green-600 dark:text-green-400 font-medium text-sm">
+                        URL-specific diagnostics
+                      </span>
+                    </td>
                   </tr>
                   <tr className="border-b border-border">
                     <td className="p-4 font-medium text-foreground">Shows exact code to fix</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">❌ General positioning only</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">❌ Metrics only</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 inline mr-1 text-green-500" /><span className="text-green-600 dark:text-green-400 font-medium text-sm">Copy-paste schema + fixes</span></td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30">
+                      <Check className="h-5 w-5 inline mr-1 text-green-500" />
+                      <span className="text-green-600 dark:text-green-400 font-medium text-sm">
+                        Copy-paste schema + fixes
+                      </span>
+                    </td>
                   </tr>
                   <tr className="border-b border-border bg-muted/50">
                     <td className="p-4 font-medium text-foreground">Before/after testing</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">❌</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">⚠️ Monthly tracking</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 inline mr-1 text-green-500" /><span className="text-green-600 dark:text-green-400 font-medium text-sm">Test → fix → instant retest</span></td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30">
+                      <Check className="h-5 w-5 inline mr-1 text-green-500" />
+                      <span className="text-green-600 dark:text-green-400 font-medium text-sm">
+                        Test → fix → instant retest
+                      </span>
+                    </td>
                   </tr>
                   <tr className="border-b border-border">
                     <td className="p-4 font-medium text-foreground">Schema validation</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">❌</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">⚠️ Basic check</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30"><Check className="h-5 w-5 inline mr-1 text-green-500" /><span className="text-green-600 dark:text-green-400 font-medium text-sm">Detailed schema.org validation</span></td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30">
+                      <Check className="h-5 w-5 inline mr-1 text-green-500" />
+                      <span className="text-green-600 dark:text-green-400 font-medium text-sm">
+                        Detailed schema.org validation
+                      </span>
+                    </td>
                   </tr>
                   <tr className="border-b border-border bg-muted/50">
                     <td className="p-4 font-medium text-foreground">Price</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">Free (email gate)</td>
                     <td className="p-4 text-center text-muted-foreground text-sm">$199/month</td>
-                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-bold text-green-600 dark:text-green-400">Free (beta)</td>
+                    <td className="p-4 text-center bg-blue-50 dark:bg-blue-950/30 font-bold text-green-600 dark:text-green-400">
+                      Free (beta)
+                    </td>
                   </tr>
                   {/* Killer row - the real differentiator */}
                   <tr className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-t-2 border-amber-300 dark:border-amber-700">
                     <td className="p-5 font-bold text-foreground text-base">Example: semrush.com</td>
                     <td className="p-5 text-center font-semibold text-muted-foreground">No data (not tracked)</td>
                     <td className="p-5 text-center font-semibold text-muted-foreground">Shows mentions only</td>
-                    <td className="p-5 text-center bg-blue-100 dark:bg-blue-900/40 font-bold text-blue-700 dark:text-blue-300 text-base">59/100 – Missing FAQ schema, weak entity markup</td>
+                    <td className="p-5 text-center bg-blue-100 dark:bg-blue-900/40 font-bold text-blue-700 dark:text-blue-300 text-base">
+                      59/100 – Missing FAQ schema, weak entity markup
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
-          
+
           {/* Comparison note */}
           <p className="text-center text-muted-foreground text-sm max-w-3xl mx-auto mb-12 italic">
             Semrush/HubSpot track mentions AFTER AI knows you. FoundIndex fixes structure BEFORE discovery.
@@ -595,7 +625,8 @@ const Index = () => {
               </div>
               <h3 className="font-bold text-lg mb-3 text-foreground">The Scoreboard vs The Playbook</h3>
               <p className="text-muted-foreground text-sm">
-                HubSpot and Semrush show the scoreboard—how often AI mentions your brand. FoundIndex gives you the playbook—exactly what to change so AI can understand and cite your content.
+                HubSpot and Semrush show the scoreboard—how often AI mentions your brand. FoundIndex gives you the
+                playbook—exactly what to change so AI can understand and cite your content.
               </p>
             </article>
 
@@ -605,7 +636,8 @@ const Index = () => {
               </div>
               <h3 className="font-bold text-lg mb-3 text-foreground">Page-Level, Not Brand-Level</h3>
               <p className="text-muted-foreground text-sm">
-                Brand monitors work for Nike and HubSpot. But if AI has never heard of you, they can't help. FoundIndex analyzes your actual content and tells you what's blocking AI from finding it.
+                Brand monitors work for Nike and HubSpot. But if AI has never heard of you, they can't help. FoundIndex
+                analyzes your actual content and tells you what's blocking AI from finding it.
               </p>
             </article>
 
@@ -615,7 +647,8 @@ const Index = () => {
               </div>
               <h3 className="font-bold text-lg mb-3 text-foreground">Fix It, Then Prove It</h3>
               <p className="text-muted-foreground text-sm">
-                Use your FoundIndex score as a baseline. Make the recommended changes. Re-test. Show clients the improvement. That's how you prove ROI on AI optimization work.
+                Use your FoundIndex score as a baseline. Make the recommended changes. Re-test. Show clients the
+                improvement. That's how you prove ROI on AI optimization work.
               </p>
             </article>
           </div>
@@ -626,7 +659,7 @@ const Index = () => {
               href="#test-section"
               onClick={(e) => {
                 e.preventDefault();
-                document.getElementById('test-section')?.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById("test-section")?.scrollIntoView({ behavior: "smooth" });
               }}
               className="inline-block"
             >
@@ -647,7 +680,10 @@ const Index = () => {
       {/* URL Input Section */}
       <section className="container mx-auto px-4 py-12 md:py-16">
         {/* Test cards */}
-        <div id="test-section" className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto scroll-mt-8">
+        <div
+          id="test-section"
+          className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto scroll-mt-8"
+        >
           {/* Homepage card */}
           <Card className="relative bg-gradient-to-br from-blue-50 to-background dark:from-blue-950/20 border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 transition-all duration-300">
             <CardContent className="p-8">
@@ -789,7 +825,7 @@ const Index = () => {
             </CardContent>
           </Card>
         </div>
-        
+
         {/* Blog test counter */}
         <div className="max-w-5xl mx-auto mt-4">
           <BlogTestCounter />
@@ -949,11 +985,7 @@ const Index = () => {
       </footer>
       {/* Retest Modal */}
       {retestModalData && (
-        <RetestModal
-          open={retestModalOpen}
-          onClose={() => setRetestModalOpen(false)}
-          {...retestModalData}
-        />
+        <RetestModal open={retestModalOpen} onClose={() => setRetestModalOpen(false)} {...retestModalData} />
       )}
     </div>
   );
