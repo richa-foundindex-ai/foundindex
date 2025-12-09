@@ -1,109 +1,110 @@
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { RefreshCw, ArrowRight, Clock } from "lucide-react";
 
 interface RetestModalProps {
   open: boolean;
-  onClose: () => void;
-  url: string;
-  lastTestedDate: Date;
-  nextAvailableDate: Date;
-  cachedTestId: string;
-  cachedScore: number;
+  onOpenChange: (open: boolean) => void;
+  testedDate: string; // ISO date string
+  canRetestDate: string; // ISO date string
+  cachedTestId?: string;
+  cachedScore?: number;
+  attemptsExhausted?: boolean; // true if 3 attempts used
 }
 
-// Format date in IST timezone
-const formatDateIST = (date: Date) => {
-  return new Intl.DateTimeFormat("en-IN", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: "Asia/Kolkata",
-  }).format(date);
-};
-
-// Calculate relative days until date
-const getRelativeDays = (targetDate: Date): string => {
-  const now = new Date();
-  const diffMs = targetDate.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  
-  if (diffDays <= 0) return "now";
-  if (diffDays === 1) return "in 1 day";
-  return `in ${diffDays} days`;
-};
-
-export const RetestModal = ({
+export function RetestModal({
   open,
-  onClose,
-  url,
-  lastTestedDate,
-  nextAvailableDate,
+  onOpenChange,
+  testedDate,
+  canRetestDate,
   cachedTestId,
   cachedScore,
-}: RetestModalProps) => {
+  attemptsExhausted = false,
+}: RetestModalProps) {
   const navigate = useNavigate();
-  const relativeDays = getRelativeDays(nextAvailableDate);
-  const canRetestNow = relativeDays === "now";
+
+  // Format dates for display
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const testedDateFormatted = formatDate(testedDate);
+  const canRetestDateFormatted = formatDate(canRetestDate);
+
+  const handleSeeResults = () => {
+    if (cachedTestId) {
+      navigate(`/results/${cachedTestId}`);
+    }
+    onOpenChange(false);
+  };
+
+  const handleTestNewUrl = () => {
+    onOpenChange(false);
+    // Focus on URL input after modal closes
+    setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>('input[type="url"], input[placeholder*="URL"]');
+      if (input) {
+        input.value = "";
+        input.focus();
+      }
+    }, 100);
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <RefreshCw className="h-5 w-5 text-primary" />
-            This URL Was Recently Tested
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            URL cooldown information
+          <DialogTitle>{attemptsExhausted ? "Test Limit Reached" : "URL Recently Tested"}</DialogTitle>
+          <DialogDescription className="pt-4 space-y-2">
+            {attemptsExhausted ? (
+              <>
+                <p>
+                  You've tested this URL <strong>3 times</strong> in the last 7 days.
+                </p>
+                <p>
+                  You can test it again on <strong className="text-foreground">{canRetestDateFormatted}</strong>, or
+                  test a different URL now.
+                </p>
+              </>
+            ) : (
+              <>
+                <p>
+                  This URL was tested on <strong className="text-foreground">{testedDateFormatted}</strong>.
+                </p>
+                <p>
+                  Same URL can be retested on <strong className="text-foreground">{canRetestDateFormatted}</strong>.
+                </p>
+              </>
+            )}
+            {cachedScore && (
+              <p className="text-sm text-muted-foreground pt-2">
+                Previous score: <strong>{cachedScore}/100</strong>
+              </p>
+            )}
           </DialogDescription>
         </DialogHeader>
-
-        <div className="space-y-4 py-4">
-          <p className="text-sm text-muted-foreground break-all">
-            <strong className="text-foreground">{url}</strong> was tested on {formatDateIST(lastTestedDate)} (IST).
-          </p>
-
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4 flex-shrink-0" />
-            {canRetestNow ? (
-              <span className="text-green-600 font-medium">Ready to retest now!</span>
-            ) : (
-              <span>
-                Same URL can be retested on <strong className="text-foreground">{formatDateIST(nextAvailableDate)}</strong> (IST) — <span className="text-primary font-medium">{relativeDays}</span>
-              </span>
-            )}
-          </div>
-
-          <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
-            <p className="text-sm font-medium text-foreground">
-              Previous score: <span className="text-primary text-lg">{cachedScore}/100</span>
-            </p>
-          </div>
-        </div>
-
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button
-            onClick={() => {
-              navigate(`/results?testId=${cachedTestId}&url=${encodeURIComponent(url)}`);
-              onClose();
-            }}
-            className="w-full sm:w-auto"
-          >
-            See Old Results
-            <ArrowRight className="h-4 w-4 ml-2" />
+          <Button onClick={handleTestNewUrl} variant="outline" className="w-full sm:w-auto">
+            Test new URL
           </Button>
-
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="w-full sm:w-auto"
-          >
-            Test New URL
+          <Button onClick={handleSeeResults} className="w-full sm:w-auto" disabled={!cachedTestId}>
+            See old results
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
-};
+}
