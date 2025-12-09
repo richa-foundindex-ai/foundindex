@@ -187,29 +187,8 @@ const Index = () => {
 
     const websiteUrl = validation.normalizedUrl!;
 
-    // Local rate checks (fast UX) — keep existing checkRateLimits logic
-    const rateCheck = await checkRateLimits(websiteUrl, "homepage");
-    if (rateCheck.blocked) {
-      if (rateCheck.reason === "url_cooldown" && rateCheck.existingTestId) {
-        setRetestModalData({
-          url: websiteUrl,
-          lastTestedDate: rateCheck.testedAt!,
-          nextAvailableDate: rateCheck.nextAvailable!,
-          cachedTestId: rateCheck.existingTestId,
-          cachedScore: rateCheck.existingScore!,
-        });
-        setRetestModalOpen(true);
-      } else {
-        toast({
-          title: "Rate limit reached",
-          description: rateCheck.message,
-          variant: "destructive",
-          duration: 5000,
-        });
-      }
-      return;
-    }
 
+    analytics.buttonClick("Get FI Score - Homepage", "homepage audit");
     analytics.buttonClick("Get FI Score - Homepage", "homepage audit");
     setIsLoadingHomepage(true);
 
@@ -307,23 +286,6 @@ const Index = () => {
 
     const websiteUrl = validation.normalizedUrl!;
 
-    const rateCheck = await checkRateLimits(websiteUrl, "blog");
-    if (rateCheck.blocked) {
-      if (rateCheck.reason === "url_cooldown" && rateCheck.existingTestId) {
-        setRetestModalData({
-          url: websiteUrl,
-          lastTestedDate: rateCheck.testedAt!,
-          nextAvailableDate: rateCheck.nextAvailable!,
-          cachedTestId: rateCheck.existingTestId,
-          cachedScore: rateCheck.existingScore!,
-        });
-        setRetestModalOpen(true);
-      } else {
-        toast({ title: "Rate limit reached", description: rateCheck.message, variant: "destructive", duration: 5000 });
-      }
-      return;
-    }
-
     analytics.buttonClick("Get FI Score - Blog", "blog audit");
     setIsLoadingBlog(true);
 
@@ -349,8 +311,6 @@ const Index = () => {
       }
 
       if (data?.testId) {
-        // record blog test locally + increment hook
-        recordBlogTest();
         incrementBlogTestCount();
         toast({ title: "Analysis complete!", description: "Loading your results...", duration: 2000 });
         navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
