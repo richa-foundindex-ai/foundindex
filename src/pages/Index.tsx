@@ -50,7 +50,6 @@ const Index = () => {
     analytics.pageView("homepage");
   }, []);
 
-  // Normalized helper: accept many variant names from backend
   const normalizeRateLimitPayload = (p: any) => {
     if (!p) return null;
     return {
@@ -68,7 +67,6 @@ const Index = () => {
     };
   };
 
-  // handleAnalysisError: centralized consumer for structured backend errors
   const handleAnalysisError = (errorData: unknown, websiteUrl: string) => {
     if (!isStructuredError(errorData)) return false;
     const e = errorData as any;
@@ -169,7 +167,6 @@ const Index = () => {
     return true;
   };
 
-  // handleHomepageSubmit
   const handleHomepageSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setHomepageError(null);
@@ -200,7 +197,6 @@ const Index = () => {
 
       if (error) throw error;
 
-      // CHECK SUCCESS FIRST
       if (data?.success === true && data?.testId) {
         toast({
           title: "Analysis complete!",
@@ -211,7 +207,6 @@ const Index = () => {
         return;
       }
 
-      // THEN handle errors
       if (data?.success === false) {
         const handled = handleAnalysisError(data, websiteUrl);
         if (!handled) {
@@ -240,7 +235,6 @@ const Index = () => {
     }
   };
 
-  // handleBlogSubmit
   const handleBlogSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBlogError(null);
@@ -271,7 +265,6 @@ const Index = () => {
 
       if (error) throw error;
 
-      // CHECK SUCCESS FIRST
       if (data?.success === true && data?.testId) {
         incrementBlogTestCount();
         toast({
@@ -283,7 +276,6 @@ const Index = () => {
         return;
       }
 
-      // THEN handle errors
       if (data?.success === false) {
         const handled = handleAnalysisError(data, websiteUrl);
         if (!handled) {
@@ -321,17 +313,17 @@ const Index = () => {
 
       <header className="container mx-auto px-4 py-12 md:py-24 text-center">
         <p className="text-sm md:text-base font-semibold text-destructive mb-4">
-          Your SEO is fine. AI still can't find you.
+          Your SEO is fine. AI still can&apos;t find you.
         </p>
         <h1 className="text-[2rem] md:text-6xl font-bold mb-6 text-foreground leading-tight px-2">
-          Score your website's visibility to AI search engines
+          Score your website&apos;s visibility to AI search engines
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-3xl mx-auto px-4">
-          ChatGPT, Perplexity, and Claude don't rank pages—they cite sources. FoundIndex analyzes if your website is
+          ChatGPT, Perplexity, and Claude don&apos;t rank pages—they cite sources. FoundIndex analyzes if your website is
           structured clearly enough for AI to understand, parse, and recommend.
         </p>
 
-        <a
+        
           href="#test-section"
           onClick={(e) => {
             e.preventDefault();
@@ -348,7 +340,6 @@ const Index = () => {
         </a>
       </header>
 
-      {/* Test cards */}
       <section className="container mx-auto px-4 py-12 md:py-16">
         <div
           id="test-section"
@@ -398,7 +389,7 @@ const Index = () => {
                             }}
                             className="ml-1 text-primary hover:underline font-medium"
                           >
-                            Use "{homepageSuggestion}"?
+                            Use &quot;{homepageSuggestion}&quot;?
                           </button>
                         )}
                       </div>
@@ -467,7 +458,7 @@ const Index = () => {
                             }}
                             className="ml-1 text-primary hover:underline font-medium"
                           >
-                            Use "{blogSuggestion}"?
+                            Use &quot;{blogSuggestion}&quot;?
                           </button>
                         )}
                       </div>
@@ -510,7 +501,7 @@ const Index = () => {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground text-center md:text-left">
             <div className="order-2 md:order-1">
               Built by{" "}
-              <a
+              
                 href="https://richadeo.com"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -535,7 +526,6 @@ const Index = () => {
         </div>
       </footer>
 
-      {/* Retest Modal */}
       {retestModalData && (
         <RetestModal
           open={retestModalOpen}
