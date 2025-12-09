@@ -326,10 +326,26 @@ const Index = () => {
       console.log("[BlogSubmit] Response error:", error);
 
       // Handle error responses - check data first as it may contain the error info
-      if (data && data.success === false && data.error_type) {
-        console.log("[BlogSubmit] Structured error in data:", data);
-        const handled = handleAnalysisError(data, websiteUrl, "blog");
-        if (handled) return;
+      if (data && data.success === false) {
+        console.log("[BlogSubmit] ERROR DATA FROM BACKEND:", JSON.stringify(data, null, 2));
+        
+        // If backend returns error_type and user_message, show it directly for RATE_LIMIT_IP
+        if (data.error_type === "RATE_LIMIT_IP" && data.user_message) {
+          console.log("[BlogSubmit] RATE_LIMIT_IP - Showing user_message:", data.user_message);
+          toast({
+            variant: "destructive",
+            title: "Blog test limit reached",
+            description: data.user_message,
+            duration: Infinity,
+          });
+          return;
+        }
+        
+        // For other error types, use handleAnalysisError
+        if (data.error_type) {
+          const handled = handleAnalysisError(data, websiteUrl, "blog");
+          if (handled) return;
+        }
       }
 
       if (error) {
