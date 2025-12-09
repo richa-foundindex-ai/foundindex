@@ -309,19 +309,18 @@ const Index = () => {
       <div className="min-h-screen bg-background">
         <SEOSchema />
         <Header />
-
         <RateLimitBanner />
 
         <header className="container mx-auto px-4 py-12 md:py-24 text-center">
           <p className="text-sm md:text-base font-semibold text-destructive mb-4">
-            Your SEO is fine. AI still can&apos;t find you.
+            Your SEO is fine. AI still cannot find you.
           </p>
           <h1 className="text-[2rem] md:text-6xl font-bold mb-6 text-foreground leading-tight px-2">
-            Score your website&apos;s visibility to AI search engines
+            Score your website visibility to AI search engines
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-3xl mx-auto px-4">
-            ChatGPT, Perplexity, and Claude don&apos;t rank pages—they cite sources. FoundIndex analyzes if your
-            website is structured clearly enough for AI to understand, parse, and recommend.
+            ChatGPT, Perplexity, and Claude do not rank pages. They cite sources. FoundIndex analyzes if your website
+            is structured clearly enough for AI to understand, parse, and recommend.
           </p>
 
           
@@ -390,7 +389,7 @@ const Index = () => {
                               }}
                               className="ml-1 text-primary hover:underline font-medium"
                             >
-                              Use &quot;{homepageSuggestion}&quot;?
+                              Use {homepageSuggestion}?
                             </button>
                           )}
                         </div>
@@ -459,7 +458,7 @@ const Index = () => {
                               }}
                               className="ml-1 text-primary hover:underline font-medium"
                             >
-                              Use &quot;{blogSuggestion}&quot;?
+                              Use {blogSuggestion}?
                             </button>
                           )}
                         </div>
@@ -483,7 +482,7 @@ const Index = () => {
                 </form>
 
                 <p className="text-sm text-muted-foreground mt-4 text-center">
-                  3 posts/week · <span className="font-bold text-foreground">Free during beta</span>
+                  3 posts/week • <span className="font-bold text-foreground">Free during beta</span>
                 </p>
               </CardContent>
             </Card>
