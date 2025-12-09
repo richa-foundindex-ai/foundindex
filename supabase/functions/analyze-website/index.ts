@@ -760,11 +760,14 @@ const createErrorResponse = (
 };
 
 const formatDateForUser = (date: Date): string => {
-  return new Intl.DateTimeFormat("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  }).format(date);
+  return (
+    new Intl.DateTimeFormat("en-IN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "Asia/Kolkata",
+    }).format(date) + " (IST)"
+  );
 };
 
 // =============================================================================
@@ -890,7 +893,7 @@ serve(async (req) => {
         console.warn(`[rate-limit] IP ${clientIP} exceeded blog limit: ${recentBlogTests.length} posts in 30 days`);
 
         return createErrorResponse("RATE_LIMIT_IP", {
-          user_message: `You've tested 3 blog posts in the last 7 days. You can test more on ${formatDateForUser(resetDate)} (IST). Homepage tests are unlimited!`,
+          user_message: `You've tested 3 blog posts in the last 7 days. You can test more blog posts on ${formatDateForUser(resetDate)}. Homepage tests are unlimited!`,
           next_available_time: resetDate.toISOString(),
           suggested_action: "Test homepages (unlimited) or wait until reset date",
           technical_details: `IP: ${clientIP}, Blog posts in 30 days: ${recentBlogTests.length}`,
@@ -908,13 +911,12 @@ serve(async (req) => {
 
     if (!urlRateCheck.allowed && urlRateCheck.cachedTestId) {
       const testDate = new Date(urlRateCheck.cachedCreatedAt!);
-      const nextTestDate = new Date(testDate);
-      nextTestDate.setDate(nextTestDate.getDate() + 7);
+      const nextTestDate = new Date(testDate.getTime() + 7 * 24 * 60 * 60 * 1000);
 
       console.log(`[rate-limit] URL ${validatedWebsite} in cooldown, returning cached results`);
 
       return createErrorResponse("RATE_LIMIT_URL", {
-        user_message: `This URL was tested on ${formatDateForUser(testDate)} (IST). Same URL can be retested on ${formatDateForUser(nextTestDate)} (IST).`,
+        user_message: `This URL was tested on ${formatDateForUser(testDate)}. Same URL can be retested on ${formatDateForUser(nextTestDate)}.`,
         next_available_time: nextTestDate.toISOString(),
         suggested_action: "We will show you the previous results. Made changes? Contact us for a priority retest.",
         cached_test_id: urlRateCheck.cachedTestId,
