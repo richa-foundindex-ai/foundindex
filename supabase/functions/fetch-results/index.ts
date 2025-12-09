@@ -55,14 +55,12 @@ serve(async (req) => {
 
     if (testError) {
       console.error("[fetch-results] Database error:", testError);
-
       if (testError.code === "PGRST116") {
         return new Response(JSON.stringify({ error: "Test not found" }), {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
       throw testError;
     }
 
