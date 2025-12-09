@@ -12,9 +12,13 @@ import { useNavigate } from "react-router-dom";
 
 interface RetestModalProps {
   open: boolean;
-  onOpenChange: (open: boolean) => void;
-  testedDate: string; // ISO date string
-  canRetestDate: string; // ISO date string
+  onOpenChange?: (open: boolean) => void;
+  onClose?: () => void;
+  url?: string;
+  lastTestedDate?: Date;
+  nextAvailableDate?: Date;
+  testedDate?: string; // ISO date string
+  canRetestDate?: string; // ISO date string
   cachedTestId?: string;
   cachedScore?: number;
   attemptsExhausted?: boolean; // true if 3 attempts used
@@ -23,12 +27,24 @@ interface RetestModalProps {
 export function RetestModal({
   open,
   onOpenChange,
+  onClose,
+  lastTestedDate,
+  nextAvailableDate,
   testedDate,
   canRetestDate,
   cachedTestId,
   cachedScore,
   attemptsExhausted = false,
 }: RetestModalProps) {
+  // Support both prop patterns
+  const handleOpenChange = (newOpen: boolean) => {
+    if (onOpenChange) onOpenChange(newOpen);
+    if (!newOpen && onClose) onClose();
+  };
+  
+  // Use either Date objects or ISO strings
+  const testedDateStr = testedDate || (lastTestedDate ? lastTestedDate.toISOString() : "");
+  const canRetestDateStr = canRetestDate || (nextAvailableDate ? nextAvailableDate.toISOString() : "");
   const navigate = useNavigate();
 
   // Format dates for display
@@ -41,18 +57,18 @@ export function RetestModal({
     });
   };
 
-  const testedDateFormatted = formatDate(testedDate);
-  const canRetestDateFormatted = formatDate(canRetestDate);
+  const testedDateFormatted = testedDateStr ? formatDate(testedDateStr) : "";
+  const canRetestDateFormatted = canRetestDateStr ? formatDate(canRetestDateStr) : "";
 
   const handleSeeResults = () => {
     if (cachedTestId) {
       navigate(`/results/${cachedTestId}`);
     }
-    onOpenChange(false);
+    handleOpenChange(false);
   };
 
   const handleTestNewUrl = () => {
-    onOpenChange(false);
+    handleOpenChange(false);
     // Focus on URL input after modal closes
     setTimeout(() => {
       const input = document.querySelector<HTMLInputElement>('input[type="url"], input[placeholder*="URL"]');
@@ -64,7 +80,7 @@ export function RetestModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{attemptsExhausted ? "Test Limit Reached" : "URL Recently Tested"}</DialogTitle>
