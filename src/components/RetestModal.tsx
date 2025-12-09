@@ -47,15 +47,28 @@ export function RetestModal({
   const canRetestDateStr = canRetestDate || (nextAvailableDate ? nextAvailableDate.toISOString() : "");
   const navigate = useNavigate();
 
-  // Format dates for display
+  // Format dates for display in IST timezone
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString("en-US", {
+    const formatted = new Intl.DateTimeFormat("en-IN", {
       month: "long",
       day: "numeric",
       year: "numeric",
-    });
+      timeZone: "Asia/Kolkata",
+    }).format(date);
+    return `${formatted} (IST)`;
   };
+  
+  // Calculate relative days remaining
+  const getDaysRemaining = (dateStr: string) => {
+    const targetDate = new Date(dateStr);
+    const now = new Date();
+    const diffMs = targetDate.getTime() - now.getTime();
+    const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    return days > 0 ? days : 0;
+  };
+  
+  const daysRemaining = canRetestDateStr ? getDaysRemaining(canRetestDateStr) : 0;
 
   const testedDateFormatted = testedDateStr ? formatDate(testedDateStr) : "";
   const canRetestDateFormatted = canRetestDateStr ? formatDate(canRetestDateStr) : "";
@@ -101,7 +114,8 @@ export function RetestModal({
                   This URL was tested on <strong className="text-foreground">{testedDateFormatted}</strong>.
                 </p>
                 <p>
-                  Same URL can be retested on <strong className="text-foreground">{canRetestDateFormatted}</strong>.
+                  Same URL can be retested on <strong className="text-foreground">{canRetestDateFormatted}</strong>
+                  {daysRemaining > 0 && <span className="text-muted-foreground"> — in {daysRemaining} day{daysRemaining !== 1 ? 's' : ''}</span>}.
                 </p>
               </>
             )}

@@ -602,7 +602,12 @@ const Index = () => {
           <Card className="relative bg-gradient-to-br from-blue-50 to-background dark:from-blue-950/20 border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 transition-all duration-300">
             <CardContent className="p-8">
               <div className="text-6xl mb-4">🏠</div>
-              <h2 className="text-2xl font-bold mb-3 text-foreground">Homepage audit</h2>
+              <div className="flex items-center gap-2 mb-2">
+                <h2 className="text-2xl font-bold text-foreground">Homepage audit</h2>
+                <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                  ✨ Unlimited
+                </span>
+              </div>
               <p className="text-muted-foreground mb-6">Test if AI can understand what your business does</p>
 
               <form onSubmit={handleHomepageSubmit} className="space-y-4">
@@ -660,7 +665,7 @@ const Index = () => {
               </form>
 
               <p className="text-sm text-muted-foreground mt-4 text-center">
-                Normally $97 · <span className="font-bold text-foreground">Free during beta</span>
+                Unlimited tests • <span className="font-bold text-foreground">Free during beta</span>
               </p>
             </CardContent>
           </Card>
