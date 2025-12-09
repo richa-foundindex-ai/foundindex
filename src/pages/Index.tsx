@@ -322,7 +322,51 @@ const Index = () => {
         body: { website: websiteUrl, testType: "blog" },
       });
 
-      if (error) throw error;
+      console.log("[BlogSubmit] Response data:", data);
+      console.log("[BlogSubmit] Response error:", error);
+
+      // Handle error responses - check data first as it may contain the error info
+      if (data && data.success === false && data.error_type) {
+        console.log("[BlogSubmit] Structured error in data:", data);
+        const handled = handleAnalysisError(data, websiteUrl, "blog");
+        if (handled) return;
+      }
+
+      if (error) {
+        console.log("[BlogSubmit] Error object:", error);
+        // Try to parse structured error from the error response
+        let errorData = null;
+        
+        // Check if error itself has the structured data
+        if (error && typeof error === "object") {
+          const errObj = error as any;
+          if (errObj.error_type) {
+            errorData = errObj;
+          } else if (errObj.context?.body) {
+            try {
+              errorData = typeof errObj.context.body === "string" 
+                ? JSON.parse(errObj.context.body) 
+                : errObj.context.body;
+            } catch (e) {}
+          } else if (errObj.message) {
+            const jsonMatch = errObj.message.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                errorData = JSON.parse(jsonMatch[0]);
+              } catch (e) {}
+            }
+          }
+        }
+
+        if (errorData && errorData.error_type) {
+          console.log("[BlogSubmit] Parsed error data:", errorData);
+          const handled = handleAnalysisError(errorData, websiteUrl, "blog");
+          if (handled) return;
+        }
+
+        // Fall through to generic error handling
+        throw error;
+      }
 
       if (data?.success === true && data?.testId) {
         incrementBlogTestCount();
@@ -335,64 +379,16 @@ const Index = () => {
         return;
       }
 
-      if (data?.success === false) {
-        const handled = handleAnalysisError(data, websiteUrl, "blog");
-        if (!handled) {
-          toast({
-            title: "Analysis failed",
-            description: data.error || data.user_message || "Unable to analyze this blog post",
-            variant: "destructive",
-            duration: 5000,
-          });
-        }
-        return;
-      }
-
       throw new Error("Unexpected response format");
     } catch (err: unknown) {
-      console.error("Blog submit error:", err);
-
-      // Try to extract structured error from the exception
-      let errorParsed = false;
-      if (err && typeof err === "object") {
-        const errObj = err as any;
-        // Check if error has context.body (supabase functions error format)
-        if (errObj.context?.body) {
-          try {
-            const body = typeof errObj.context.body === "string" 
-              ? JSON.parse(errObj.context.body) 
-              : errObj.context.body;
-            if (body && body.error_type) {
-              errorParsed = handleAnalysisError(body, websiteUrl, "blog");
-            }
-          } catch (parseErr) {
-            console.error("Failed to parse error body:", parseErr);
-          }
-        }
-        // Also check error.message for JSON
-        if (!errorParsed && errObj.message) {
-          const jsonMatch = errObj.message.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            try {
-              const parsed = JSON.parse(jsonMatch[0]);
-              if (parsed && parsed.error_type) {
-                errorParsed = handleAnalysisError(parsed, websiteUrl, "blog");
-              }
-            } catch (parseErr) {
-              console.error("Failed to parse error message JSON:", parseErr);
-            }
-          }
-        }
-      }
-
-      if (!errorParsed) {
-        toast({
-          title: "Unable to analyze blog post",
-          description: "Please check the URL and try again.",
-          variant: "destructive",
-          duration: 5000,
-        });
-      }
+      console.error("[BlogSubmit] Catch block error:", err);
+      
+      toast({
+        title: "Unable to analyze blog post",
+        description: "Please check the URL and try again.",
+        variant: "destructive",
+        duration: 5000,
+      });
     } finally {
       setIsLoadingBlog(false);
     }
