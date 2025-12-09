@@ -678,51 +678,35 @@ const detectPageType = (url: string, html: string, requestedType: "homepage" | "
     path = urlLower;
   }
 
+  // If root path, ALWAYS homepage
   if (path === "/" || path === "") {
     return "homepage";
   }
 
-  if (requestedType === "blog" && path.length > 1) {
-    return "blog";
-  }
+  // CRITICAL FIX: Only detect as blog if path is CLEARLY a blog post
+  const strongBlogPatterns = ["/blog/", "/post/", "/article/", "/news/", "/insights/", "/stories/", "/journal/"];
 
-  const blogPatterns = [
-    "/blog/",
-    "/post/",
-    "/article/",
-    "/news/",
-    "/insights/",
-    "/stories/",
-    "/journal/",
-    "/travel-guide",
-    "/guide-",
-    "/how-to-",
-    "/what-is-",
-    "/best-",
-    "/top-",
-    "/review-",
-    "-tips",
-    "-guide",
-    "-tutorial",
-    "-explained",
-  ];
-  const hasBlogUrl = blogPatterns.some((pattern) => path.includes(pattern));
-
-  const datePattern = /\/\d{4}\/\d{2}\//;
-  const hasDateUrl = datePattern.test(urlLower);
-
+  const hasStrongBlogPattern = strongBlogPatterns.some((pattern) => path.includes(pattern));
+  const hasDatePattern = /\/\d{4}\/\d{2}\//.test(urlLower);
   const hasBlogSubdomain = /^https?:\/\/blog\./i.test(url);
+  const hasBlogSchema = html.includes('"@type":"BlogPosting"') || html.includes('"@type":"Article"');
 
-  const hasBlogSchema =
-    html.includes('"@type":"BlogPosting"') ||
-    html.includes('"@type":"Article"') ||
-    html.includes('"@type": "BlogPosting"') ||
-    html.includes('"@type": "Article"');
-
-  if (hasBlogUrl || hasDateUrl || hasBlogSubdomain || hasBlogSchema) {
+  // STRONG blog indicators: date pattern + blog subdomain/schema
+  if ((hasDatePattern && hasBlogSubdomain) || (hasDatePattern && hasBlogSchema)) {
     return "blog";
   }
 
+  // If user requested blog AND has blog pattern, honor request
+  if (requestedType === "blog" && (hasStrongBlogPattern || path.length > 10)) {
+    return "blog";
+  }
+
+  // Default to homepage for root-like paths
+  if (path === "/" || path === "" || path.split("/").length <= 2) {
+    return "homepage";
+  }
+
+  // Otherwise use requested type
   return requestedType;
 };
 
