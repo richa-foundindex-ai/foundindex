@@ -18,6 +18,16 @@ import { RateLimitBanner } from "@/components/landing/RateLimitBanner";
 import { BlogTestCounter } from "@/components/landing/BlogTestCounter";
 import { isStructuredError, type ErrorResponse } from "@/utils/errorTypes";
 import { ToastAction } from "@/components/ui/toast";
+import { RetestModal } from "@/components/RetestModal";
+
+interface RetestModalData {
+  url: string;
+  lastTestedDate: Date;
+  nextAvailableDate: Date;
+  cachedTestId: string;
+  cachedScore: number;
+}
+
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -30,6 +40,8 @@ const Index = () => {
   const [blogError, setBlogError] = useState<string | null>(null);
   const [homepageSuggestion, setHomepageSuggestion] = useState<string | null>(null);
   const [blogSuggestion, setBlogSuggestion] = useState<string | null>(null);
+  const [retestModalOpen, setRetestModalOpen] = useState(false);
+  const [retestModalData, setRetestModalData] = useState<RetestModalData | null>(null);
 
   useEffect(() => {
     analytics.pageView("homepage");
@@ -121,12 +133,17 @@ const Index = () => {
 
     if (recentUrlTests && recentUrlTests.length > 0) {
       const test = recentUrlTests[0];
-      const daysAgo = Math.floor((Date.now() - new Date(test.created_at).getTime()) / (24 * 60 * 60 * 1000));
+      const testDate = new Date(test.created_at);
+      const nextAvailableDate = new Date(testDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const daysAgo = Math.floor((Date.now() - testDate.getTime()) / (24 * 60 * 60 * 1000));
       const daysRemaining = 7 - daysAgo;
       return {
         blocked: true,
-        reason: "url_cooldown",
+        reason: "url_cooldown" as const,
         existingTestId: test.test_id,
+        existingScore: test.score,
+        testedAt: testDate,
+        nextAvailable: nextAvailableDate,
         daysAgo,
         daysRemaining,
         message: `This URL was tested ${daysAgo} day${daysAgo === 1 ? "" : "s"} ago. You can retest in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}.`,
@@ -181,25 +198,18 @@ const Index = () => {
 
     const rateCheck = await checkRateLimits(websiteUrl, "homepage");
     if (rateCheck.blocked) {
-      if (rateCheck.existingTestId) {
-        toast({
-          title: "URL tested recently",
-          description: (
-            <div>
-              <p>{rateCheck.message}</p>
-              <p className="mt-2 text-sm">
-                Made changes?{" "}
-                <a href="/contact" className="underline font-medium">
-                  Contact us
-                </a>{" "}
-                to request an early retest.
-              </p>
-            </div>
-          ),
+      if (rateCheck.reason === "url_cooldown" && rateCheck.existingTestId) {
+        // Show modal instead of toast
+        setRetestModalData({
+          url: websiteUrl,
+          lastTestedDate: rateCheck.testedAt!,
+          nextAvailableDate: rateCheck.nextAvailable!,
+          cachedTestId: rateCheck.existingTestId,
+          cachedScore: rateCheck.existingScore!,
         });
-        navigate(`/results?testId=${rateCheck.existingTestId}&url=${encodeURIComponent(websiteUrl)}`);
+        setRetestModalOpen(true);
       } else {
-        toast({ title: "Rate limit reached", description: rateCheck.message, variant: "destructive" });
+        toast({ title: "Rate limit reached", description: rateCheck.message, variant: "destructive", duration: Infinity });
       }
       return;
     }
@@ -278,25 +288,18 @@ const Index = () => {
 
     const rateCheck = await checkRateLimits(websiteUrl, "blog");
     if (rateCheck.blocked) {
-      if (rateCheck.existingTestId) {
-        toast({
-          title: "URL tested recently",
-          description: (
-            <div>
-              <p>{rateCheck.message}</p>
-              <p className="mt-2 text-sm">
-                Made changes?{" "}
-                <a href="/contact" className="underline font-medium">
-                  Contact us
-                </a>{" "}
-                to request an early retest.
-              </p>
-            </div>
-          ),
+      if (rateCheck.reason === "url_cooldown" && rateCheck.existingTestId) {
+        // Show modal instead of toast
+        setRetestModalData({
+          url: websiteUrl,
+          lastTestedDate: rateCheck.testedAt!,
+          nextAvailableDate: rateCheck.nextAvailable!,
+          cachedTestId: rateCheck.existingTestId,
+          cachedScore: rateCheck.existingScore!,
         });
-        navigate(`/results?testId=${rateCheck.existingTestId}&url=${encodeURIComponent(websiteUrl)}`);
+        setRetestModalOpen(true);
       } else {
-        toast({ title: "Rate limit reached", description: rateCheck.message, variant: "destructive" });
+        toast({ title: "Rate limit reached", description: rateCheck.message, variant: "destructive", duration: Infinity });
       }
       return;
     }
@@ -889,6 +892,14 @@ const Index = () => {
           </div>
         </div>
       </footer>
+      {/* Retest Modal */}
+      {retestModalData && (
+        <RetestModal
+          open={retestModalOpen}
+          onClose={() => setRetestModalOpen(false)}
+          {...retestModalData}
+        />
+      )}
     </div>
   );
 };
