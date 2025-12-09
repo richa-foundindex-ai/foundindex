@@ -41,6 +41,7 @@ interface RetestModalData {
   nextAvailableDate: Date;
   cachedTestId: string;
   cachedScore: number;
+  attemptsExhausted: boolean;
 }
 
 const Index = () => {
@@ -96,21 +97,32 @@ const Index = () => {
       }
 
       case "RATE_LIMIT_URL": {
-        // Backend expected fields: cached_test_id, cached_created_at, can_retest_at, cached_score
-        const cachedTestId = (errorData as any).cached_test_id || (errorData as any).test_id;
-        const testedAt =
-          (errorData as any).testedAt ||
-          (errorData as any).cached_created_at ||
-          (errorData as any).cached_created_at_iso;
-        const canRetestAt = (errorData as any).canRetestAt || (errorData as any).can_retest_at;
+        // Backend expected fields: test_id, testedAt, canRetestAt, cached_score, attempts_exhausted
+        const cachedTestId = (errorData as any).test_id || (errorData as any).cached_test_id;
         const cachedScore = (errorData as any).cached_score;
+        const attempts = (errorData as any).attempts;
+        const attemptsExhausted = (errorData as any).attempts_exhausted === true || (typeof attempts === "number" && attempts >= 3);
+
+        // Handle testedAt - use provided value or compute from canRetestAt
+        let testedAtRaw = (errorData as any).testedAt || (errorData as any).cached_created_at || (errorData as any).cached_created_at_iso;
+        let canRetestAtRaw = (errorData as any).canRetestAt || (errorData as any).can_retest_at;
+
+        // Edge case: if only canRetestAt is provided, compute testedAt = canRetestAt - 7 days
+        if (!testedAtRaw && canRetestAtRaw) {
+          testedAtRaw = new Date(new Date(canRetestAtRaw).getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+        }
+        // Edge case: if only testedAt is provided, compute canRetestAt = testedAt + 7 days
+        if (testedAtRaw && !canRetestAtRaw) {
+          canRetestAtRaw = new Date(new Date(testedAtRaw).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        }
 
         setRetestModalData({
           url: websiteUrl,
-          lastTestedDate: testedAt ? new Date(testedAt) : new Date(),
-          nextAvailableDate: canRetestAt ? new Date(canRetestAt) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          lastTestedDate: testedAtRaw ? new Date(testedAtRaw) : new Date(),
+          nextAvailableDate: canRetestAtRaw ? new Date(canRetestAtRaw) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           cachedTestId: cachedTestId || "",
           cachedScore: typeof cachedScore === "number" ? cachedScore : 0,
+          attemptsExhausted,
         });
         setRetestModalOpen(true);
         break;
@@ -948,7 +960,16 @@ const Index = () => {
       </footer>
       {/* Retest Modal */}
       {retestModalData && (
-        <RetestModal open={retestModalOpen} onClose={() => setRetestModalOpen(false)} {...retestModalData} />
+        <RetestModal
+          open={retestModalOpen}
+          onClose={() => setRetestModalOpen(false)}
+          url={retestModalData.url}
+          lastTestedDate={retestModalData.lastTestedDate}
+          nextAvailableDate={retestModalData.nextAvailableDate}
+          cachedTestId={retestModalData.cachedTestId}
+          cachedScore={retestModalData.cachedScore}
+          attemptsExhausted={retestModalData.attemptsExhausted}
+        />
       )}
     </div>
   );
