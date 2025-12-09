@@ -380,17 +380,17 @@ const Index = () => {
                         <div>
                           <span>{homepageError}</span>
                           {homepageSuggestion && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setHomepageUrl(homepageSuggestion);
-                                setHomepageError(null);
-                                setHomepageSuggestion(null);
-                              }}
-                              className="ml-1 text-primary hover:underline font-medium"
-                            >
-                              Use {homepageSuggestion}?
-                            </button>
+ <button
+  type="button"
+  onClick={() => {
+    setHomepageUrl(homepageSuggestion);
+    setHomepageError(null);
+    setHomepageSuggestion(null);
+  }}
+  className="ml-1 text-primary hover:underline font-medium"
+>
+  Use suggested URL?
+</button>
                           )}
                         </div>
                       </div>
@@ -450,16 +450,16 @@ const Index = () => {
                           <span>{blogError}</span>
                           {blogSuggestion && (
                             <button
-                              type="button"
-                              onClick={() => {
-                                setBlogUrl(blogSuggestion);
-                                setBlogError(null);
-                                setBlogSuggestion(null);
-                              }}
-                              className="ml-1 text-primary hover:underline font-medium"
-                            >
-                              Use {blogSuggestion}?
-                            </button>
+  type="button"
+  onClick={() => {
+    setBlogUrl(blogSuggestion);
+    setBlogError(null);
+    setBlogSuggestion(null);
+  }}
+  className="ml-1 text-primary hover:underline font-medium"
+>
+  Use suggested URL?
+</button>
                           )}
                         </div>
                       </div>
