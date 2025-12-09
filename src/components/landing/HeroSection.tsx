@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,8 @@ import { CoffeeBrewingLoader } from "./CoffeeBrewingLoader";
 import { checkRateLimit, recordTest, releaseTestLock } from "@/utils/rateLimiting";
 import { validateAndNormalizeUrl, getErrorMessage } from "@/utils/urlValidation";
 import { analytics } from "@/utils/analytics";
+import { RetestModal } from "@/components/RetestModal";
+import { isStructuredError, ErrorResponse } from "@/utils/errorTypes";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,9 +31,19 @@ interface ExistingTestInfo {
   testDate: string;
 }
 
+interface RetestModalState {
+  open: boolean;
+  url: string;
+  lastTestedDate: Date;
+  nextAvailableDate: Date;
+  cachedTestId: string;
+  cachedScore: number;
+}
+
 const HeroSection = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     website: "",
   });
@@ -47,12 +59,28 @@ const HeroSection = () => {
   const [monthlyLimitResetDate, setMonthlyLimitResetDate] = useState<string>("");
   const [validationError, setValidationError] = useState<string | null>(null);
   const [urlSuggestion, setUrlSuggestion] = useState<string | null>(null);
+  
+  // Retest modal state for 7-day URL cooldown
+  const [retestModal, setRetestModal] = useState<RetestModalState>({
+    open: false,
+    url: "",
+    lastTestedDate: new Date(),
+    nextAvailableDate: new Date(),
+    cachedTestId: "",
+    cachedScore: 0,
+  });
 
-  // Clear validation errors when input changes
+  // Clear validation errors and dismiss toasts when input changes
   const handleInputChange = (value: string) => {
     setFormData({ ...formData, website: value });
     setValidationError(null);
     setUrlSuggestion(null);
+    dismiss(); // Dismiss all toasts when user starts typing
+  };
+  
+  // Dismiss toasts when input is focused
+  const handleInputFocus = () => {
+    dismiss();
   };
 
   // Apply URL suggestion
@@ -68,6 +96,9 @@ const HeroSection = () => {
     e.preventDefault();
     setValidationError(null);
     setUrlSuggestion(null);
+    
+    // Dismiss all toasts BEFORE starting new analysis
+    dismiss();
     
     analytics.buttonClick('Analyze Website', 'hero_section');
 
@@ -142,6 +173,45 @@ const HeroSection = () => {
       
       // Handle success: false responses with specific error types
       if (submitData?.success === false) {
+        // Check for structured error response (new format)
+        if (isStructuredError(submitData)) {
+          const errorData = submitData as ErrorResponse;
+          
+          // Handle RATE_LIMIT_URL with modal instead of toast
+          if (errorData.error_type === "RATE_LIMIT_URL" && errorData.cached_test_id) {
+            const lastTestedDate = errorData.cached_created_at ? new Date(errorData.cached_created_at) : new Date();
+            const nextAvailableDate = errorData.next_available_time ? new Date(errorData.next_available_time) : new Date(lastTestedDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+            
+            setRetestModal({
+              open: true,
+              url: websiteUrl,
+              lastTestedDate,
+              nextAvailableDate,
+              cachedTestId: errorData.cached_test_id,
+              cachedScore: errorData.cached_score || 0,
+            });
+            releaseTestLock();
+            setIsSubmitting(false);
+            return;
+          }
+          
+          // Handle other structured errors with toast
+          toast({
+            title: errorData.error_type === "RATE_LIMIT_IP" ? "Daily limit reached" :
+                   errorData.error_type === "SITE_UNREACHABLE" ? "Website not reachable" :
+                   errorData.error_type === "BOT_BLOCKED" ? "Access blocked" :
+                   errorData.error_type === "TIMEOUT" ? "Request timeout" :
+                   errorData.error_type === "API_QUOTA" ? "Service temporarily unavailable" :
+                   "Analysis issue",
+            description: errorData.user_message,
+            variant: "destructive",
+          });
+          releaseTestLock();
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Legacy error format handling
         const errorType = submitData.errorType || 'unknown';
         let errorTitle = submitData.error || "Analysis issue";
         let errorDescription = submitData.details || "Unable to analyze this website";
@@ -211,9 +281,24 @@ const HeroSection = () => {
     }
   };
 
+  const handleRetestModalClose = () => {
+    setRetestModal(prev => ({ ...prev, open: false }));
+  };
+
   return (
     <>
       {isSubmitting && <CoffeeBrewingLoader website={formData.website} />}
+      
+      {/* 7-Day URL Retest Modal */}
+      <RetestModal
+        open={retestModal.open}
+        onClose={handleRetestModalClose}
+        url={retestModal.url}
+        lastTestedDate={retestModal.lastTestedDate}
+        nextAvailableDate={retestModal.nextAvailableDate}
+        cachedTestId={retestModal.cachedTestId}
+        cachedScore={retestModal.cachedScore}
+      />
 
       {/* Monthly Limit Modal */}
       <AlertDialog open={showMonthlyLimitModal} onOpenChange={setShowMonthlyLimitModal}>
@@ -350,11 +435,13 @@ const HeroSection = () => {
                   Website URL
                 </Label>
                 <Input
+                  ref={inputRef}
                   id="website"
                   type="text"
                   placeholder="slack.com or https://yourwebsite.com"
                   value={formData.website}
                   onChange={(e) => handleInputChange(e.target.value)}
+                  onFocus={handleInputFocus}
                   required
                   className={`h-12 min-h-[48px] ${validationError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   style={{ fontSize: '16px' }}
