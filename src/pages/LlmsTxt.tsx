@@ -31,6 +31,29 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
+const techArticleSchema = {
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "llms.txt - A Proposed Standard for AI-Readable Websites",
+  "author": {
+    "@type": "Organization",
+    "name": "FoundIndex",
+    "url": "https://foundindex.com"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "FoundIndex",
+    "url": "https://foundindex.com"
+  },
+  "datePublished": "2024-12-16",
+  "dateModified": "2024-12-16",
+  "description": "A machine-readable file that declares how AI systems should interpret a website's content, inspired by how robots.txt guides crawlers.",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://foundindex.com/llms-txt"
+  }
+};
+
 // Mock counters - would be fetched from backend in production
 const IMPLEMENTATIONS_COUNT = 34;
 const VALIDATIONS_COUNT = 127;
@@ -203,6 +226,9 @@ ${email ? `contact-email: ${email}` : '# contact-email: (not specified)'}
       <Helmet>
         <title>llms.txt – A Proposed Standard for AI-Readable Websites | FoundIndex</title>
         <meta name="description" content="A machine-readable file that declares how AI systems should interpret a website's content, inspired by how robots.txt guides crawlers." />
+        <script type="application/ld+json">
+          {JSON.stringify(techArticleSchema)}
+        </script>
       </Helmet>
 
       {/* Theme Toggle */}

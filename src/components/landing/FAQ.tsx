@@ -49,11 +49,6 @@ const FAQ = () => {
         "Beta phase. Free forever for single URL testing. Paid (launching 2026): Weekly monitoring $29/mo, Multi-site + content rewrites $49/mo, API access $99/mo. Early users get lifetime discounts.",
     },
     {
-      question: "What's your background?",
-      answer:
-        "Built by UX researcher with 15+ years experience (British Telecom, Indian Navy), combining technical analysis with content strategy expertise.",
-    },
-    {
       question: "How can I give feedback?",
       answer: "Use the feedback button on results page or",
       hasLink: true,
