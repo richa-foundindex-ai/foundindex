@@ -73,7 +73,6 @@ const Index = () => {
 
     switch (e.error_type) {
       case "RATE_LIMIT_BLOG": {
-        // Blog-specific rate limit (3 per 7 days)
         const nextAvailable = e.next_available_time || e.canRetestAt;
         let resetDateStr = "";
         if (nextAvailable) {
@@ -95,7 +94,6 @@ const Index = () => {
       }
 
       case "RATE_LIMIT_IP": {
-        // If backend provides user_message, use it directly (it has the correct info)
         if (e.user_message && testType === "blog") {
           toast({
             variant: "destructive",
@@ -106,7 +104,6 @@ const Index = () => {
           break;
         }
 
-        // Check if this is actually a blog rate limit based on context
         const blogCount = e.blogCount || e.blog_count;
         const blogLimit = e.blogLimit || e.blog_limit || 3;
         const nextAvailable = e.next_available_time || e.canRetestAt;
@@ -131,7 +128,6 @@ const Index = () => {
           break;
         }
 
-        // Generic IP rate limit
         const ipCount = e.ipCount || e.ip_count;
         const ipLimit = e.ipLimit || e.ip_limit;
         const description =
@@ -322,12 +318,7 @@ const Index = () => {
         body: { website: websiteUrl, testType: "blog" },
       });
 
-      console.log("[BlogSubmit] Response data:", data);
-      console.log("[BlogSubmit] Response error:", error);
-
-      // PRIORITY 1: Check for RATE_LIMIT_IP in data (backend returns error in data)
       if (data?.error_type === "RATE_LIMIT_IP") {
-        console.log("[BlogSubmit] RATE_LIMIT_IP detected in data:", data.user_message);
         toast({
           variant: "destructive",
           title: "Blog test limit reached",
@@ -337,11 +328,9 @@ const Index = () => {
         return;
       }
 
-      // PRIORITY 2: Check for RATE_LIMIT_IP in error object (Supabase may wrap it)
       if (error) {
         let errorData: any = null;
         
-        // Try to extract from error.context.body (common Supabase pattern)
         if (error.context?.body) {
           try {
             errorData = typeof error.context.body === "string" 
@@ -350,7 +339,6 @@ const Index = () => {
           } catch (e) {}
         }
         
-        // Try to extract from error.message (JSON embedded in message)
         if (!errorData && error.message) {
           const jsonMatch = error.message.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
@@ -360,10 +348,7 @@ const Index = () => {
           }
         }
         
-        console.log("[BlogSubmit] Extracted error data from error object:", errorData);
-        
         if (errorData?.error_type === "RATE_LIMIT_IP") {
-          console.log("[BlogSubmit] RATE_LIMIT_IP from error object:", errorData.user_message);
           toast({
             variant: "destructive",
             title: "Blog test limit reached",
@@ -374,18 +359,14 @@ const Index = () => {
         }
       }
 
-      // Handle other error responses in data
       if (data && data.success === false && data.error_type) {
         const handled = handleAnalysisError(data, websiteUrl, "blog");
         if (handled) return;
       }
 
       if (error) {
-        console.log("[BlogSubmit] Error object:", error);
-        // Try to parse structured error from the error response
         let errorData = null;
         
-        // Check if error itself has the structured data
         if (error && typeof error === "object") {
           const errObj = error as any;
           if (errObj.error_type) {
@@ -407,12 +388,10 @@ const Index = () => {
         }
 
         if (errorData && errorData.error_type) {
-          console.log("[BlogSubmit] Parsed error data:", errorData);
           const handled = handleAnalysisError(errorData, websiteUrl, "blog");
           if (handled) return;
         }
 
-        // Fall through to generic error handling
         throw error;
       }
 
@@ -429,15 +408,10 @@ const Index = () => {
 
       throw new Error("Unexpected response format");
     } catch (err: unknown) {
-      console.error("[BlogSubmit] Catch block error:", err);
-      
-      // Try to extract structured error from exception
       let errorData = null;
       if (err && typeof err === "object") {
         const errObj = err as any;
-        console.log("[BlogSubmit] Error object in catch:", JSON.stringify(errObj, null, 2));
         
-        // Check various places where error data might be
         if (errObj.error_type && errObj.user_message) {
           errorData = errObj;
         } else if (errObj.context?.body) {
@@ -455,8 +429,6 @@ const Index = () => {
           }
         }
       }
-
-      console.log("[BlogSubmit] Extracted error data:", errorData);
 
       if (errorData && errorData.error_type) {
         const handled = handleAnalysisError(errorData, websiteUrl, "blog");
@@ -483,17 +455,16 @@ const Index = () => {
 
         <header className="container mx-auto px-4 py-12 md:py-24 text-center">
           <p className="text-sm md:text-base font-semibold text-destructive mb-4">
-            Your SEO is fine. AI still cannot find you.
+            Only 23% of websites are structured for AI discovery
           </p>
           <h1 className="text-[2rem] md:text-6xl font-bold mb-6 text-foreground leading-tight px-2">
-            Score your website visibility to AI search engines
+            Does AI understand your website?
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-3xl mx-auto px-4">
-            ChatGPT, Perplexity, and Claude do not rank pages. They cite sources. FoundIndex analyzes if your website
-            is structured clearly enough for AI to understand, parse, and recommend.
+            Most sites score below 60 because AI can't parse their structure. FoundIndex diagnoses WHY — in 60 seconds.
           </p>
 
-          <a
+          
             href="#test-section"
             onClick={(e) => {
               e.preventDefault();
@@ -550,17 +521,17 @@ const Index = () => {
                         <div>
                           <span>{homepageError}</span>
                           {homepageSuggestion && (
- <button
-  type="button"
-  onClick={() => {
-    setHomepageUrl(homepageSuggestion);
-    setHomepageError(null);
-    setHomepageSuggestion(null);
-  }}
-  className="ml-1 text-primary hover:underline font-medium"
->
-  Use suggested URL?
-</button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setHomepageUrl(homepageSuggestion);
+                                setHomepageError(null);
+                                setHomepageSuggestion(null);
+                              }}
+                              className="ml-1 text-primary hover:underline font-medium"
+                            >
+                              Use suggested URL?
+                            </button>
                           )}
                         </div>
                       </div>
@@ -620,16 +591,16 @@ const Index = () => {
                           <span>{blogError}</span>
                           {blogSuggestion && (
                             <button
-  type="button"
-  onClick={() => {
-    setBlogUrl(blogSuggestion);
-    setBlogError(null);
-    setBlogSuggestion(null);
-  }}
-  className="ml-1 text-primary hover:underline font-medium"
->
-  Use suggested URL?
-</button>
+                              type="button"
+                              onClick={() => {
+                                setBlogUrl(blogSuggestion);
+                                setBlogError(null);
+                                setBlogSuggestion(null);
+                              }}
+                              className="ml-1 text-primary hover:underline font-medium"
+                            >
+                              Use suggested URL?
+                            </button>
                           )}
                         </div>
                       </div>
@@ -671,7 +642,7 @@ const Index = () => {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground text-center md:text-left">
               <div className="order-2 md:order-1">
                 Built by{" "}
-                <a
+                
                   href="https://richadeo.com"
                   target="_blank"
                   rel="noopener noreferrer"
