@@ -464,7 +464,7 @@ const Index = () => {
             Most sites score below 60 because AI can't parse their structure. FoundIndex diagnoses WHY — in 60 seconds.
           </p>
 
-          
+          <a
             href="#test-section"
             onClick={(e) => {
               e.preventDefault();
@@ -642,7 +642,7 @@ const Index = () => {
             <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground text-center md:text-left">
               <div className="order-2 md:order-1">
                 Built by{" "}
-                
+                <a
                   href="https://richadeo.com"
                   target="_blank"
                   rel="noopener noreferrer"
