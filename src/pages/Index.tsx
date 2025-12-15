@@ -498,7 +498,7 @@ const Index = () => {
                 </thead>
                 <tbody>
                   <tr className="border-b border-border">
-                    <td className="px-4 md:px-6 py-4 text-muted-foreground">Similarweb, Semrush</td>
+                    <td className="px-4 md:px-6 py-4 text-muted-foreground">Similarweb/Semrush</td>
                     <td className="px-4 md:px-6 py-4 text-muted-foreground">IF AI mentions you (output)</td>
                   </tr>
                   <tr className="bg-primary/5">
@@ -510,7 +510,7 @@ const Index = () => {
             </div>
 
             <p className="text-center text-muted-foreground text-sm md:text-base">
-              <span className="font-medium text-foreground">Use both:</span> Fix structure (FoundIndex) → Track growth (Similarweb)
+              FoundIndex comes before citation tracking. If AI can't understand you, there's nothing worth tracking.
             </p>
           </div>
         </section>
