@@ -481,6 +481,40 @@ const Index = () => {
           </a>
         </header>
 
+        {/* Comparison Section */}
+        <section className="container mx-auto px-4 py-12 md:py-16">
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-foreground">
+              How is FoundIndex different?
+            </h2>
+            
+            <div className="bg-card border border-border rounded-lg overflow-hidden mb-8">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="px-4 md:px-6 py-4 font-semibold text-foreground">Tool</th>
+                    <th className="px-4 md:px-6 py-4 font-semibold text-foreground">What it measures</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-border">
+                    <td className="px-4 md:px-6 py-4 text-muted-foreground">Similarweb, Semrush</td>
+                    <td className="px-4 md:px-6 py-4 text-muted-foreground">IF AI mentions you (output)</td>
+                  </tr>
+                  <tr className="bg-primary/5">
+                    <td className="px-4 md:px-6 py-4 font-semibold text-primary">FoundIndex</td>
+                    <td className="px-4 md:px-6 py-4 font-semibold text-primary">WHY AI can't parse you (input)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p className="text-center text-muted-foreground text-sm md:text-base">
+              <span className="font-medium text-foreground">Use both:</span> Fix structure (FoundIndex) → Track growth (Similarweb)
+            </p>
+          </div>
+        </section>
+
         <section className="container mx-auto px-4 py-12 md:py-16">
           <div
             id="test-section"
