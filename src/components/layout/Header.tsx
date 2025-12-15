@@ -16,6 +16,7 @@ const Header = () => {
   
   const navLinks = [
     { to: "/methodology", label: "Methodology" },
+    { to: "/llms-txt", label: "llms.txt Standard" },
     { to: "/pricing", label: "Pricing" },
     { to: "/contact", label: "Contact" },
   ];
