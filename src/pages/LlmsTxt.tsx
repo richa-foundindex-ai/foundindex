@@ -229,7 +229,7 @@ const LlmsTxt = () => {
     return { score: found, warnings };
   };
 
-  // Validate llms.txt
+  // Validate llms.txt using server-side proxy (bypasses CORS)
   const handleValidate = async () => {
     if (!validatorUrl.trim()) {
       toast({
@@ -243,95 +243,55 @@ const LlmsTxt = () => {
     setIsValidating(true);
     setValidationResult(null);
 
-    // Normalize URL
-    let baseUrl = validatorUrl.trim();
-    if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
-      baseUrl = 'https://' + baseUrl;
-    }
-    // Remove trailing slash
-    baseUrl = baseUrl.replace(/\/+$/, '');
-    
-    // Remove any path to get just the domain
     try {
-      const urlObj = new URL(baseUrl);
-      baseUrl = urlObj.origin;
-    } catch (e) {
-      console.error('[llms.txt validator] Invalid URL:', baseUrl);
-      setValidationResult({
-        found: false,
-        errors: ['Invalid URL format'],
-        warnings: ['Please enter a valid domain (e.g., example.com)']
+      console.log(`[llms.txt validator] Calling edge function for: ${validatorUrl}`);
+      
+      const { data, error } = await supabase.functions.invoke('validate-llms-txt', {
+        body: { url: validatorUrl }
       });
-      setIsValidating(false);
-      return;
-    }
 
-    const pathsToTry = [
-      '/.well-known/llms.txt',
-      '/llms.txt'
-    ];
+      console.log('[llms.txt validator] Edge function response:', data, error);
 
-    let foundPath: string | null = null;
-    let fileContent: string | null = null;
-    let lastError: string | null = null;
-
-    for (const path of pathsToTry) {
-      const fullUrl = baseUrl + path;
-      console.log(`[llms.txt validator] Trying: ${fullUrl}`);
-      
-      const response = await fetchWithRetry(fullUrl);
-      
-      if (response === null) {
-        lastError = `Connection failed - CORS may be blocking the request`;
-        console.log(`[llms.txt validator] ${path}: Connection failed (likely CORS)`);
-        continue;
+      if (error) {
+        console.error('[llms.txt validator] Edge function error:', error);
+        setValidationResult({
+          found: false,
+          errors: ['Validation service error - please try again'],
+          warnings: [error.message || 'Unknown error']
+        });
+        setIsValidating(false);
+        return;
       }
-      
-      if (response.status === 200) {
-        const contentType = response.headers.get('content-type') || '';
-        console.log(`[llms.txt validator] ${path}: Found! Content-Type: ${contentType}`);
+
+      if (data.success && data.content) {
+        // Parse and validate the file
+        const { directives, valid, errors } = parseLlmsTxt(data.content);
+        const { score, warnings } = calculateCompleteness(directives);
         
-        try {
-          fileContent = await response.text();
-          foundPath = path;
-          break;
-        } catch (e: any) {
-          console.error(`[llms.txt validator] ${path}: Failed to read body:`, e.message);
-          lastError = 'Failed to read file content';
-        }
-      } else if (response.status === 404) {
-        console.log(`[llms.txt validator] ${path}: Not found (404)`);
-        lastError = 'File not found (404)';
-      } else if (response.status >= 500) {
-        console.log(`[llms.txt validator] ${path}: Server error (${response.status})`);
-        lastError = `Server error (${response.status})`;
+        setValidationResult({
+          found: true,
+          location: data.foundPath,
+          valid,
+          errors,
+          directives,
+          completenessScore: score,
+          warnings
+        });
       } else {
-        console.log(`[llms.txt validator] ${path}: Unexpected status ${response.status}`);
-        lastError = `Unexpected response (${response.status})`;
+        // File not found
+        console.log(`[llms.txt validator] No llms.txt found. Error: ${data.error}`);
+        setValidationResult({
+          found: false,
+          errors: [data.error || 'No llms.txt file found'],
+          warnings: data.pathsTried ? [`Tried: ${data.domain}${data.pathsTried.join(` and ${data.domain}`)}`] : []
+        });
       }
-    }
-
-    if (foundPath && fileContent) {
-      // Parse and validate the file
-      const { directives, valid, errors } = parseLlmsTxt(fileContent);
-      const { score, warnings } = calculateCompleteness(directives);
-      
-      setValidationResult({
-        found: true,
-        location: foundPath,
-        valid,
-        errors,
-        directives,
-        completenessScore: score,
-        warnings
-      });
-    } else {
-      // File not found at any location
-      console.log(`[llms.txt validator] No llms.txt found. Last error: ${lastError}`);
+    } catch (err: any) {
+      console.error('[llms.txt validator] Unexpected error:', err);
       setValidationResult({
         found: false,
-        errors: [lastError || 'No llms.txt file found'],
-        warnings: [`Tried: ${baseUrl}/.well-known/llms.txt and ${baseUrl}/llms.txt`]
+        errors: ['Failed to validate - please try again'],
+        warnings: [err.message || 'Network error']
       });
     }
 
