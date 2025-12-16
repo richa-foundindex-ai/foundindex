@@ -135,6 +135,100 @@ const LlmsTxt = () => {
     }
   };
 
+  // Fetch with retry logic
+  const fetchWithRetry = async (url: string, retries: number = 2): Promise<Response | null> => {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        console.log(`[llms.txt validator] Attempt ${attempt}: Fetching ${url}`);
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'text/plain, */*',
+          },
+          redirect: 'follow', // Follow 301/302 redirects
+        });
+        console.log(`[llms.txt validator] Response from ${url}: Status ${response.status}`);
+        return response;
+      } catch (error: any) {
+        console.error(`[llms.txt validator] Attempt ${attempt} failed for ${url}:`, error.message);
+        if (attempt === retries) {
+          return null;
+        }
+        // Wait before retry
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+    return null;
+  };
+
+  // Parse llms.txt content
+  const parseLlmsTxt = (content: string): { directives: Record<string, string>; valid: boolean; errors: string[] } => {
+    const directives: Record<string, string> = {};
+    const errors: string[] = [];
+    const lines = content.split('\n');
+    
+    for (const line of lines) {
+      const trimmed = line.trim();
+      // Skip empty lines and comments
+      if (!trimmed || trimmed.startsWith('#')) continue;
+      
+      // Handle list items (indented with -)
+      if (trimmed.startsWith('-')) {
+        // This is a list item for the previous directive
+        const lastKey = Object.keys(directives).pop();
+        if (lastKey) {
+          const value = trimmed.substring(1).trim();
+          directives[lastKey] = directives[lastKey] ? `${directives[lastKey]}, ${value}` : value;
+        }
+        continue;
+      }
+      
+      // Parse key: value
+      const colonIndex = trimmed.indexOf(':');
+      if (colonIndex > 0) {
+        const key = trimmed.substring(0, colonIndex).trim().toLowerCase();
+        const value = trimmed.substring(colonIndex + 1).trim();
+        directives[key] = value;
+      }
+    }
+    
+    // Validate required fields
+    if (!directives['version']) {
+      errors.push('Missing required field: version');
+    }
+    
+    return { directives, valid: errors.length === 0, errors };
+  };
+
+  // Calculate completeness score
+  const calculateCompleteness = (directives: Record<string, string>): { score: number; warnings: string[] } => {
+    const recommendedFields = [
+      'version',
+      'site-purpose',
+      'primary-audience',
+      'authoritative-pages',
+      'content-freshness',
+      'contact-email',
+      'last-updated',
+      'language',
+      'scope',
+      'authoritative-source'
+    ];
+    
+    const warnings: string[] = [];
+    let found = 0;
+    
+    for (const field of recommendedFields) {
+      if (directives[field]) {
+        found++;
+      } else {
+        warnings.push(`Missing: ${field}`);
+      }
+    }
+    
+    return { score: found, warnings };
+  };
+
   // Validate llms.txt
   const handleValidate = async () => {
     if (!validatorUrl.trim()) {
@@ -149,32 +243,96 @@ const LlmsTxt = () => {
     setIsValidating(true);
     setValidationResult(null);
 
-    // Simulate validation - in production this would call an edge function
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    // Mock result - would be real validation in production
-    const mockResult = {
-      found: Math.random() > 0.6,
-      location: "/.well-known/llms.txt",
-      valid: true,
-      directives: {
-        "version": "0.1",
-        "site-purpose": "B2B SaaS for website analytics",
-        "primary-audience": "Marketers, Product Managers",
-        "authoritative-pages": "/docs, /pricing, /blog",
-        "update-frequency": "weekly"
-      },
-      completenessScore: 7,
-      warnings: ["Missing: contact-email", "Missing: last-updated", "Missing: language"]
-    };
-
-    if (!mockResult.found) {
+    // Normalize URL
+    let baseUrl = validatorUrl.trim();
+    if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+      baseUrl = 'https://' + baseUrl;
+    }
+    // Remove trailing slash
+    baseUrl = baseUrl.replace(/\/+$/, '');
+    
+    // Remove any path to get just the domain
+    try {
+      const urlObj = new URL(baseUrl);
+      baseUrl = urlObj.origin;
+    } catch (e) {
+      console.error('[llms.txt validator] Invalid URL:', baseUrl);
       setValidationResult({
         found: false,
-        warnings: ["No llms.txt file found at standard locations"]
+        errors: ['Invalid URL format'],
+        warnings: ['Please enter a valid domain (e.g., example.com)']
+      });
+      setIsValidating(false);
+      return;
+    }
+
+    const pathsToTry = [
+      '/.well-known/llms.txt',
+      '/llms.txt'
+    ];
+
+    let foundPath: string | null = null;
+    let fileContent: string | null = null;
+    let lastError: string | null = null;
+
+    for (const path of pathsToTry) {
+      const fullUrl = baseUrl + path;
+      console.log(`[llms.txt validator] Trying: ${fullUrl}`);
+      
+      const response = await fetchWithRetry(fullUrl);
+      
+      if (response === null) {
+        lastError = `Connection failed - CORS may be blocking the request`;
+        console.log(`[llms.txt validator] ${path}: Connection failed (likely CORS)`);
+        continue;
+      }
+      
+      if (response.status === 200) {
+        const contentType = response.headers.get('content-type') || '';
+        console.log(`[llms.txt validator] ${path}: Found! Content-Type: ${contentType}`);
+        
+        try {
+          fileContent = await response.text();
+          foundPath = path;
+          break;
+        } catch (e: any) {
+          console.error(`[llms.txt validator] ${path}: Failed to read body:`, e.message);
+          lastError = 'Failed to read file content';
+        }
+      } else if (response.status === 404) {
+        console.log(`[llms.txt validator] ${path}: Not found (404)`);
+        lastError = 'File not found (404)';
+      } else if (response.status >= 500) {
+        console.log(`[llms.txt validator] ${path}: Server error (${response.status})`);
+        lastError = `Server error (${response.status})`;
+      } else {
+        console.log(`[llms.txt validator] ${path}: Unexpected status ${response.status}`);
+        lastError = `Unexpected response (${response.status})`;
+      }
+    }
+
+    if (foundPath && fileContent) {
+      // Parse and validate the file
+      const { directives, valid, errors } = parseLlmsTxt(fileContent);
+      const { score, warnings } = calculateCompleteness(directives);
+      
+      setValidationResult({
+        found: true,
+        location: foundPath,
+        valid,
+        errors,
+        directives,
+        completenessScore: score,
+        warnings
       });
     } else {
-      setValidationResult(mockResult);
+      // File not found at any location
+      console.log(`[llms.txt validator] No llms.txt found. Last error: ${lastError}`);
+      setValidationResult({
+        found: false,
+        errors: [lastError || 'No llms.txt file found'],
+        warnings: [`Tried: ${baseUrl}/.well-known/llms.txt and ${baseUrl}/llms.txt`]
+      });
     }
 
     setIsValidating(false);
@@ -586,6 +744,9 @@ language: en`}</code>
                     <>
                       <X className="w-5 h-5 text-[#f85149]" />
                       <span className="font-semibold">No llms.txt found</span>
+                      {validationResult.errors && validationResult.errors.length > 0 && (
+                        <span className={`text-sm ${mutedText}`}>- {validationResult.errors[0]}</span>
+                      )}
                     </>
                   )}
                 </div>
@@ -642,6 +803,15 @@ language: en`}</code>
                 {/* No file found - show boilerplate */}
                 {!validationResult.found && (
                   <div className="mt-4">
+                    {/* Show what URLs were tried */}
+                    {validationResult.warnings && validationResult.warnings.length > 0 && (
+                      <div className={`p-3 rounded border mb-4 text-xs font-mono ${isDark ? 'bg-[#161b22] border-[#30363d] text-[#8b949e]' : 'bg-[#f6f8fa] border-[#d0d7de] text-[#57606a]'}`}>
+                        {validationResult.warnings.map((w, i) => (
+                          <div key={i}>{w}</div>
+                        ))}
+                      </div>
+                    )}
+                    
                     <p className={`mb-3 text-sm ${mutedText}`}>
                       Get started with this minimal boilerplate:
                     </p>
