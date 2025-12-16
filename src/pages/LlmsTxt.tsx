@@ -26,7 +26,8 @@ import {
   AlertTriangle,
   FileText,
   Moon,
-  Sun
+  Sun,
+  Github
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -783,14 +784,18 @@ update-frequency: weekly`}
           </p>
 
           {/* Live Badge Preview */}
-          <div className={`mb-6 p-6 rounded-lg border-2 ${isDark ? 'bg-[#0d1117] border-green-600/50' : 'bg-gray-50 border-green-500/50'}`}>
-            <p className={`text-sm font-medium mb-3 ${isDark ? 'text-green-400' : 'text-green-700'}`}>Live Preview:</p>
-            <div className="flex items-center justify-center py-4">
+          <div className={`mb-6 p-8 rounded-lg border-4 ${isDark ? 'bg-[#0d1117] border-green-500' : 'bg-green-50 border-green-500'}`}>
+            <p className={`text-lg font-bold mb-4 text-center ${isDark ? 'text-green-400' : 'text-green-700'}`}>
+              Live Preview:
+            </p>
+            <div className="flex items-center justify-center py-6 bg-white rounded-lg">
               <a href="https://foundindex.com/llms-txt" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition-opacity">
-                <img src="/badges/ai-readable.svg" alt="AI-Readable Site" className="h-8" style={{ height: '28px' }} />
+                <img src="/badges/ai-readable.svg" alt="AI-Readable Site" style={{ height: '40px', width: 'auto' }} />
               </a>
             </div>
-            <p className={`text-xs text-center mt-2 ${mutedText}`}>Click to preview the link destination</p>
+            <p className={`text-sm text-center mt-4 ${mutedText}`}>
+              This site follows the llms.txt standard
+            </p>
           </div>
 
           <div className={`relative rounded-md border overflow-hidden ${cardClasses}`}>
@@ -933,29 +938,39 @@ update-frequency: weekly`}
               </Link>
             </div>
             
-            <div className="flex flex-wrap justify-center gap-6">
+            <div className="flex flex-wrap justify-center gap-6 items-center">
               <a 
-                href="https://github.com/foundindex/llms-txt" 
+                href="https://github.com/richa-foundindex-ai/llms-txt" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className={`text-sm flex items-center gap-1 hover:underline ${accentColor}`}
+                className={`text-sm font-semibold flex items-center gap-2 hover:underline ${accentColor}`}
               >
-                View & Contribute on GitHub
-                <ExternalLink className="w-3 h-3" />
+                <Github className="w-5 h-5" />
+                View Specification on GitHub
               </a>
-              <Link to="/" className={`text-sm hover:underline ${accentColor}`}>
-                FoundIndex Homepage
-              </Link>
+              <span className={mutedText}>•</span>
               <a 
                 href="mailto:hello@foundindex.com"
                 className={`text-sm hover:underline ${accentColor}`}
               >
                 Contact: hello@foundindex.com
               </a>
+              <span className={mutedText}>•</span>
+              <Link to="/" className={`text-sm hover:underline ${accentColor}`}>
+                FoundIndex Homepage
+              </Link>
             </div>
           </div>
           
-          <div className={`mt-8 text-center text-xs ${mutedText}`}>
+          {/* AI-Readable Badge in Footer */}
+          <div className="mt-8 flex flex-col items-center gap-2">
+            <Link to="/llms-txt" className="inline-block hover:opacity-80 transition-opacity">
+              <img src="/badges/ai-readable.svg" alt="AI-Readable Site" style={{ height: '24px' }} />
+            </Link>
+            <p className={`text-xs ${mutedText}`}>This site follows the llms.txt standard</p>
+          </div>
+          
+          <div className={`mt-4 text-center text-xs ${mutedText}`}>
             Powered by FoundIndex
           </div>
         </div>
