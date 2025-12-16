@@ -782,6 +782,14 @@ update-frequency: weekly`}
             Show visitors that your site is AI-readable:
           </p>
 
+          {/* Live Badge Preview */}
+          <div className={`mb-4 p-4 rounded-md border ${cardClasses}`}>
+            <p className={`text-xs mb-2 ${mutedText}`}>Preview:</p>
+            <a href="https://foundindex.com/llms-txt" target="_blank" rel="noopener noreferrer">
+              <img src="/badges/ai-readable.svg" alt="AI-Readable Site" className="h-5" />
+            </a>
+          </div>
+
           <div className={`relative rounded-md border overflow-hidden ${cardClasses}`}>
             <div className={`flex items-center justify-between px-4 py-2 border-b ${isDark ? 'border-[#30363d] bg-[#161b22]' : 'border-[#d0d7de] bg-[#f6f8fa]'}`}>
               <span className="font-mono text-sm">HTML</span>
