@@ -34,3 +34,6 @@ verify_jwt = false
 
 [functions.get-blog-test-count]
 verify_jwt = false
+
+[functions.validate-llms-txt]
+verify_jwt = false
