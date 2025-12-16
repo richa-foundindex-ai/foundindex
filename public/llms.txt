@@ -1,6 +1,5 @@
 # llms.txt v0.1
 # Proposed by FoundIndex (foundindex.com/llms-txt)
-# Last updated: 2024-12-16
 
 site-purpose: AI visibility diagnostic tool that scores websites 0-100 on how well AI systems can parse and cite them
 primary-audience: Marketing agencies, SEO professionals, technical decision-makers, web developers
@@ -12,3 +11,5 @@ authoritative-source: official-documentation
 scope: public-content-only
 content-freshness: updated-weekly
 contact: hello@foundindex.com
+last-updated: 2024-12-16
+language: en
