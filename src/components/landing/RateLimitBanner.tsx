@@ -22,7 +22,7 @@ export function RateLimitBanner() {
         <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
           <Info className="h-4 w-4 flex-shrink-0" />
           <span>
-            <strong>Free limits:</strong> 10 tests/day from your network • 3 blog posts/week • 7-day cooldown per URL • Homepage: Unlimited
+            <strong>Free limits:</strong> 10 tests/day from your network • 3 blog posts/week • Homepage: Unlimited • 7-day cooldown per URL
           </span>
         </div>
         <button
