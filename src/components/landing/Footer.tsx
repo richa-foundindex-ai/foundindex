@@ -9,7 +9,14 @@ const Footer = ({ onOpenFeedback }: FooterProps) => {
   return (
     <footer className="py-12 px-4 bg-accent-gray-light border-t">
       <div className="container mx-auto max-w-4xl">
-        <div className="text-center space-y-3">
+        <div className="text-center space-y-4">
+          {/* AI-Readable Badge */}
+          <div className="flex justify-center">
+            <Link to="/llms-txt" className="inline-block hover:opacity-80 transition-opacity">
+              <img src="/badges/ai-readable.svg" alt="AI-Readable Site" className="h-5" />
+            </Link>
+          </div>
+          
           <div className="flex justify-center items-center gap-2 flex-wrap text-sm text-muted-foreground">
             <span>FoundIndex © 2025</span>
             <span className="text-gray-300">•</span>
