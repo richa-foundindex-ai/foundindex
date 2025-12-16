@@ -995,9 +995,12 @@ update-frequency: weekly`}
           
           {/* AI-Readable Badge in Footer */}
           <div className="mt-8 flex flex-col items-center gap-2">
-            <Link to="/llms-txt" className="inline-block hover:opacity-80 transition-opacity">
+            <button 
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="inline-block hover:opacity-80 transition-opacity cursor-pointer"
+            >
               <img src="/badges/ai-readable.svg" alt="AI-Readable Site" style={{ height: '24px' }} />
-            </Link>
+            </button>
             <p className={`text-xs ${mutedText}`}>This site follows the llms.txt standard</p>
           </div>
           
