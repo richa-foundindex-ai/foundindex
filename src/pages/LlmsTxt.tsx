@@ -783,11 +783,14 @@ update-frequency: weekly`}
           </p>
 
           {/* Live Badge Preview */}
-          <div className={`mb-4 p-4 rounded-md border ${cardClasses}`}>
-            <p className={`text-xs mb-2 ${mutedText}`}>Preview:</p>
-            <a href="https://foundindex.com/llms-txt" target="_blank" rel="noopener noreferrer">
-              <img src="/badges/ai-readable.svg" alt="AI-Readable Site" className="h-5" />
-            </a>
+          <div className={`mb-6 p-6 rounded-lg border-2 ${isDark ? 'bg-[#0d1117] border-green-600/50' : 'bg-gray-50 border-green-500/50'}`}>
+            <p className={`text-sm font-medium mb-3 ${isDark ? 'text-green-400' : 'text-green-700'}`}>Live Preview:</p>
+            <div className="flex items-center justify-center py-4">
+              <a href="https://foundindex.com/llms-txt" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition-opacity">
+                <img src="/badges/ai-readable.svg" alt="AI-Readable Site" className="h-8" style={{ height: '28px' }} />
+              </a>
+            </div>
+            <p className={`text-xs text-center mt-2 ${mutedText}`}>Click to preview the link destination</p>
           </div>
 
           <div className={`relative rounded-md border overflow-hidden ${cardClasses}`}>
