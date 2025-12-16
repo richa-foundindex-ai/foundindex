@@ -27,10 +27,12 @@ import {
   FileText,
   Moon,
   Sun,
-  Github
+  Github,
+  ArrowUp
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import Header from "@/components/layout/Header";
 
 const techArticleSchema = {
   "@context": "https://schema.org",
@@ -96,6 +98,21 @@ const LlmsTxt = () => {
     mediaQuery.addEventListener('change', handler);
     return () => mediaQuery.removeEventListener('change', handler);
   }, []);
+
+  // Back to Top visibility state
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Toggle theme
   const toggleTheme = () => setIsDark(!isDark);
@@ -232,14 +249,28 @@ ${email ? `contact-email: ${email}` : '# contact-email: (not specified)'}
         </script>
       </Helmet>
 
+      {/* Header Navigation */}
+      <Header />
+
       {/* Theme Toggle */}
       <button
         onClick={toggleTheme}
-        className={`fixed top-4 right-4 z-50 p-2 rounded-md border ${cardClasses} hover:opacity-80 transition-opacity`}
+        className={`fixed top-20 right-4 z-50 p-2 rounded-md border ${cardClasses} hover:opacity-80 transition-opacity`}
         aria-label="Toggle theme"
       >
         {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
       </button>
+
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-gray-900 text-white shadow-lg hover:bg-gray-800 transition-all duration-300"
+          aria-label="Back to top"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
 
       {/* Hero Section */}
       <header className="py-16 md:py-24 px-4">
