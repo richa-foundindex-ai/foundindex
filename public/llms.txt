@@ -11,5 +11,5 @@ authoritative-source: official-documentation
 scope: public-content-only
 content-freshness: updated-weekly
 contact: hello@foundindex.com
-last-updated: 2024-12-16
+last-updated: 2025-12-16
 language: en
