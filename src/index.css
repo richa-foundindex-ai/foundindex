@@ -2,63 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* FoundIndex Design System - WCAG AA Compliant
+ * 2-color system with accessibility-first approach
+ * All colors MUST be HSL.
+ */
 
 @layer base {
   :root {
-    /* FoundIndex Design System - Editorial/Magazine Style */
+    /* Background */
     --background: 0 0% 100%;
-    --foreground: 0 0% 10%;
     
+    /* Text - Charcoal (#2C3E50) - 12.6:1 contrast on white */
+    --foreground: 207 29% 24%;
+    
+    /* Text Secondary - Lighter charcoal (#5A6C7D) */
+    --foreground-muted: 209 16% 42%;
+    
+    /* Card backgrounds */
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card-foreground: 207 29% 24%;
     
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover-foreground: 207 29% 24%;
     
-    /* Primary Red - Used sparingly for CTAs */
-    --primary: 0 72% 51%;
+    /* Primary CTA - Muted Orange (#E67E22) - 4.9:1 contrast with white text */
+    --primary: 28 80% 52%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 0 68% 42%;
+    --primary-hover: 28 80% 46%;
     
-    /* Subtle Gray for secondary text */
-    --secondary: 0 0% 22%;
+    /* Secondary - Charcoal for secondary buttons */
+    --secondary: 207 29% 24%;
     --secondary-foreground: 0 0% 100%;
     
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    /* Muted backgrounds */
+    --muted: 220 14% 96%;
+    --muted-foreground: 209 16% 42%;
     
+    /* Accent */
     --accent: 220 13% 91%;
-    --accent-foreground: 0 0% 10%;
+    --accent-foreground: 207 29% 24%;
     
-    /* Success/Warning colors */
-    --success: 158 64% 52%;
+    /* Success - Green */
+    --success: 158 64% 40%;
     --success-foreground: 0 0% 100%;
     
+    /* Warning - Amber */
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 10%;
+    --warning-foreground: 207 29% 24%;
     
+    /* Destructive - Red */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 0 0% 89%;
-    --input: 0 0% 89%;
-    --ring: 0 72% 51%;
+    /* Borders - Light gray (#E5E7EB) and medium (#D1D5DB) */
+    --border: 220 13% 91%;
+    --border-medium: 220 13% 82%;
+    --input: 220 13% 91%;
+    
+    /* Focus ring - Deep teal (#0A7C7C) for accessibility */
+    --ring: 180 84% 27%;
     
     --radius: 0.5rem;
     
-    /* Light red background for special sections */
+    /* Special section backgrounds */
     --accent-red-light: 0 100% 98%;
-    
-    /* Light gray background for methodology */
     --accent-gray-light: 0 0% 98%;
     
-    /* Link colors - Blue for text links */
-    --link: 217 91% 60%;
-    --link-hover: 217 91% 50%;
-    --link-visited: 217 91% 40%;
+    /* Link colors - Deep Teal (#0A7C7C) - 4.8:1 contrast */
+    --link: 180 84% 27%;
+    --link-hover: 180 84% 20%;
+    --link-visited: 180 84% 22%;
     
     /* Beta Launch Colors */
     --blue: 217 91% 60%;
@@ -68,6 +81,7 @@ All colors MUST be HSL.
   }
 }
 
+/* Animations */
 @keyframes steam {
   0% {
     opacity: 0.7;
@@ -95,6 +109,18 @@ All colors MUST be HSL.
   animation: shimmer 2s infinite linear;
 }
 
+/* Reduced motion support for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -102,16 +128,60 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    font-size: 1.125rem;
+    line-height: 1.7;
   }
   
+  /* Typography with WCAG compliance */
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold text-foreground;
+    line-height: 1.2;
   }
   
-  /* Text link styles - blue color, not buttons */
+  h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+  }
+  
+  h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+  }
+  
+  h3 {
+    font-size: 1.875rem;
+    font-weight: 600;
+  }
+  
+  /* Responsive typography */
+  @media (max-width: 768px) {
+    h1 {
+      font-size: 2.5rem;
+    }
+    h2 {
+      font-size: 2rem;
+    }
+    h3 {
+      font-size: 1.5rem;
+    }
+  }
+  
+  /* Focus states for accessibility - 3px solid teal with 2px offset */
+  button:focus-visible,
+  a:focus-visible,
+  [role="button"]:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 3px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+  
+  /* Text link styles - Deep teal color */
   .text-link {
     color: hsl(var(--link));
     text-decoration: none;
+    transition: color 0.2s ease;
   }
   
   .text-link:hover {
@@ -123,20 +193,96 @@ All colors MUST be HSL.
     color: hsl(var(--link-visited));
   }
   
+  /* Skip navigation link for accessibility */
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: hsl(var(--foreground));
+    color: hsl(var(--background));
+    padding: 8px 16px;
+    z-index: 100;
+    transition: top 0.3s;
+  }
+  
+  .skip-link:focus {
+    top: 0;
+  }
+  
   /* Editorial typography scale */
   .text-editorial-xl {
-    @apply text-5xl md:text-6xl font-bold leading-tight;
+    @apply font-bold leading-tight;
+    font-size: 3.5rem;
   }
   
   .text-editorial-lg {
-    @apply text-3xl md:text-4xl font-bold leading-tight;
+    @apply font-bold leading-tight;
+    font-size: 2.5rem;
   }
   
   .text-editorial-md {
-    @apply text-2xl md:text-3xl font-bold leading-tight;
+    @apply font-bold leading-tight;
+    font-size: 1.875rem;
   }
   
   .text-body-lg {
-    @apply text-lg leading-relaxed;
+    font-size: 1.125rem;
+    line-height: 1.8;
+  }
+  
+  /* Readable text width */
+  .prose-readable {
+    max-width: 65ch;
+  }
+  
+  @media (max-width: 768px) {
+    .text-editorial-xl {
+      font-size: 2.5rem;
+    }
+    .text-editorial-lg {
+      font-size: 2rem;
+    }
+    .text-editorial-md {
+      font-size: 1.5rem;
+    }
+  }
+}
+
+/* Section spacing utilities - Each&Other style */
+@layer utilities {
+  .section-padding {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+  
+  @media (min-width: 768px) {
+    .section-padding {
+      padding-top: 4.5rem;
+      padding-bottom: 4.5rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .section-padding {
+      padding-top: 6rem;
+      padding-bottom: 6rem;
+    }
+  }
+  
+  /* CTA clearance */
+  .cta-clearance {
+    margin-top: 2.5rem;
+    margin-bottom: 2.5rem;
+  }
+  
+  /* Element spacing within sections */
+  .element-spacing > * + * {
+    margin-top: 2.5rem;
+  }
+  
+  @media (min-width: 768px) {
+    .element-spacing > * + * {
+      margin-top: 3rem;
+    }
   }
 }

@@ -36,6 +36,10 @@ function ToastDismissOnNavigate() {
 
 const AppRoutes = () => (
   <>
+    {/* Skip navigation link for accessibility */}
+    <a href="#main-content" className="skip-link">
+      Skip to main content
+    </a>
     <ToastDismissOnNavigate />
     <Routes>
       <Route path="/" element={<Index />} />
