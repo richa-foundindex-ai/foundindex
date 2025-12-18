@@ -96,7 +96,6 @@ export default {
           light: "hsl(var(--blue-light))",
         },
       },
-      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
