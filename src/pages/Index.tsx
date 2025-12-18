@@ -5,6 +5,7 @@ import Navigation from "@/components/layout/Navigation";
 import SiteFooter from "@/components/layout/SiteFooter";
 import DiagnosticForm from "@/components/DiagnosticForm";
 import Testimonials from "@/components/landing/Testimonials";
+import FAQ from "@/components/FAQ";
 
 const Index = () => {
   const scrollToSection = (id: string) => {
@@ -437,43 +438,7 @@ const Index = () => {
         <Testimonials />
 
         {/* FAQ Section */}
-        <section className="py-20 bg-gray-50">
-          <div className="max-w-3xl mx-auto px-4 sm:px-6">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
-              Common Questions
-            </h2>
-
-            <div className="space-y-4">
-              {[
-                {
-                  q: "Who is this for?",
-                  a: "B2B SaaS, content publishers, e-commerce sites—anyone wanting AI citations. If you have a dev team or can follow technical instructions, you can implement our code."
-                },
-                {
-                  q: "Do you need access to my site?",
-                  a: "No. We deliver complete code packages. You (or your developer) implement. Zero security risk, full control."
-                },
-                {
-                  q: "What platforms?",
-                  a: "WordPress, Shopify, Webflow, Wix, custom sites. Includes platform-specific instructions."
-                },
-                {
-                  q: "How long to implement?",
-                  a: "2-4 hours for developers, 4-6 hours DIY. We deliver code within 48 hours of payment."
-                },
-                {
-                  q: "Can I do this without a developer?",
-                  a: "Yes if you're comfortable with WordPress plugins or basic HTML. Video guides show exactly where to paste. Complex custom sites may need dev help."
-                }
-              ].map((item, index) => (
-                <div key={index} className="bg-white rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.q}</h3>
-                  <p className="text-gray-600">{item.a}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <FAQ />
 
         {/* Final CTA */}
         <section className="py-20 bg-gray-900 text-white">
