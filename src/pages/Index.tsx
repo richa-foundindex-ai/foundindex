@@ -26,39 +26,39 @@ const Index = () => {
 
       <main id="main-content">
         {/* Hero Section */}
-        <section className="bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-500 text-white py-20 md:py-28">
+        <section className="bg-white py-20 md:py-28">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight text-foreground">
               Is AI Ignoring Your Website?
             </h1>
 
-            <p className="text-xl md:text-2xl text-white/90 mb-6 max-w-3xl mx-auto">
+            <p className="text-xl md:text-2xl text-foreground-muted mb-6 max-w-3xl mx-auto">
               Test if ChatGPT, Perplexity, and Google AI can actually understand your site. Get your AI Readability Score in 60 seconds.
             </p>
 
-            <p className="text-white/80 mb-8 max-w-2xl mx-auto">
+            <p className="text-foreground-muted mb-8 max-w-2xl mx-auto">
               Analyzes 47 structural criteria including schema markup, llms.txt, semantic HTML, and content clarity
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
               <button
                 onClick={() => scrollToSection("free-tool")}
-                className="bg-white text-violet-700 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg"
+                className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-hover transition-colors shadow-lg"
                 aria-label="Test your website for AI readability - Free diagnostic in 60 seconds"
               >
                 Test Your Site Free
               </button>
               <button
                 onClick={() => scrollToSection("pricing")}
-                className="border-2 border-white/50 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 transition-colors"
+                className="border-2 border-border-medium text-foreground px-8 py-4 rounded-xl font-semibold text-lg hover:bg-muted transition-colors"
                 aria-label="View code package details - $997 professional AI readability implementation"
               >
                 See Code Package - $997 →
               </button>
             </div>
 
-            <p className="text-white/70 text-sm flex items-center justify-center gap-2">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+            <p className="text-foreground-muted text-sm flex items-center justify-center gap-2">
+              <svg className="w-4 h-4 text-success" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               No signup required • Instant results
@@ -102,13 +102,13 @@ const Index = () => {
 
               {/* The Cost */}
               <div className="bg-white rounded-2xl p-8 shadow-sm card-hover">
-                <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center mb-6">
-                  <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center mb-6">
+                  <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">The Cost</h3>
-                <p className="text-gray-600">
+                <h3 className="text-xl font-bold text-foreground mb-3">The Cost</h3>
+                <p className="text-foreground-muted">
                   While competitors get cited by AI, you're losing traffic and authority. Every day AI can't read you is a day you're invisible.
                 </p>
               </div>
@@ -154,57 +154,57 @@ const Index = () => {
               </div>
 
               {/* FoundIndex Fixes the INPUT */}
-              <div className="bg-violet-50 rounded-2xl p-8 border-2 border-violet-200">
+              <div className="bg-white rounded-2xl p-8 border-2 border-primary/30">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-violet-200 rounded-lg flex items-center justify-center">
-                    <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-bold text-violet-900">FoundIndex Fixes the INPUT</h3>
+                  <h3 className="text-xl font-bold text-foreground">FoundIndex Fixes the INPUT</h3>
                 </div>
-                <p className="text-violet-800 mb-4">We diagnose and fix the root cause:</p>
+                <p className="text-foreground mb-4">We diagnose and fix the root cause:</p>
                 <div className="space-y-2 mb-4">
                   <div className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold">✓</span>
-                    <span className="text-violet-800">"Your site has no schema markup"</span>
+                    <span className="text-success font-bold">✓</span>
+                    <span className="text-foreground">"Your site has no schema markup"</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold">✓</span>
-                    <span className="text-violet-800">"Your content structure confuses AI"</span>
+                    <span className="text-success font-bold">✓</span>
+                    <span className="text-foreground">"Your content structure confuses AI"</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <span className="text-green-600 font-bold">✓</span>
-                    <span className="text-violet-800">"You're missing llms.txt context"</span>
+                    <span className="text-success font-bold">✓</span>
+                    <span className="text-foreground">"You're missing llms.txt context"</span>
                   </div>
                 </div>
-                <p className="text-violet-700 font-medium">We fix the structure so AI can read you.</p>
+                <p className="text-foreground font-medium">We fix the structure so AI can read you.</p>
               </div>
             </div>
 
             {/* How They Work Together */}
-            <div className="bg-gray-900 rounded-2xl p-8 text-white">
-              <h3 className="text-2xl font-bold text-center mb-8">How They Work Together</h3>
+            <div className="bg-muted rounded-2xl p-8">
+              <h3 className="text-2xl font-bold text-center mb-8 text-foreground">How They Work Together</h3>
               <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 mb-6">
                 <div className="text-center">
-                  <div className="text-violet-400 text-sm font-medium mb-1">STEP 1</div>
-                  <div className="text-lg font-bold">FoundIndex</div>
-                  <div className="text-gray-400 text-sm">Fix INPUT (Structure)</div>
+                  <div className="text-primary text-sm font-medium mb-1">STEP 1</div>
+                  <div className="text-lg font-bold text-foreground">FoundIndex</div>
+                  <div className="text-foreground-muted text-sm">Fix INPUT (Structure)</div>
                 </div>
-                <span className="text-gray-500 text-2xl hidden md:block">→</span>
+                <span className="text-foreground-muted text-2xl hidden md:block">→</span>
                 <div className="text-center">
-                  <div className="text-violet-400 text-sm font-medium mb-1">STEP 2</div>
-                  <div className="text-lg font-bold">Build Authority</div>
-                  <div className="text-gray-400 text-sm">Content & Backlinks</div>
+                  <div className="text-primary text-sm font-medium mb-1">STEP 2</div>
+                  <div className="text-lg font-bold text-foreground">Build Authority</div>
+                  <div className="text-foreground-muted text-sm">Content & Backlinks</div>
                 </div>
-                <span className="text-gray-500 text-2xl hidden md:block">→</span>
+                <span className="text-foreground-muted text-2xl hidden md:block">→</span>
                 <div className="text-center">
-                  <div className="text-violet-400 text-sm font-medium mb-1">STEP 3</div>
-                  <div className="text-lg font-bold">Track OUTPUT</div>
-                  <div className="text-gray-400 text-sm">Semrush/Ahrefs</div>
+                  <div className="text-primary text-sm font-medium mb-1">STEP 3</div>
+                  <div className="text-lg font-bold text-foreground">Track OUTPUT</div>
+                  <div className="text-foreground-muted text-sm">Semrush/Ahrefs</div>
                 </div>
               </div>
-              <p className="text-center text-green-400 font-medium">
+              <p className="text-center text-success font-medium">
                 ✅ We're the prerequisite to citation tracking.
               </p>
             </div>
@@ -273,13 +273,13 @@ const Index = () => {
         </section>
 
         {/* Free Tool Section */}
-        <section id="free-tool" className="py-20 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-500 text-white">
+        <section id="free-tool" className="py-20 bg-muted">
           <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
-            <span className="inline-block bg-white/20 text-white px-4 py-1 rounded-full text-sm font-medium mb-6">
+            <span className="inline-block bg-primary/10 text-primary px-4 py-1 rounded-full text-sm font-medium mb-6">
               Free Tool
             </span>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Test Your AI Readability</h2>
-            <p className="text-xl text-white/90 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-foreground">Test Your AI Readability</h2>
+            <p className="text-xl text-foreground-muted mb-8">
               Get your 0-100 score in 60 seconds. See exactly what AI systems can't understand.
             </p>
 
@@ -291,23 +291,23 @@ const Index = () => {
         <section id="pricing" className="py-20 bg-white">
           <div className="max-w-4xl mx-auto px-4 sm:px-6">
             <div className="text-center mb-12">
-              <span className="inline-block bg-violet-100 text-violet-700 px-4 py-1 rounded-full text-sm font-medium mb-4">
+              <span className="inline-block bg-primary/10 text-primary px-4 py-1 rounded-full text-sm font-medium mb-4">
                 Professional Service
               </span>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">AI Readability Code Package</h2>
-              <p className="text-xl text-gray-600">Complete implementation code. You install. We support.</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-2">AI Readability Code Package</h2>
+              <p className="text-xl text-foreground-muted">Complete implementation code. You install. We support.</p>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-              <div className="bg-gray-900 text-white p-6 md:p-8">
+            <div className="bg-white rounded-2xl shadow-xl border-2 border-border overflow-hidden">
+              <div className="bg-muted p-6 md:p-8 border-b border-border">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h3 className="text-2xl font-bold mb-1">Complete Code Package</h3>
-                    <p className="text-gray-400">Ready-to-install with video guide</p>
+                    <h3 className="text-2xl font-bold mb-1 text-foreground">Complete Code Package</h3>
+                    <p className="text-foreground-muted">Ready-to-install with video guide</p>
                   </div>
                   <div className="mt-4 md:mt-0 text-right">
-                    <div className="text-4xl font-bold">$997</div>
-                    <div className="text-gray-400">one-time</div>
+                    <div className="text-4xl font-bold text-foreground">$997</div>
+                    <div className="text-foreground-muted">one-time</div>
                   </div>
                 </div>
               </div>
@@ -359,17 +359,17 @@ const Index = () => {
                     href="https://foundindex.gumroad.com/l/code-package"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-block bg-violet-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-700 transition-colors w-full md:w-auto"
+                    className="inline-block bg-primary text-primary-foreground px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-hover transition-colors w-full md:w-auto"
                     aria-label="Purchase AI readability code package for $997 - Secure payment via Gumroad"
                   >
                     Get Code Package - $997
                   </a>
-                  <p className="text-sm text-gray-500 mt-4">
+                  <p className="text-sm text-foreground-muted mt-4">
                     Secure payment via Gumroad • Digital delivery
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-foreground-muted">
                     Questions?{" "}
-                    <Link to="/contact" className="text-violet-600 hover:underline">
+                    <Link to="/contact" className="text-link hover:text-link-hover hover:underline">
                       Chat with us
                     </Link>{" "}
                     during business hours
@@ -380,15 +380,15 @@ const Index = () => {
 
             {/* Q1 2026 Notice */}
             <div className="mt-12 text-center">
-              <div className="inline-flex items-center gap-3 bg-violet-50 border border-violet-200 rounded-xl px-6 py-4">
-                <div className="w-10 h-10 bg-violet-200 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <div className="inline-flex items-center gap-3 bg-muted border border-border rounded-xl px-6 py-4">
+                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
                 <div className="text-left">
-                  <div className="text-violet-800 font-medium">Full Implementation Service ($2,997) launching Q1 2026</div>
-                  <div className="text-violet-600 text-sm">We install everything for you. Stay tuned.</div>
+                  <div className="text-foreground font-medium">Full Implementation Service ($2,997) launching Q1 2026</div>
+                  <div className="text-foreground-muted text-sm">We install everything for you. Stay tuned.</div>
                 </div>
               </div>
             </div>
@@ -441,18 +441,18 @@ const Index = () => {
         <FAQ />
 
         {/* Final CTA */}
-        <section className="py-20 bg-gray-900 text-white">
+        <section className="py-20 bg-secondary text-secondary-foreground">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               Stop Being Invisible to AI
             </h2>
-            <p className="text-xl text-gray-400 mb-8">
+            <p className="text-xl text-secondary-foreground/70 mb-8">
               Test free. Get professional code if needed.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
                 onClick={() => scrollToSection("free-tool")}
-                className="bg-violet-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-700 transition-colors"
+                className="bg-primary text-primary-foreground px-8 py-4 rounded-xl font-semibold text-lg hover:bg-primary-hover transition-colors"
                 aria-label="Test your website for AI readability - Free diagnostic"
               >
                 Test Your Site Free
@@ -461,7 +461,7 @@ const Index = () => {
                 href="https://foundindex.gumroad.com/l/code-package"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="border-2 border-gray-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-800 transition-colors"
+                className="border-2 border-secondary-foreground/30 text-secondary-foreground px-8 py-4 rounded-xl font-semibold text-lg hover:bg-secondary-foreground/10 transition-colors"
                 aria-label="Purchase AI readability code package for $997"
               >
                 Get Code Package - $997 →
