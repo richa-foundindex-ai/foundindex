@@ -4,9 +4,7 @@ import { Helmet } from "react-helmet-async";
 import Navigation from "@/components/layout/Navigation";
 import SiteFooter from "@/components/layout/SiteFooter";
 import DiagnosticForm from "@/components/DiagnosticForm";
-import blueNectarLogo from "@/assets/blue-nectar-logo.png";
-import nitinPhoto from "@/assets/nitin-kaura.jpg";
-import gunishthaPhoto from "@/assets/gunishtha-doomra.jpg";
+import Testimonials from "@/components/landing/Testimonials";
 
 const Index = () => {
   const scrollToSection = (id: string) => {
@@ -436,69 +434,7 @@ const Index = () => {
         </section>
 
         {/* Testimonials */}
-        <section className="py-20 bg-white">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
-              Trusted by Founders and Marketers
-            </h2>
-
-            <div className="grid md:grid-cols-3 gap-8">
-              {/* Testimonial 1 */}
-              <div className="bg-gray-50 rounded-2xl p-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <img
-                    src={blueNectarLogo}
-                    alt="Blue Nectar Ayurved company logo"
-                    className="w-14 h-14 rounded-full object-cover border border-gray-200"
-                  />
-                  <div>
-                    <div className="font-semibold text-gray-900">Sanyog Jain</div>
-                    <div className="text-sm text-gray-500">Co-Founder, Blue Nectar Ayurved</div>
-                  </div>
-                </div>
-                <p className="text-gray-600">
-                  "A genuinely top-tier tool. The AI visibility insights uncovered opportunities our regular SEO stack misses entirely."
-                </p>
-              </div>
-
-              {/* Testimonial 2 */}
-              <div className="bg-gray-50 rounded-2xl p-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <img
-                    src={nitinPhoto}
-                    alt="Nitin Kaura professional headshot"
-                    className="w-14 h-14 rounded-full object-cover border border-gray-200"
-                  />
-                  <div>
-                    <div className="font-semibold text-gray-900">Nitin Kaura</div>
-                    <div className="text-sm text-gray-500">Full-Stack Marketer & SEO Specialist</div>
-                  </div>
-                </div>
-                <p className="text-gray-600">
-                  "The breakdown was sharp and surprisingly aligned with how I evaluate pages for AEO/LLM relevance."
-                </p>
-              </div>
-
-              {/* Testimonial 3 */}
-              <div className="bg-gray-50 rounded-2xl p-8">
-                <div className="flex items-center gap-4 mb-6">
-                  <img
-                    src={gunishthaPhoto}
-                    alt="Gunishtha Doomra professional headshot"
-                    className="w-14 h-14 rounded-full object-cover border border-gray-200"
-                  />
-                  <div>
-                    <div className="font-semibold text-gray-900">Gunishtha Doomra</div>
-                    <div className="text-sm text-gray-500">Tech Blogger & Software Developer</div>
-                  </div>
-                </div>
-                <p className="text-gray-600">
-                  "Surprisingly accurate insights. FoundIndex highlighted AI visibility gaps that didn't show up anywhere else."
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+        <Testimonials />
 
         {/* FAQ Section */}
         <section className="py-20 bg-gray-50">
