@@ -1,719 +1,750 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import Header from "@/components/layout/Header";
-import SEOSchema from "@/components/SEOSchema";
-import Testimonials from "@/components/landing/Testimonials";
-import FAQ from "@/components/landing/FAQ";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, AlertCircle } from "lucide-react";
-import { analytics } from "@/utils/analytics";
-import { validateAndNormalizeUrl, getErrorMessage } from "@/utils/urlValidation";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useBlogTestCounter } from "@/hooks/useBlogTestCounter";
-import { RateLimitBanner } from "@/components/landing/RateLimitBanner";
-import { BlogTestCounter } from "@/components/landing/BlogTestCounter";
-import { isStructuredError } from "@/utils/errorTypes";
-import { ToastAction } from "@/components/ui/toast";
-import { RetestModal } from "@/components/RetestModal";
-
-interface RetestModalData {
-  url: string;
-  lastTestedDate: Date;
-  nextAvailableDate: Date;
-  cachedTestId: string;
-  cachedScore: number;
-  attemptsExhausted?: boolean;
-}
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
+import blueNectarLogo from "@/assets/blue-nectar-logo.png";
+import nitinPhoto from "@/assets/nitin-kaura.jpg";
+import gunishthaPhoto from "@/assets/gunishtha-doomra.jpg";
 
 const Index = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState("");
   const navigate = useNavigate();
-  const { toast, dismiss } = useToast();
-  const { incrementBlogTestCount } = useBlogTestCounter();
 
-  const [homepageUrl, setHomepageUrl] = useState("");
-  const [blogUrl, setBlogUrl] = useState("");
-  const [isLoadingHomepage, setIsLoadingHomepage] = useState(false);
-  const [isLoadingBlog, setIsLoadingBlog] = useState(false);
-  const [homepageError, setHomepageError] = useState<string | null>(null);
-  const [blogError, setBlogError] = useState<string | null>(null);
-  const [homepageSuggestion, setHomepageSuggestion] = useState<string | null>(null);
-  const [blogSuggestion, setBlogSuggestion] = useState<string | null>(null);
-
-  const [retestModalOpen, setRetestModalOpen] = useState(false);
-  const [retestModalData, setRetestModalData] = useState<RetestModalData | null>(null);
-
-  useEffect(() => {
-    analytics.pageView("homepage");
-  }, []);
-
-  const normalizeRateLimitPayload = (p: any) => {
-    if (!p) return null;
-    return {
-      testId: p.test_id || p.cached_test_id || p.testId || p.cachedTestId || "",
-      testedAt: p.testedAt || p.cached_created_at || p.cached_created_at_iso || p.tested_at || p.created_at || null,
-      canRetestAt: p.canRetestAt || p.can_retest_at || p.next_available_time || p.nextAvailable || p.canRetest || null,
-      cachedScore:
-        typeof p.cached_score === "number"
-          ? p.cached_score
-          : typeof p.cachedScore === "number"
-            ? p.cachedScore
-            : undefined,
-      attemptsExhausted: p.attempts_exhausted === true || (typeof p.attempts === "number" && p.attempts >= 3) || false,
-      userMessage: p.user_message || p.userMessage || p.message || null,
-    };
-  };
-
-  const handleAnalysisError = (errorData: unknown, websiteUrl: string, testType?: string) => {
-    if (!isStructuredError(errorData)) return false;
-    const e = errorData as any;
-
-    switch (e.error_type) {
-      case "RATE_LIMIT_BLOG": {
-        const nextAvailable = e.next_available_time || e.canRetestAt;
-        let resetDateStr = "";
-        if (nextAvailable) {
-          resetDateStr = new Intl.DateTimeFormat("en-IN", {
-            weekday: "long",
-            month: "long",
-            day: "numeric",
-            timeZone: "Asia/Kolkata",
-          }).format(new Date(nextAvailable)) + " (IST)";
-        }
-
-        toast({
-          variant: "destructive",
-          title: "Blog test limit reached",
-          description: `You've tested 3 blog posts in the last 7 days. You can test more blog posts on ${resetDateStr || "next week"}. Homepage tests are unlimited!`,
-          duration: 10000,
-        });
-        break;
-      }
-
-      case "RATE_LIMIT_IP": {
-        if (e.user_message && testType === "blog") {
-          toast({
-            variant: "destructive",
-            title: "Blog test limit reached",
-            description: e.user_message,
-            duration: 10000,
-          });
-          break;
-        }
-
-        const blogCount = e.blogCount || e.blog_count;
-        const blogLimit = e.blogLimit || e.blog_limit || 3;
-        const nextAvailable = e.next_available_time || e.canRetestAt;
-
-        if (testType === "blog" && (blogCount !== undefined || e.is_blog_limit || nextAvailable)) {
-          let resetDateStr = "";
-          if (nextAvailable) {
-            resetDateStr = new Intl.DateTimeFormat("en-IN", {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-              timeZone: "Asia/Kolkata",
-            }).format(new Date(nextAvailable)) + " (IST)";
-          }
-
-          toast({
-            variant: "destructive",
-            title: "Blog test limit reached",
-            description: `You've tested 3 blog posts in the last 7 days. You can test more on ${resetDateStr || "next week"}. Homepage tests are unlimited!`,
-            duration: 10000,
-          });
-          break;
-        }
-
-        const ipCount = e.ipCount || e.ip_count;
-        const ipLimit = e.ipLimit || e.ip_limit;
-        const description =
-          e.user_message ||
-          (ipCount && ipLimit
-            ? `You've used ${ipCount} of ${ipLimit} free tests today from this network. Try again tomorrow or use a different internet connection (mobile data).`
-            : "You've reached the daily testing limit from this network. Try again later or use a different connection.");
-
-        toast({
-          variant: "destructive",
-          title: "Daily limit reached",
-          description,
-          duration: 10000,
-          action: (
-            <ToastAction altText="Contact" onClick={() => navigate("/contact")}>
-              Contact Us
-            </ToastAction>
-          ),
-        });
-        break;
-      }
-
-      case "RATE_LIMIT_URL": {
-        const payload = normalizeRateLimitPayload(e);
-        let testedIso = payload?.testedAt;
-        let canRetestIso = payload?.canRetestAt;
-
-        if (!testedIso && canRetestIso) {
-          testedIso = new Date(new Date(canRetestIso).getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        }
-        if (!canRetestIso && testedIso) {
-          canRetestIso = new Date(new Date(testedIso).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-        }
-        const lastTestedDate = testedIso ? new Date(testedIso) : new Date();
-        const nextAvailableDate = canRetestIso
-          ? new Date(canRetestIso)
-          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-        setRetestModalData({
-          url: websiteUrl,
-          lastTestedDate,
-          nextAvailableDate,
-          cachedTestId: payload?.testId || "",
-          cachedScore: payload?.cachedScore ?? 0,
-          attemptsExhausted: payload?.attemptsExhausted ?? false,
-        });
-        setRetestModalOpen(true);
-        break;
-      }
-
-      case "SITE_UNREACHABLE":
-        toast({
-          variant: "destructive",
-          title: "Website not reachable",
-          description: e.user_message || "We couldn't reach that site — check the URL or try again later.",
-          duration: 5000,
-        });
-        break;
-
-      case "TIMEOUT":
-        toast({
-          variant: "destructive",
-          title: "Request timed out",
-          description: e.user_message || "The site took too long to respond. Try again later.",
-          duration: 5000,
-        });
-        break;
-
-      case "API_QUOTA":
-        toast({
-          variant: "destructive",
-          title: "Service temporarily unavailable",
-          description: e.user_message || "We're temporarily out of capacity. Try again shortly.",
-          duration: 5000,
-          action: (
-            <ToastAction altText="Notify" onClick={() => navigate("/contact")}>
-              Email Me When Fixed
-            </ToastAction>
-          ),
-        });
-        break;
-
-      default:
-        toast({
-          variant: "destructive",
-          title: "Analysis failed",
-          description: e.user_message || "Unable to analyze this website. Please try again.",
-          duration: 5000,
-        });
-    }
-
-    return true;
-  };
-
-  const handleHomepageSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setHomepageError(null);
-    setHomepageSuggestion(null);
-    dismiss?.();
-
-    if (!homepageUrl.trim()) {
-      setHomepageError("Please enter a website URL");
-      return;
-    }
-
-    const validation = validateAndNormalizeUrl(homepageUrl);
-    if (!validation.valid) {
-      const errorMsg = getErrorMessage(validation);
-      setHomepageError(errorMsg.description);
-      if (validation.suggestion) setHomepageSuggestion(validation.suggestion);
-      return;
-    }
-
-    const websiteUrl = validation.normalizedUrl!;
-    analytics.buttonClick("Get FI Score - Homepage", "homepage_audit");
-    setIsLoadingHomepage(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("analyze-website", {
-        body: { website: websiteUrl, testType: "homepage" },
-      });
-
-      if (error) throw error;
-
-      if (data?.success === true && data?.testId) {
-        toast({
-          title: "Analysis complete!",
-          description: "Loading your results...",
-          duration: 2000,
-        });
-        navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
-        return;
-      }
-
-      if (data?.success === false) {
-        const handled = handleAnalysisError(data, websiteUrl);
-        if (!handled) {
-          toast({
-            title: "Analysis failed",
-            description: data.error || data.user_message || "Unable to analyze this website",
-            variant: "destructive",
-            duration: 5000,
-          });
-        }
-        return;
-      }
-
-      throw new Error("Unexpected response format");
-    } catch (err: unknown) {
-      console.error("Homepage submit error:", err);
-
-      toast({
-        title: "Unable to analyze website",
-        description: "Please check the URL and try again.",
-        variant: "destructive",
-        duration: 5000,
-      });
-    } finally {
-      setIsLoadingHomepage(false);
+    if (websiteUrl.trim()) {
+      const normalizedUrl = websiteUrl.startsWith("http://") || websiteUrl.startsWith("https://")
+        ? websiteUrl
+        : `https://${websiteUrl}`;
+      navigate(`/results?url=${encodeURIComponent(normalizedUrl)}`);
     }
   };
 
-  const handleBlogSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBlogError(null);
-    setBlogSuggestion(null);
-    dismiss?.();
-
-    if (!blogUrl.trim()) {
-      setBlogError("Please enter a blog post URL");
-      return;
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
     }
-
-    const validation = validateAndNormalizeUrl(blogUrl);
-    if (!validation.valid) {
-      const errorMsg = getErrorMessage(validation);
-      setBlogError(errorMsg.description);
-      if (validation.suggestion) setBlogSuggestion(validation.suggestion);
-      return;
-    }
-
-    const websiteUrl = validation.normalizedUrl!;
-    analytics.buttonClick("Get FI Score - Blog", "blog_audit");
-    setIsLoadingBlog(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("analyze-website", {
-        body: { website: websiteUrl, testType: "blog" },
-      });
-
-      if (data?.error_type === "RATE_LIMIT_IP") {
-        toast({
-          variant: "destructive",
-          title: "Blog test limit reached",
-          description: data.user_message || "You've reached your blog test limit.",
-          duration: Infinity,
-        });
-        return;
-      }
-
-      if (error) {
-        let errorData: any = null;
-        
-        if (error.context?.body) {
-          try {
-            errorData = typeof error.context.body === "string" 
-              ? JSON.parse(error.context.body) 
-              : error.context.body;
-          } catch (e) {}
-        }
-        
-        if (!errorData && error.message) {
-          const jsonMatch = error.message.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            try {
-              errorData = JSON.parse(jsonMatch[0]);
-            } catch (e) {}
-          }
-        }
-        
-        if (errorData?.error_type === "RATE_LIMIT_IP") {
-          toast({
-            variant: "destructive",
-            title: "Blog test limit reached",
-            description: errorData.user_message || "You've reached your blog test limit.",
-            duration: Infinity,
-          });
-          return;
-        }
-      }
-
-      if (data && data.success === false && data.error_type) {
-        const handled = handleAnalysisError(data, websiteUrl, "blog");
-        if (handled) return;
-      }
-
-      if (error) {
-        let errorData = null;
-        
-        if (error && typeof error === "object") {
-          const errObj = error as any;
-          if (errObj.error_type) {
-            errorData = errObj;
-          } else if (errObj.context?.body) {
-            try {
-              errorData = typeof errObj.context.body === "string" 
-                ? JSON.parse(errObj.context.body) 
-                : errObj.context.body;
-            } catch (e) {}
-          } else if (errObj.message) {
-            const jsonMatch = errObj.message.match(/\{[\s\S]*\}/);
-            if (jsonMatch) {
-              try {
-                errorData = JSON.parse(jsonMatch[0]);
-              } catch (e) {}
-            }
-          }
-        }
-
-        if (errorData && errorData.error_type) {
-          const handled = handleAnalysisError(errorData, websiteUrl, "blog");
-          if (handled) return;
-        }
-
-        throw error;
-      }
-
-      if (data?.success === true && data?.testId) {
-        incrementBlogTestCount();
-        toast({
-          title: "Analysis complete!",
-          description: "Loading your results...",
-          duration: 2000,
-        });
-        navigate(`/results?testId=${data.testId}&url=${encodeURIComponent(websiteUrl)}`);
-        return;
-      }
-
-      throw new Error("Unexpected response format");
-    } catch (err: unknown) {
-      let errorData = null;
-      if (err && typeof err === "object") {
-        const errObj = err as any;
-        
-        if (errObj.error_type && errObj.user_message) {
-          errorData = errObj;
-        } else if (errObj.context?.body) {
-          try {
-            errorData = typeof errObj.context.body === "string" 
-              ? JSON.parse(errObj.context.body) 
-              : errObj.context.body;
-          } catch (e) {}
-        } else if (errObj.message) {
-          const jsonMatch = errObj.message.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            try {
-              errorData = JSON.parse(jsonMatch[0]);
-            } catch (e) {}
-          }
-        }
-      }
-
-      if (errorData && errorData.error_type) {
-        const handled = handleAnalysisError(errorData, websiteUrl, "blog");
-        if (handled) return;
-      }
-      
-      toast({
-        title: "Unable to analyze blog post",
-        description: "Please check the URL and try again.",
-        variant: "destructive",
-        duration: 5000,
-      });
-    } finally {
-      setIsLoadingBlog(false);
-    }
+    setMobileMenuOpen(false);
   };
 
   return (
     <>
-      <div className="min-h-screen bg-background">
-        <SEOSchema />
-        <Header />
-        <RateLimitBanner />
+      <Helmet>
+        <title>FoundIndex | Fix Why AI Can't Read Your Website</title>
+        <meta name="description" content="Free diagnostic to see why AI systems can't understand your site. Professional code package to fix it. 48-hour delivery." />
+      </Helmet>
 
-        <header className="container mx-auto px-4 py-12 md:py-24 text-center">
-          <p className="text-sm md:text-base font-semibold text-destructive mb-4">
-            Only 23% of websites are structured for AI discovery
-          </p>
-          <h1 className="text-[2rem] md:text-6xl font-bold mb-6 text-foreground leading-tight px-2">
-            Does AI understand your website?
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground mb-6 max-w-3xl mx-auto px-4">
-            Most sites score below 60 because AI can't parse their structure. FoundIndex diagnoses WHY — in 60 seconds.
-          </p>
-
-          <a
-            href="#test-section"
-            onClick={(e) => {
-              e.preventDefault();
-              document.getElementById("test-section")?.scrollIntoView({ behavior: "smooth" });
-            }}
-            className="inline-block"
-          >
-            <Button
-              size="lg"
-              className="h-14 px-10 text-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+      {/* Navigation */}
+      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex justify-between items-center h-16">
+            <Link 
+              to="/" 
+              className="text-xl font-bold text-gray-900"
+              aria-label="FoundIndex home - AI readability diagnostic tool"
             >
-              Test your site free
-            </Button>
-          </a>
-        </header>
+              FoundIndex
+            </Link>
 
-        {/* Comparison Section */}
-        <section className="container mx-auto px-4 py-12 md:py-16">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold text-center mb-8 text-foreground">
-              How is FoundIndex different?
-            </h2>
-            
-            <div className="bg-card border border-border rounded-lg overflow-hidden mb-8">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="px-4 md:px-6 py-4 font-semibold text-foreground">Tool</th>
-                    <th className="px-4 md:px-6 py-4 font-semibold text-foreground">What it measures</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="border-b border-border">
-                    <td className="px-4 md:px-6 py-4 text-muted-foreground">Similarweb/Semrush</td>
-                    <td className="px-4 md:px-6 py-4 text-muted-foreground">IF AI mentions you (output)</td>
-                  </tr>
-                  <tr className="bg-primary/5">
-                    <td className="px-4 md:px-6 py-4 font-semibold text-primary">FoundIndex</td>
-                    <td className="px-4 md:px-6 py-4 font-semibold text-primary">WHY AI can't parse you (input)</td>
-                  </tr>
-                </tbody>
-              </table>
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-8">
+              <Link 
+                to="/methodology" 
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+                aria-label="Learn about our 47-criteria methodology"
+              >
+                Methodology
+              </Link>
+              <Link 
+                to="/pricing" 
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+                aria-label="View AI readability code package pricing and details"
+              >
+                Pricing
+              </Link>
+              <Link 
+                to="/contact" 
+                className="text-gray-600 hover:text-gray-900 transition-colors"
+                aria-label="Contact FoundIndex team"
+              >
+                Contact
+              </Link>
+              <button
+                onClick={() => scrollToSection("free-tool")}
+                className="bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 transition-colors"
+                aria-label="Test your website for AI readability - Free diagnostic"
+              >
+                Test Free
+              </button>
             </div>
 
-            <p className="text-center text-muted-foreground text-sm md:text-base">
-              FoundIndex comes before citation tracking. If AI can't understand you, there's nothing worth tracking.
+            {/* Mobile Menu Button */}
+            <button
+              className="md:hidden p-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-expanded={mobileMenuOpen}
+              aria-label="Main navigation menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden py-4 border-t border-gray-100">
+              <Link 
+                to="/methodology" 
+                className="block py-2 text-gray-600 hover:text-gray-900"
+                aria-label="Learn about our 47-criteria methodology"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Methodology
+              </Link>
+              <Link 
+                to="/pricing" 
+                className="block py-2 text-gray-600 hover:text-gray-900"
+                aria-label="View AI readability code package pricing and details"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Pricing
+              </Link>
+              <Link 
+                to="/contact" 
+                className="block py-2 text-gray-600 hover:text-gray-900"
+                aria-label="Contact FoundIndex team"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Contact
+              </Link>
+              <button
+                onClick={() => scrollToSection("free-tool")}
+                className="block w-full text-left py-2 text-violet-600 font-medium"
+                aria-label="Test your website for AI readability - Free diagnostic"
+              >
+                Test Free
+              </button>
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <main id="main-content">
+        {/* Hero Section */}
+        <section className="bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-500 text-white py-20 md:py-28">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
+              Is AI Ignoring Your Website?
+            </h1>
+
+            <p className="text-xl md:text-2xl text-white/90 mb-6 max-w-3xl mx-auto">
+              Test if ChatGPT, Perplexity, and Google AI can actually understand your site. Get your AI Readability Score in 60 seconds.
+            </p>
+
+            <p className="text-white/80 mb-8 max-w-2xl mx-auto">
+              Analyzes 47 structural criteria including schema markup, llms.txt, semantic HTML, and content clarity
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
+              <button
+                onClick={() => scrollToSection("free-tool")}
+                className="bg-white text-violet-700 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-100 transition-colors shadow-lg"
+                aria-label="Test your website for AI readability - Free diagnostic in 60 seconds"
+              >
+                Test Your Site Free
+              </button>
+              <button
+                onClick={() => scrollToSection("pricing")}
+                className="border-2 border-white/50 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white/10 transition-colors"
+                aria-label="View code package details - $997 professional AI readability implementation"
+              >
+                See Code Package - $997 →
+              </button>
+            </div>
+
+            <p className="text-white/70 text-sm flex items-center justify-center gap-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              No signup required • Instant results
             </p>
           </div>
         </section>
 
-        <section className="container mx-auto px-4 py-12 md:py-16">
-          <div
-            id="test-section"
-            className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto scroll-mt-8"
-          >
-            <Card className="relative bg-gradient-to-br from-blue-50 to-background dark:from-blue-950/20 border-2 border-blue-200 dark:border-blue-800 hover:border-blue-400 transition-all duration-300">
-              <CardContent className="p-8">
-                <div className="text-6xl mb-4">🏠</div>
-                <div className="flex items-center gap-2 mb-2">
-                  <h2 className="text-2xl font-bold text-foreground">Homepage audit</h2>
-                  <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                    ✨ Unlimited
-                  </span>
+        {/* Problem Section */}
+        <section className="py-20 bg-gray-50">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-16">
+              Your Content Is Invisible to AI
+            </h2>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {/* The Shift */}
+              <div className="bg-white rounded-2xl p-8 shadow-sm card-hover">
+                <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-6">
+                  <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
                 </div>
-                <p className="text-muted-foreground mb-6">Test if AI can understand what your business does</p>
-
-                <form onSubmit={handleHomepageSubmit} className="space-y-4">
-                  <div>
-                    <Input
-                      type="text"
-                      placeholder="yourcompany.com"
-                      value={homepageUrl}
-                      onFocus={() => dismiss?.()}
-                      onChange={(e) => {
-                        setHomepageUrl(e.target.value);
-                        setHomepageError(null);
-                        setHomepageSuggestion(null);
-                        dismiss?.();
-                      }}
-                      className={`h-12 text-base min-h-[48px] ${homepageError ? "border-destructive" : ""}`}
-                      style={{ fontSize: "16px" }}
-                      required
-                      aria-label="Homepage URL"
-                    />
-                    {homepageError && (
-                      <div className="flex items-start gap-2 text-sm text-destructive mt-2">
-                        <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <span>{homepageError}</span>
-                          {homepageSuggestion && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setHomepageUrl(homepageSuggestion);
-                                setHomepageError(null);
-                                setHomepageSuggestion(null);
-                              }}
-                              className="ml-1 text-primary hover:underline font-medium"
-                            >
-                              Use suggested URL?
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700 text-white"
-                    disabled={isLoadingHomepage}
-                  >
-                    {isLoadingHomepage ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing (~60s)
-                      </>
-                    ) : (
-                      "Get your FI score"
-                    )}
-                  </Button>
-                </form>
-
-                <p className="text-sm text-muted-foreground mt-4 text-center">
-                  Unlimited tests • <span className="font-bold text-foreground">Free during beta</span>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">The Shift</h3>
+                <p className="text-gray-600">
+                  AI-powered search (ChatGPT, Perplexity, Google AI Overviews) now answers 40% of queries directly—without sending users to your site.
                 </p>
-              </CardContent>
-            </Card>
+              </div>
 
-            <Card className="relative bg-gradient-to-br from-purple-50 to-background dark:from-purple-950/20 border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 transition-all duration-300">
-              <Badge className="absolute top-4 right-4 bg-amber-500 text-white">Most popular</Badge>
-              <CardContent className="p-8">
-                <div className="text-6xl mb-4">📝</div>
-                <h2 className="text-2xl font-bold mb-3 text-foreground">Blog post audit</h2>
-                <p className="text-muted-foreground mb-6">Test if AI can extract and cite your answers</p>
-
-                <form onSubmit={handleBlogSubmit} className="space-y-4">
-                  <div>
-                    <Input
-                      type="text"
-                      placeholder="yoursite.com/blog/post-title"
-                      value={blogUrl}
-                      onFocus={() => dismiss?.()}
-                      onChange={(e) => {
-                        setBlogUrl(e.target.value);
-                        setBlogError(null);
-                        setBlogSuggestion(null);
-                        dismiss?.();
-                      }}
-                      className={`h-12 text-base min-h-[48px] ${blogError ? "border-destructive" : ""}`}
-                      style={{ fontSize: "16px" }}
-                      required
-                      aria-label="Blog post URL"
-                    />
-                    {blogError && (
-                      <div className="flex items-start gap-2 text-sm text-destructive mt-2">
-                        <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                        <div>
-                          <span>{blogError}</span>
-                          {blogSuggestion && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setBlogUrl(blogSuggestion);
-                                setBlogError(null);
-                                setBlogSuggestion(null);
-                              }}
-                              className="ml-1 text-primary hover:underline font-medium"
-                            >
-                              Use suggested URL?
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <Button
-                    type="submit"
-                    className="w-full h-12 text-base bg-purple-600 hover:bg-purple-700 text-white"
-                    disabled={isLoadingBlog}
-                  >
-                    {isLoadingBlog ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing (~60s)
-                      </>
-                    ) : (
-                      "Get your FI score"
-                    )}
-                  </Button>
-                </form>
-
-                <p className="text-sm text-muted-foreground mt-4 text-center">
-                  3 posts/week • <span className="font-bold text-foreground">Free during beta</span>
+              {/* The Problem */}
+              <div className="bg-white rounded-2xl p-8 shadow-sm card-hover">
+                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-6">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">The Problem</h3>
+                <p className="text-gray-600">
+                  AI systems can't understand most websites. Poor structure, missing schema, unclear purpose—your site speaks "human" but not "machine."
                 </p>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
 
-          <div className="max-w-5xl mx-auto mt-4">
-            <BlogTestCounter />
+              {/* The Cost */}
+              <div className="bg-white rounded-2xl p-8 shadow-sm card-hover">
+                <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center mb-6">
+                  <svg className="w-6 h-6 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">The Cost</h3>
+                <p className="text-gray-600">
+                  While competitors get cited by AI, you're losing traffic and authority. Every day AI can't read you is a day you're invisible.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
-        <Testimonials />
-        <FAQ />
+        {/* Input vs Output Comparison */}
+        <section className="py-20 bg-white">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Stop Tracking Problems. Start Fixing Them.
+              </h2>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+                Most tools track IF AI mentions you. FoundIndex fixes WHY AI can't read you.
+              </p>
+            </div>
 
-        <footer className="border-t border-border bg-muted py-8">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground text-center md:text-left">
-              <div className="order-2 md:order-1">
-                Built by{" "}
-                <a
-                  href="https://richadeo.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-primary hover:underline"
-                >
-                  Richa Deo
-                </a>
+            <div className="grid md:grid-cols-2 gap-8 mb-16">
+              {/* Most Tools Track OUTPUT */}
+              <div className="bg-gray-50 rounded-2xl p-8 border border-gray-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Most Tools Track OUTPUT</h3>
+                </div>
+                <p className="text-gray-600 mb-4">Tools like Semrush AI Visibility and Ahrefs Brand Radar tell you:</p>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-600">"AI cited you 3 times last month"</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-600">"Your competitor is mentioned more"</span>
+                  </div>
+                </div>
+                <p className="text-gray-500 italic">They track the symptom, but not the cause.</p>
               </div>
-              <div className="flex flex-wrap justify-center gap-4 md:gap-6 order-1 md:order-2">
-                <a href="/privacy" className="hover:text-foreground transition-colors">
-                  Privacy
-                </a>
-                <a href="/privacy" className="hover:text-foreground transition-colors">
-                  Terms
-                </a>
-                <a href="/contact" className="hover:text-foreground transition-colors">
-                  Contact
-                </a>
+
+              {/* FoundIndex Fixes the INPUT */}
+              <div className="bg-violet-50 rounded-2xl p-8 border-2 border-violet-200">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-violet-200 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-violet-900">FoundIndex Fixes the INPUT</h3>
+                </div>
+                <p className="text-violet-800 mb-4">We diagnose and fix the root cause:</p>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">✓</span>
+                    <span className="text-violet-800">"Your site has no schema markup"</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">✓</span>
+                    <span className="text-violet-800">"Your content structure confuses AI"</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-green-600 font-bold">✓</span>
+                    <span className="text-violet-800">"You're missing llms.txt context"</span>
+                  </div>
+                </div>
+                <p className="text-violet-700 font-medium">We fix the structure so AI can read you.</p>
               </div>
-              <div className="order-3">© 2025 FoundIndex</div>
+            </div>
+
+            {/* How They Work Together */}
+            <div className="bg-gray-900 rounded-2xl p-8 text-white">
+              <h3 className="text-2xl font-bold text-center mb-8">How They Work Together</h3>
+              <div className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8 mb-6">
+                <div className="text-center">
+                  <div className="text-violet-400 text-sm font-medium mb-1">STEP 1</div>
+                  <div className="text-lg font-bold">FoundIndex</div>
+                  <div className="text-gray-400 text-sm">Fix INPUT (Structure)</div>
+                </div>
+                <span className="text-gray-500 text-2xl hidden md:block">→</span>
+                <div className="text-center">
+                  <div className="text-violet-400 text-sm font-medium mb-1">STEP 2</div>
+                  <div className="text-lg font-bold">Build Authority</div>
+                  <div className="text-gray-400 text-sm">Content & Backlinks</div>
+                </div>
+                <span className="text-gray-500 text-2xl hidden md:block">→</span>
+                <div className="text-center">
+                  <div className="text-violet-400 text-sm font-medium mb-1">STEP 3</div>
+                  <div className="text-lg font-bold">Track OUTPUT</div>
+                  <div className="text-gray-400 text-sm">Semrush/Ahrefs</div>
+                </div>
+              </div>
+              <p className="text-center text-green-400 font-medium">
+                ✅ We're the prerequisite to citation tracking.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Large Sites Explanation */}
+        <section className="py-20 bg-gray-50">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4">
+              "But Large, Authoritative Sites Score Low Too"
+            </h2>
+            <p className="text-xl text-gray-600 text-center mb-12">
+              Yes—that's exactly the point. Here's why this is common and fixable.
+            </p>
+
+            <div className="bg-white rounded-2xl p-8 md:p-12 shadow-sm">
+              <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                Why Even Well-Known Websites Can Score Low
+              </h3>
+
+              <p className="text-gray-600 mb-6">
+                FoundIndex measures structural readability—can AI parse your site without ambiguity? Not brand size or domain authority.
+              </p>
+
+              <div className="mb-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">Large, mature sites often have:</h4>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-600">Legacy markup from multiple redesigns</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-600">Heavy JavaScript rendering (hard for AI)</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-600">Mixed audiences and purposes</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <span className="text-gray-400">•</span>
+                    <span className="text-gray-600">Built before AI search existed (2022-2025)</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-gray-700 font-medium mb-8">
+                Result: Even authoritative sites score 50-70. This is common—and fixable.
+              </p>
+
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3">The Key Distinction:</h4>
+                <p className="text-gray-600 mb-2">
+                  Semrush/Ahrefs track IF AI mentions brands (output).
+                </p>
+                <p className="text-gray-600 mb-2">
+                  FoundIndex measures IF AI can READ structure (input).
+                </p>
+                <p className="text-gray-700 font-medium">
+                  Two different problems. Both valuable—at different stages.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Free Tool Section */}
+        <section id="free-tool" className="py-20 bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-500 text-white">
+          <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
+            <span className="inline-block bg-white/20 text-white px-4 py-1 rounded-full text-sm font-medium mb-6">
+              Free Tool
+            </span>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Test Your AI Readability</h2>
+            <p className="text-xl text-white/90 mb-8">
+              Get your 0-100 score in 60 seconds. See exactly what AI systems can't understand.
+            </p>
+
+            <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 md:p-8 text-left">
+              <div className="mb-4">
+                <label htmlFor="website-url" className="block text-gray-700 font-medium mb-2">
+                  Your Website URL
+                </label>
+                <input
+                  type="text"
+                  id="website-url"
+                  value={websiteUrl}
+                  onChange={(e) => setWebsiteUrl(e.target.value)}
+                  placeholder="example.com"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent text-gray-900"
+                  aria-required="true"
+                  aria-describedby="url-helper-text"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-violet-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-violet-700 transition-colors"
+                aria-label="Analyze my website for AI readability - Free diagnostic"
+              >
+                Analyze My Site
+              </button>
+            </form>
+
+            <p id="url-helper-text" className="text-white/70 text-sm mt-4">
+              Instant results • No signup • Analyzes 47 technical criteria
+            </p>
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section id="pricing" className="py-20 bg-white">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6">
+            <div className="text-center mb-12">
+              <span className="inline-block bg-violet-100 text-violet-700 px-4 py-1 rounded-full text-sm font-medium mb-4">
+                Professional Service
+              </span>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">AI Readability Code Package</h2>
+              <p className="text-xl text-gray-600">Complete implementation code. You install. We support.</p>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+              <div className="bg-gray-900 text-white p-6 md:p-8">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h3 className="text-2xl font-bold mb-1">Complete Code Package</h3>
+                    <p className="text-gray-400">Ready-to-install with video guide</p>
+                  </div>
+                  <div className="mt-4 md:mt-0 text-right">
+                    <div className="text-4xl font-bold">$997</div>
+                    <div className="text-gray-400">one-time</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 md:p-8">
+                <h4 className="text-lg font-semibold text-gray-900 mb-6">What You Receive:</h4>
+                <div className="grid md:grid-cols-2 gap-4 mb-8">
+                  {[
+                    { title: "Complete 47-criteria audit", desc: "Detailed analysis of blocking issues" },
+                    { title: "JSON-LD schema code", desc: "Organization, Article, FAQ—ready to paste" },
+                    { title: "llms.txt file", desc: "AI context file ready to upload" },
+                    { title: "Optimized meta tags", desc: "Title, description, Open Graph" },
+                    { title: "Homepage rewrite", desc: "AI-optimized content structure" },
+                    { title: "Installation guide", desc: "WordPress, Shopify, custom sites" },
+                    { title: "Video walkthrough", desc: "Screen recording with instructions" },
+                    { title: "7-day email support", desc: "Questions answered promptly" },
+                  ].map((item, index) => (
+                    <div key={index} className="flex gap-3">
+                      <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <div>
+                        <div className="font-medium text-gray-900">{item.title}</div>
+                        <div className="text-sm text-gray-500">{item.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-gray-50 rounded-xl p-6 mb-8">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-gray-900">48 hours</div>
+                      <div className="text-sm text-gray-500">Delivery time</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-gray-900">Email delivery</div>
+                      <div className="text-sm text-gray-500">You implement</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-gray-900">Guaranteed</div>
+                      <div className="text-sm text-gray-500">Score improvement</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <a
+                    href="https://foundindex.gumroad.com/l/code-package"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-block bg-violet-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-700 transition-colors w-full md:w-auto"
+                    aria-label="Purchase AI readability code package for $997 - Secure payment via Gumroad"
+                  >
+                    Get Code Package - $997
+                  </a>
+                  <p className="text-sm text-gray-500 mt-4">
+                    Secure payment via Gumroad • Digital delivery
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Questions?{" "}
+                    <Link to="/contact" className="text-violet-600 hover:underline">
+                      Chat with us
+                    </Link>{" "}
+                    during business hours
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Q1 2026 Notice */}
+            <div className="mt-12 text-center">
+              <div className="inline-flex items-center gap-3 bg-violet-50 border border-violet-200 rounded-xl px-6 py-4">
+                <div className="w-10 h-10 bg-violet-200 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <div className="text-violet-800 font-medium">Full Implementation Service ($2,997) launching Q1 2026</div>
+                  <div className="text-violet-600 text-sm">We install everything for you. Stay tuned.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Guarantee Section */}
+        <section className="py-20 bg-gray-50">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6">
+            <div className="bg-white rounded-2xl p-8 md:p-12 shadow-sm flex flex-col md:flex-row gap-8 items-start">
+              <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Our Guarantee & Expectations</h2>
+
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Money-Back Guarantee:</h3>
+                  <p className="text-gray-600 mb-2">
+                    Implement our code exactly as instructed. If your FoundIndex score shows zero improvement, we refund 100%.
+                  </p>
+                  <p className="text-gray-500 text-sm">
+                    Covers code accuracy only. Does not guarantee specific point increases (depends on baseline).
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Improvement Expectations:</h3>
+                  <p className="text-gray-600 mb-3">Score improvements vary by baseline:</p>
+                  <div className="bg-gray-50 rounded-lg p-4 mb-3">
+                    <p className="text-gray-700"><strong>• Severe issues (20-40):</strong> Typically 25-45 points</p>
+                    <p className="text-gray-700"><strong>• Moderate issues (40-60):</strong> Typically 15-30 points</p>
+                    <p className="text-gray-700"><strong>• Well-structured (60-75):</strong> May see 8-15 points</p>
+                  </div>
+                  <p className="text-gray-600 text-sm">
+                    Example: FoundIndex.com improved 8 points (73→81) from a strong baseline. Sites at 35/100 typically gain 30-40 points.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Testimonials */}
+        <section className="py-20 bg-white">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
+              Trusted by Founders and Marketers
+            </h2>
+
+            <div className="grid md:grid-cols-3 gap-8">
+              {/* Testimonial 1 */}
+              <div className="bg-gray-50 rounded-2xl p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <img
+                    src={blueNectarLogo}
+                    alt="Blue Nectar Ayurved company logo"
+                    className="w-14 h-14 rounded-full object-cover border border-gray-200"
+                  />
+                  <div>
+                    <div className="font-semibold text-gray-900">Sanyog Jain</div>
+                    <div className="text-sm text-gray-500">Co-Founder, Blue Nectar Ayurved</div>
+                  </div>
+                </div>
+                <p className="text-gray-600">
+                  "A genuinely top-tier tool. The AI visibility insights uncovered opportunities our regular SEO stack misses entirely."
+                </p>
+              </div>
+
+              {/* Testimonial 2 */}
+              <div className="bg-gray-50 rounded-2xl p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <img
+                    src={nitinPhoto}
+                    alt="Nitin Kaura professional headshot"
+                    className="w-14 h-14 rounded-full object-cover border border-gray-200"
+                  />
+                  <div>
+                    <div className="font-semibold text-gray-900">Nitin Kaura</div>
+                    <div className="text-sm text-gray-500">Full-Stack Marketer & SEO Specialist</div>
+                  </div>
+                </div>
+                <p className="text-gray-600">
+                  "The breakdown was sharp and surprisingly aligned with how I evaluate pages for AEO/LLM relevance."
+                </p>
+              </div>
+
+              {/* Testimonial 3 */}
+              <div className="bg-gray-50 rounded-2xl p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <img
+                    src={gunishthaPhoto}
+                    alt="Gunishtha Doomra professional headshot"
+                    className="w-14 h-14 rounded-full object-cover border border-gray-200"
+                  />
+                  <div>
+                    <div className="font-semibold text-gray-900">Gunishtha Doomra</div>
+                    <div className="text-sm text-gray-500">Tech Blogger & Software Developer</div>
+                  </div>
+                </div>
+                <p className="text-gray-600">
+                  "Surprisingly accurate insights. FoundIndex highlighted AI visibility gaps that didn't show up anywhere else."
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="py-20 bg-gray-50">
+          <div className="max-w-3xl mx-auto px-4 sm:px-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
+              Common Questions
+            </h2>
+
+            <div className="space-y-4">
+              {[
+                {
+                  q: "Who is this for?",
+                  a: "B2B SaaS, content publishers, e-commerce sites—anyone wanting AI citations. If you have a dev team or can follow technical instructions, you can implement our code."
+                },
+                {
+                  q: "Do you need access to my site?",
+                  a: "No. We deliver complete code packages. You (or your developer) implement. Zero security risk, full control."
+                },
+                {
+                  q: "What platforms?",
+                  a: "WordPress, Shopify, Webflow, Wix, custom sites. Includes platform-specific instructions."
+                },
+                {
+                  q: "How long to implement?",
+                  a: "2-4 hours for developers, 4-6 hours DIY. We deliver code within 48 hours of payment."
+                },
+                {
+                  q: "Can I do this without a developer?",
+                  a: "Yes if you're comfortable with WordPress plugins or basic HTML. Video guides show exactly where to paste. Complex custom sites may need dev help."
+                }
+              ].map((item, index) => (
+                <div key={index} className="bg-white rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.q}</h3>
+                  <p className="text-gray-600">{item.a}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA */}
+        <section className="py-20 bg-gray-900 text-white">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+              Stop Being Invisible to AI
+            </h2>
+            <p className="text-xl text-gray-400 mb-8">
+              Test free. Get professional code if needed.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => scrollToSection("free-tool")}
+                className="bg-violet-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-700 transition-colors"
+                aria-label="Test your website for AI readability - Free diagnostic"
+              >
+                Test Your Site Free
+              </button>
+              <a
+                href="https://foundindex.gumroad.com/l/code-package"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="border-2 border-gray-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-800 transition-colors"
+                aria-label="Purchase AI readability code package for $997"
+              >
+                Get Code Package - $997 →
+              </a>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="bg-gray-900 text-gray-400 pt-12 pb-8 border-t border-gray-800">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+              <div className="mb-6 md:mb-0">
+                <div className="text-xl font-bold text-white mb-1">FoundIndex</div>
+                <div className="text-sm">Making websites legible to AI systems</div>
+              </div>
+
+              <div className="flex flex-wrap gap-6">
+                <Link to="/methodology" className="hover:text-white transition-colors">Methodology</Link>
+                <Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link>
+                <Link to="/contact" className="hover:text-white transition-colors">Contact</Link>
+                <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+                <Link to="/privacy#terms" className="hover:text-white transition-colors">Terms</Link>
+              </div>
+            </div>
+
+            <div className="border-t border-gray-800 pt-8 text-sm">
+              <p className="mb-2">
+                Built by Richa Deo • Content Strategist and UX Researcher with 14+ years experience
+              </p>
+              <p className="mb-4">
+                llms.txt is a community standard by{" "}
+                <a href="https://llmstxt.org" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline">
+                  llmstxt.org
+                </a>
+              </p>
+              <p>© 2025 FoundIndex. All rights reserved.</p>
             </div>
           </div>
         </footer>
-      </div>
+      </main>
 
-      {retestModalData && (
-        <RetestModal
-          open={retestModalOpen}
-          onClose={() => setRetestModalOpen(false)}
-          url={retestModalData.url}
-          lastTestedDate={retestModalData.lastTestedDate}
-          nextAvailableDate={retestModalData.nextAvailableDate}
-          cachedTestId={retestModalData.cachedTestId}
-          cachedScore={retestModalData.cachedScore}
-          attemptsExhausted={!!retestModalData.attemptsExhausted}
-        />
-      )}
+      <style>{`
+        .card-hover {
+          transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+        }
+      `}</style>
     </>
   );
 };
