@@ -1,26 +1,14 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React from "react";
+import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import Navigation from "@/components/layout/Navigation";
 import SiteFooter from "@/components/layout/SiteFooter";
+import DiagnosticForm from "@/components/DiagnosticForm";
 import blueNectarLogo from "@/assets/blue-nectar-logo.png";
 import nitinPhoto from "@/assets/nitin-kaura.jpg";
 import gunishthaPhoto from "@/assets/gunishtha-doomra.jpg";
 
 const Index = () => {
-  const [websiteUrl, setWebsiteUrl] = useState("");
-  const navigate = useNavigate();
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (websiteUrl.trim()) {
-      const normalizedUrl = websiteUrl.startsWith("http://") || websiteUrl.startsWith("https://")
-        ? websiteUrl
-        : `https://${websiteUrl}`;
-      navigate(`/results?url=${encodeURIComponent(normalizedUrl)}`);
-    }
-  };
-
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -296,34 +284,7 @@ const Index = () => {
               Get your 0-100 score in 60 seconds. See exactly what AI systems can't understand.
             </p>
 
-            <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 md:p-8 text-left">
-              <div className="mb-4">
-                <label htmlFor="website-url" className="block text-gray-700 font-medium mb-2">
-                  Your Website URL
-                </label>
-                <input
-                  type="text"
-                  id="website-url"
-                  value={websiteUrl}
-                  onChange={(e) => setWebsiteUrl(e.target.value)}
-                  placeholder="example.com"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-violet-500 focus:border-transparent text-gray-900"
-                  aria-required="true"
-                  aria-describedby="url-helper-text"
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-violet-600 text-white py-4 rounded-xl font-semibold text-lg hover:bg-violet-700 transition-colors"
-                aria-label="Analyze my website for AI readability - Free diagnostic"
-              >
-                Analyze My Site
-              </button>
-            </form>
-
-            <p id="url-helper-text" className="text-white/70 text-sm mt-4">
-              Instant results • No signup • Analyzes 47 technical criteria
-            </p>
+            <DiagnosticForm />
           </div>
         </section>
 
