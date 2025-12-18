@@ -350,7 +350,7 @@ export default function Pricing() {
         {/* SECTION 1: HERO */}
         <section aria-labelledby="hero-heading" className="bg-background py-12 md:py-18 lg:py-24 px-4">
           <div className="container mx-auto max-w-[900px] text-center">
-            <h1 id="hero-heading" className="text-3xl md:text-4xl lg:text-[3.5rem] font-bold text-foreground leading-tight mb-6">
+            <h1 id="hero-heading" className="text-3xl md:text-4xl lg:text-[3.5rem] font-bold text-foreground leading-tight mb-6 not-italic">
               Fix Why AI Can't Understand Your Website
             </h1>
             <p className="text-lg md:text-xl text-foreground-muted leading-relaxed mb-10 max-w-[700px] mx-auto">
