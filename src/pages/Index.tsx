@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
+import Navigation from "@/components/layout/Navigation";
+import SiteFooter from "@/components/layout/SiteFooter";
 import blueNectarLogo from "@/assets/blue-nectar-logo.png";
 import nitinPhoto from "@/assets/nitin-kaura.jpg";
 import gunishthaPhoto from "@/assets/gunishtha-doomra.jpg";
 
 const Index = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [websiteUrl, setWebsiteUrl] = useState("");
   const navigate = useNavigate();
 
@@ -25,7 +26,6 @@ const Index = () => {
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
     }
-    setMobileMenuOpen(false);
   };
 
   return (
@@ -35,101 +35,7 @@ const Index = () => {
         <meta name="description" content="Free diagnostic to see why AI systems can't understand your site. Professional code package to fix it. 48-hour delivery." />
       </Helmet>
 
-      {/* Navigation */}
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="flex justify-between items-center h-16">
-            <Link 
-              to="/" 
-              className="text-xl font-bold text-gray-900"
-              aria-label="FoundIndex home - AI readability diagnostic tool"
-            >
-              FoundIndex
-            </Link>
-
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-8">
-              <Link 
-                to="/methodology" 
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-                aria-label="Learn about our 47-criteria methodology"
-              >
-                Methodology
-              </Link>
-              <Link 
-                to="/pricing" 
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-                aria-label="View AI readability code package pricing and details"
-              >
-                Pricing
-              </Link>
-              <Link 
-                to="/contact" 
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-                aria-label="Contact FoundIndex team"
-              >
-                Contact
-              </Link>
-              <button
-                onClick={() => scrollToSection("free-tool")}
-                className="bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 transition-colors"
-                aria-label="Test your website for AI readability - Free diagnostic"
-              >
-                Test Free
-              </button>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <button
-              className="md:hidden p-2"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              aria-expanded={mobileMenuOpen}
-              aria-label="Main navigation menu"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Mobile Menu */}
-          {mobileMenuOpen && (
-            <div className="md:hidden py-4 border-t border-gray-100">
-              <Link 
-                to="/methodology" 
-                className="block py-2 text-gray-600 hover:text-gray-900"
-                aria-label="Learn about our 47-criteria methodology"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Methodology
-              </Link>
-              <Link 
-                to="/pricing" 
-                className="block py-2 text-gray-600 hover:text-gray-900"
-                aria-label="View AI readability code package pricing and details"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Pricing
-              </Link>
-              <Link 
-                to="/contact" 
-                className="block py-2 text-gray-600 hover:text-gray-900"
-                aria-label="Contact FoundIndex team"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Contact
-              </Link>
-              <button
-                onClick={() => scrollToSection("free-tool")}
-                className="block w-full text-left py-2 text-violet-600 font-medium"
-                aria-label="Test your website for AI readability - Free diagnostic"
-              >
-                Test Free
-              </button>
-            </div>
-          )}
-        </div>
-      </nav>
+      <Navigation onScrollToSection={scrollToSection} />
 
       <main id="main-content">
         {/* Hero Section */}
@@ -702,38 +608,7 @@ const Index = () => {
           </div>
         </section>
 
-        {/* Footer */}
-        <footer className="bg-gray-900 text-gray-400 pt-12 pb-8 border-t border-gray-800">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-              <div className="mb-6 md:mb-0">
-                <div className="text-xl font-bold text-white mb-1">FoundIndex</div>
-                <div className="text-sm">Making websites legible to AI systems</div>
-              </div>
-
-              <div className="flex flex-wrap gap-6">
-                <Link to="/methodology" className="hover:text-white transition-colors">Methodology</Link>
-                <Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link>
-                <Link to="/contact" className="hover:text-white transition-colors">Contact</Link>
-                <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-                <Link to="/privacy#terms" className="hover:text-white transition-colors">Terms</Link>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-800 pt-8 text-sm">
-              <p className="mb-2">
-                Built by Richa Deo • Content Strategist and UX Researcher with 14+ years experience
-              </p>
-              <p className="mb-4">
-                llms.txt is a community standard by{" "}
-                <a href="https://llmstxt.org" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline">
-                  llmstxt.org
-                </a>
-              </p>
-              <p>© 2025 FoundIndex. All rights reserved.</p>
-            </div>
-          </div>
-        </footer>
+        <SiteFooter />
       </main>
 
       <style>{`
