@@ -1,4 +1,7 @@
+import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
+import { Card } from "@/components/ui/card";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import gunishthaPhoto from "@/assets/gunishtha-doomra.jpg";
 import blueNectarLogo from "@/assets/blue-nectar-logo.png";
 import nitinPhoto from "@/assets/nitin-kaura.jpg";
@@ -6,71 +9,188 @@ import nitinPhoto from "@/assets/nitin-kaura.jpg";
 const testimonials = [
   {
     id: 1,
+    quote: "A genuinely top-tier tool. The AI visibility insights uncovered opportunities our regular SEO stack misses entirely. Clear, actionable recommendations in a space that's moving fast - this tool is ahead of the curve.",
     name: "Sanyog Jain",
     title: "Co-Founder, Blue Nectar Ayurved",
     image: blueNectarLogo,
-    imageAlt: "Blue Nectar Ayurved company logo",
-    isLogo: true,
-    quote: "A genuinely top-tier tool. The AI visibility insights uncovered opportunities our regular SEO stack misses entirely.",
-    linkedinUrl: "https://www.linkedin.com/in/sanyog/",
-    companyUrl: "https://www.bluenectar.co.in",
+    isPhoto: false,
+    nameLink: "https://www.linkedin.com/in/sanyog/",
+    titleLink: "https://www.bluenectar.co.in",
   },
   {
     id: 2,
+    quote: "Ran a past client homepage through FoundIndex, scored 73 — and yes, I absolutely patted myself on the back. The breakdown was sharp and surprisingly aligned with how I evaluate pages for AEO/LLM relevance. Finally a tool that tells you what actually matters for AI search.",
     name: "Nitin Kaura",
     title: "Full-Stack Marketer & SEO Specialist",
     image: nitinPhoto,
-    imageAlt: "Nitin Kaura professional headshot",
-    isLogo: false,
-    quote: "The breakdown was sharp and surprisingly aligned with how I evaluate pages for AEO/LLM relevance.",
-    linkedinUrl: "https://www.linkedin.com/in/nitinkaura/",
-    companyUrl: "https://topmate.io/nitinkaura",
+    isPhoto: true,
+    nameLink: "https://www.linkedin.com/in/nitinkaura/",
+    titleLink: "https://topmate.io/nitinkaura",
   },
   {
     id: 3,
+    quote: "Surprisingly accurate insights. FoundIndex highlighted AI visibility gaps that didn't show up anywhere else. It's now part of my regular audit workflow.",
     name: "Gunishtha Doomra",
     title: "Tech Blogger & Software Developer",
     image: gunishthaPhoto,
-    imageAlt: "Gunishtha Doomra professional headshot",
-    isLogo: false,
-    quote: "Surprisingly accurate insights. FoundIndex highlighted AI visibility gaps that didn't show up anywhere else.",
-    linkedinUrl: "https://www.linkedin.com/in/gunishtha-doomra/",
-    companyUrl: "https://guptahimanshi.medium.com/",
+    isPhoto: true,
+    nameLink: "https://www.linkedin.com/in/gunishtha-doomra/",
+    titleLink: "https://guptahimanshi.medium.com/",
   },
 ];
 
 const Testimonials = () => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [desktopIndex, setDesktopIndex] = useState(0);
+
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  };
+
+  const nextDesktopSlide = () => {
+    setDesktopIndex((prev) => (prev + 1) % testimonials.length);
+  };
+
+  const prevDesktopSlide = () => {
+    setDesktopIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+  };
+
+  // Keyboard navigation
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.key === "ArrowLeft") {
+      prevSlide();
+    } else if (e.key === "ArrowRight") {
+      nextSlide();
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Get visible testimonials for desktop (2 at a time with peek)
+  const getVisibleDesktopTestimonials = () => {
+    const first = testimonials[desktopIndex];
+    const second = testimonials[(desktopIndex + 1) % testimonials.length];
+    const peek = testimonials[(desktopIndex + 2) % testimonials.length];
+    return { first, second, peek };
+  };
+
+  const { first, second, peek } = getVisibleDesktopTestimonials();
+
   return (
-    <section 
-      className="py-16 md:py-24 bg-gray-50"
-      aria-labelledby="testimonials-heading"
-    >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 
-          id="testimonials-heading"
-          className="text-2xl md:text-3xl font-bold text-center mb-12 text-gray-800"
-        >
-          Trusted by Founders and Marketers
+    <section className="py-16 md:py-24 bg-background">
+      <div className="container mx-auto px-4">
+        <h2 className="text-2xl md:text-[28px] font-semibold text-center mb-8 text-[#1a365d]">
+          Trusted by founders and teams building better businesses
         </h2>
 
-        {/* Testimonials Grid: 1 col mobile, 2 tablet, 3 desktop */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {testimonials.map((testimonial) => (
-            <TestimonialCard key={testimonial.id} testimonial={testimonial} />
-          ))}
+        {/* Desktop/Tablet: Grid with navigation */}
+        <div className="hidden md:block relative max-w-4xl mx-auto" role="region" aria-label="Testimonials carousel">
+          <div className="flex items-center gap-4">
+            {/* Left arrow */}
+            <button
+              onClick={prevDesktopSlide}
+              className="flex-shrink-0 bg-white dark:bg-card shadow-md rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Previous testimonials"
+            >
+              <ChevronLeft className="w-5 h-5 text-foreground" />
+            </button>
+
+            {/* Cards container */}
+            <div className="flex-1 grid md:grid-cols-2 gap-6">
+              <TestimonialCard testimonial={first} />
+              <TestimonialCard testimonial={second} />
+            </div>
+
+            {/* Right arrow */}
+            <button
+              onClick={nextDesktopSlide}
+              className="flex-shrink-0 bg-white dark:bg-card shadow-md rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Next testimonials"
+            >
+              <ChevronRight className="w-5 h-5 text-foreground" />
+            </button>
+          </div>
+
+          {/* Desktop dot indicators */}
+          <div className="flex justify-center gap-2 mt-6">
+            {testimonials.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setDesktopIndex(index)}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  index === desktopIndex
+                    ? "bg-primary"
+                    : "bg-gray-300 dark:bg-gray-600 hover:bg-gray-400"
+                }`}
+                aria-label={`Go to testimonial group ${index + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile: Carousel */}
+        <div className="md:hidden relative" role="region" aria-label="Testimonials carousel">
+          <div className="overflow-hidden">
+            <div
+              className="flex transition-transform duration-300 ease-in-out"
+              style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+            >
+              {testimonials.map((testimonial) => (
+                <div key={testimonial.id} className="w-full flex-shrink-0 px-2">
+                  <TestimonialCard testimonial={testimonial} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Navigation Arrows */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 bg-white dark:bg-card shadow-md rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Previous testimonial"
+          >
+            <ChevronLeft className="w-5 h-5 text-foreground" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 bg-white dark:bg-card shadow-md rounded-full p-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Next testimonial"
+          >
+            <ChevronRight className="w-5 h-5 text-foreground" />
+          </button>
+
+          {/* Dot Indicators */}
+          <div className="flex justify-center gap-2 mt-6">
+            {testimonials.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                  index === currentIndex
+                    ? "bg-primary"
+                    : "bg-gray-300 dark:bg-gray-600"
+                }`}
+                aria-label={`Go to testimonial ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* Contact CTA */}
-        <p className="text-center text-sm text-gray-500 mt-12">
+        <p className="text-center text-sm text-muted-foreground mt-10">
           Want to share your experience?{" "}
-          <Link 
-            to="/contact" 
-            className="underline hover:text-gray-800 transition-colors"
-            aria-label="Contact FoundIndex to share your testimonial"
-          >
+          <Link to="/contact" className="underline hover:text-foreground transition-colors">
             Contact us
           </Link>
         </p>
+
       </div>
     </section>
   );
@@ -82,50 +202,47 @@ interface TestimonialCardProps {
 
 const TestimonialCard = ({ testimonial }: TestimonialCardProps) => {
   return (
-    <article 
-      className="bg-white rounded-xl shadow-md p-6 transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-lg"
-    >
-      {/* Author info with image */}
+    <Card className="p-6 md:p-8 bg-white dark:bg-card shadow-md rounded-xl hover:scale-[1.02] transition-transform duration-200 h-full">
+      {/* Top-left avatar/logo */}
       <div className="flex items-start gap-4 mb-4">
-        <img
-          src={testimonial.image}
-          alt={testimonial.imageAlt}
-          loading="lazy"
-          className={`w-16 h-16 rounded-full flex-shrink-0 ${
-            testimonial.isLogo 
-              ? "bg-white border border-gray-200 p-2 object-contain" 
-              : "object-cover"
+        <div
+          className={`w-[60px] h-[60px] flex-shrink-0 rounded-full border border-[#ddd] dark:border-gray-600 overflow-hidden flex items-center justify-center ${
+            testimonial.isPhoto ? "" : "bg-white p-2"
           }`}
-        />
-        <div className="flex flex-col">
+        >
+          <img
+            src={testimonial.image}
+            alt={`${testimonial.name} profile photo`}
+            className={testimonial.isPhoto ? "w-full h-full object-cover" : "w-full h-full object-contain"}
+          />
+        </div>
+        <div className="flex flex-col pt-1">
+          {/* Name */}
           <a
-            href={testimonial.linkedinUrl}
+            href={testimonial.nameLink}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`Visit ${testimonial.name}'s LinkedIn profile`}
-            className="font-semibold text-gray-800 hover:text-teal-600 hover:underline transition-colors"
+            className="font-semibold text-foreground hover:text-primary hover:underline transition-colors"
           >
             {testimonial.name}
           </a>
+          {/* Title */}
           <a
-            href={testimonial.companyUrl}
+            href={testimonial.titleLink}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`Visit ${testimonial.title} website`}
-            className="text-sm text-gray-500 hover:text-teal-600 hover:underline transition-colors"
+            className="text-sm text-muted-foreground hover:text-primary hover:underline transition-colors"
           >
             {testimonial.title}
           </a>
         </div>
       </div>
 
-      {/* Quote */}
-      <blockquote>
-        <p className="text-gray-700 italic leading-relaxed">
-          "{testimonial.quote}"
-        </p>
-      </blockquote>
-    </article>
+      {/* Quote text */}
+      <p className="text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+        "{testimonial.quote}"
+      </p>
+    </Card>
   );
 };
 

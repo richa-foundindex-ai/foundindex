@@ -7,40 +7,49 @@ interface FooterProps {
 
 const Footer = ({ onOpenFeedback }: FooterProps) => {
   return (
-    <footer className="py-12 px-4 bg-[#1F2937] text-[#9CA3AF]">
+    <footer className="py-12 px-4 bg-accent-gray-light border-t">
       <div className="container mx-auto max-w-4xl">
-        <div className="text-center space-y-6">
-          {/* Brand */}
-          <div>
-            <Link to="/" className="text-xl font-bold text-white hover:text-gray-300 transition-colors">
-              FoundIndex
-            </Link>
-            <p className="text-sm text-[#9CA3AF] mt-1">
-              Making websites legible to AI systems
-            </p>
-          </div>
-
-          {/* Footer Navigation */}
-          <div className="flex justify-center gap-6 text-sm">
-            <Link to="/privacy" className="text-[#9CA3AF] hover:text-white hover:underline transition-colors">
-              Privacy
-            </Link>
-            <Link to="/privacy#terms" className="text-[#9CA3AF] hover:text-white hover:underline transition-colors">
-              Terms
+        <div className="text-center space-y-4">
+          {/* AI-Readable Badge */}
+          <div className="flex justify-center">
+            <Link to="/llms-txt" className="inline-block hover:opacity-80 transition-opacity">
+              <img src="/badges/ai-readable.svg" alt="AI-Readable Site" className="h-5" />
             </Link>
           </div>
-
-          {/* Attribution */}
-          <div className="text-sm space-y-2 pt-4 border-t border-[#374151]">
-            <p>
-              Built by Richa Deo — Product Builder & Founder of FoundMVP
-            </p>
-            <p className="text-[#6B7280]">
-              llms.txt follows the emerging community standard for AI-readable context files
-            </p>
-            <p className="text-[#6B7280]">
-              © 2025 FoundIndex. All rights reserved.
-            </p>
+          
+          <div className="flex justify-center items-center gap-2 flex-wrap text-sm text-muted-foreground">
+            <span>FoundIndex © 2025</span>
+            <span className="text-gray-300">•</span>
+            <span>
+              Created by{" "}
+              <a
+                href="https://richadeo.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:underline hover:text-foreground transition-colors"
+              >
+                Richa Deo
+              </a>
+            </span>
+          </div>
+          <div className="flex justify-center gap-4 flex-wrap text-sm">
+            <Link to="/privacy" className="text-muted-foreground hover:text-foreground hover:underline transition-colors">
+              Privacy & Terms
+            </Link>
+            <Link to="/contact" className="text-muted-foreground hover:text-foreground hover:underline transition-colors">
+              Contact
+            </Link>
+            <Link to="/methodology" className="text-muted-foreground hover:text-foreground hover:underline transition-colors">
+              Methodology
+            </Link>
+            {onOpenFeedback && (
+              <button
+                onClick={onOpenFeedback}
+                className="text-sm text-muted-foreground hover:text-foreground hover:underline transition-colors bg-transparent border-0 p-0 cursor-pointer"
+              >
+                Give Feedback
+              </button>
+            )}
           </div>
         </div>
       </div>

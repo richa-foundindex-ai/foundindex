@@ -11,6 +11,7 @@ import Results from "./pages/Results";
 import Methodology from "./pages/Methodology";
 import Privacy from "./pages/Privacy";
 import Contact from "./pages/Contact";
+import Pricing from "./pages/Pricing";
 import LlmsTxt from "./pages/LlmsTxt";
 import NotFound from "./pages/NotFound";
 
@@ -35,15 +36,12 @@ function ToastDismissOnNavigate() {
 
 const AppRoutes = () => (
   <>
-    {/* Skip navigation link for accessibility */}
-    <a href="#main-content" className="skip-link">
-      Skip to main content
-    </a>
     <ToastDismissOnNavigate />
     <Routes>
       <Route path="/" element={<Index />} />
       <Route path="/results" element={<Results />} />
       <Route path="/methodology" element={<Methodology />} />
+      <Route path="/pricing" element={<Pricing />} />
       <Route path="/privacy" element={<Privacy />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/llms-txt" element={<LlmsTxt />} />

@@ -13,40 +13,12 @@ export default {
       },
     },
     extend: {
-      fontFamily: {
-        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
-      },
-      fontSize: {
-        // WCAG AA compliant typography scale
-        "display": ["3.5rem", { lineHeight: "1.2", fontWeight: "700" }],
-        "h1": ["3.5rem", { lineHeight: "1.2", fontWeight: "700" }],
-        "h2": ["2.5rem", { lineHeight: "1.2", fontWeight: "700" }],
-        "h3": ["1.875rem", { lineHeight: "1.3", fontWeight: "600" }],
-        "body": ["1.125rem", { lineHeight: "1.7", fontWeight: "400" }],
-        "body-lg": ["1.125rem", { lineHeight: "1.8", fontWeight: "400" }],
-      },
-      spacing: {
-        // Section padding - Each&Other style
-        "section-mobile": "3rem",
-        "section-tablet": "4.5rem",
-        "section-desktop": "6rem",
-        "element": "2.5rem",
-        "element-lg": "3.75rem",
-        "cta-clearance": "2.5rem",
-      },
-      maxWidth: {
-        "readable": "65ch",
-      },
       colors: {
         border: "hsl(var(--border))",
-        "border-medium": "hsl(var(--border-medium))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
-        foreground: {
-          DEFAULT: "hsl(var(--foreground))",
-          muted: "hsl(var(--foreground-muted))",
-        },
+        foreground: "hsl(var(--foreground))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -94,6 +66,10 @@ export default {
         blue: {
           DEFAULT: "hsl(var(--blue))",
           light: "hsl(var(--blue-light))",
+        },
+        purple: {
+          DEFAULT: "hsl(var(--purple))",
+          light: "hsl(var(--purple-light))",
         },
       },
       borderRadius: {

@@ -2,84 +2,72 @@
 @tailwind components;
 @tailwind utilities;
 
-/* FoundIndex Design System - WCAG AA Compliant
- * 2-color system with accessibility-first approach
- * All colors MUST be HSL.
- */
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
 
 @layer base {
   :root {
-    /* Background */
+    /* FoundIndex Design System - Editorial/Magazine Style */
     --background: 0 0% 100%;
+    --foreground: 0 0% 10%;
     
-    /* Text - Charcoal (#2C3E50) - 12.6:1 contrast on white */
-    --foreground: 207 29% 24%;
-    
-    /* Text Secondary - Lighter charcoal (#5A6C7D) */
-    --foreground-muted: 209 16% 42%;
-    
-    /* Card backgrounds */
     --card: 0 0% 100%;
-    --card-foreground: 207 29% 24%;
+    --card-foreground: 0 0% 10%;
     
     --popover: 0 0% 100%;
-    --popover-foreground: 207 29% 24%;
+    --popover-foreground: 0 0% 10%;
     
-    /* Primary CTA - Muted Orange (#E67E22) - 4.9:1 contrast with white text */
-    --primary: 28 80% 52%;
+    /* Primary Red - Used sparingly for CTAs */
+    --primary: 0 72% 51%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 28 80% 46%;
+    --primary-hover: 0 68% 42%;
     
-    /* Secondary - Charcoal for secondary buttons */
-    --secondary: 207 29% 24%;
+    /* Subtle Gray for secondary text */
+    --secondary: 0 0% 22%;
     --secondary-foreground: 0 0% 100%;
     
-    /* Muted backgrounds */
-    --muted: 220 14% 96%;
-    --muted-foreground: 209 16% 42%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
     
-    /* Accent */
     --accent: 220 13% 91%;
-    --accent-foreground: 207 29% 24%;
+    --accent-foreground: 0 0% 10%;
     
-    /* Success - Green */
-    --success: 158 64% 40%;
+    /* Success/Warning colors */
+    --success: 158 64% 52%;
     --success-foreground: 0 0% 100%;
     
-    /* Warning - Amber */
     --warning: 38 92% 50%;
-    --warning-foreground: 207 29% 24%;
+    --warning-foreground: 0 0% 10%;
     
-    /* Destructive - Red */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Borders - Light gray (#E5E7EB) and medium (#D1D5DB) */
-    --border: 220 13% 91%;
-    --border-medium: 220 13% 82%;
-    --input: 220 13% 91%;
-    
-    /* Focus ring - Deep teal (#0A7C7C) for accessibility */
-    --ring: 180 84% 27%;
+    --border: 0 0% 89%;
+    --input: 0 0% 89%;
+    --ring: 0 72% 51%;
     
     --radius: 0.5rem;
     
-    /* Special section backgrounds */
+    /* Light red background for special sections */
     --accent-red-light: 0 100% 98%;
+    
+    /* Light gray background for methodology */
     --accent-gray-light: 0 0% 98%;
     
-    /* Link colors - Deep Teal (#0A7C7C) - 4.8:1 contrast */
-    --link: 180 84% 27%;
-    --link-hover: 180 84% 20%;
-    --link-visited: 180 84% 22%;
+    /* Link colors - Blue for text links */
+    --link: 217 91% 60%;
+    --link-hover: 217 91% 50%;
+    --link-visited: 217 91% 40%;
     
-    /* Utility Colors - Teal accent only */
-    --blue: 180 84% 27%;
-    --blue-light: 180 84% 95%;
+    /* Beta Launch Colors */
+    --blue: 217 91% 60%;
+    --blue-light: 217 91% 95%;
+    --purple: 258 90% 66%;
+    --purple-light: 258 90% 95%;
   }
 }
 
-/* Animations */
 @keyframes steam {
   0% {
     opacity: 0.7;
@@ -107,18 +95,6 @@
   animation: shimmer 2s infinite linear;
 }
 
-/* Reduced motion support for accessibility */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
 @layer base {
   * {
     @apply border-border;
@@ -126,61 +102,16 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-size: 1.125rem;
-    line-height: 1.7;
   }
   
-  /* Typography with WCAG compliance */
   h1, h2, h3, h4, h5, h6 {
     @apply font-bold text-foreground;
-    line-height: 1.2;
-    font-style: normal;
   }
   
-  h1 {
-    font-size: 3.5rem;
-    font-weight: 700;
-  }
-  
-  h2 {
-    font-size: 2.5rem;
-    font-weight: 700;
-  }
-  
-  h3 {
-    font-size: 1.875rem;
-    font-weight: 600;
-  }
-  
-  /* Responsive typography */
-  @media (max-width: 768px) {
-    h1 {
-      font-size: 2.5rem;
-    }
-    h2 {
-      font-size: 2rem;
-    }
-    h3 {
-      font-size: 1.5rem;
-    }
-  }
-  
-  /* Focus states for accessibility - 3px solid teal with 2px offset */
-  button:focus-visible,
-  a:focus-visible,
-  [role="button"]:focus-visible,
-  input:focus-visible,
-  textarea:focus-visible,
-  select:focus-visible {
-    outline: 3px solid hsl(var(--ring));
-    outline-offset: 2px;
-  }
-  
-  /* Text link styles - Deep teal color */
+  /* Text link styles - blue color, not buttons */
   .text-link {
     color: hsl(var(--link));
     text-decoration: none;
-    transition: color 0.2s ease;
   }
   
   .text-link:hover {
@@ -192,96 +123,20 @@
     color: hsl(var(--link-visited));
   }
   
-  /* Skip navigation link for accessibility */
-  .skip-link {
-    position: absolute;
-    top: -40px;
-    left: 0;
-    background: hsl(var(--foreground));
-    color: hsl(var(--background));
-    padding: 8px 16px;
-    z-index: 100;
-    transition: top 0.3s;
-  }
-  
-  .skip-link:focus {
-    top: 0;
-  }
-  
   /* Editorial typography scale */
   .text-editorial-xl {
-    @apply font-bold leading-tight;
-    font-size: 3.5rem;
+    @apply text-5xl md:text-6xl font-bold leading-tight;
   }
   
   .text-editorial-lg {
-    @apply font-bold leading-tight;
-    font-size: 2.5rem;
+    @apply text-3xl md:text-4xl font-bold leading-tight;
   }
   
   .text-editorial-md {
-    @apply font-bold leading-tight;
-    font-size: 1.875rem;
+    @apply text-2xl md:text-3xl font-bold leading-tight;
   }
   
   .text-body-lg {
-    font-size: 1.125rem;
-    line-height: 1.8;
-  }
-  
-  /* Readable text width */
-  .prose-readable {
-    max-width: 65ch;
-  }
-  
-  @media (max-width: 768px) {
-    .text-editorial-xl {
-      font-size: 2.5rem;
-    }
-    .text-editorial-lg {
-      font-size: 2rem;
-    }
-    .text-editorial-md {
-      font-size: 1.5rem;
-    }
-  }
-}
-
-/* Section spacing utilities - Each&Other style */
-@layer utilities {
-  .section-padding {
-    padding-top: 6rem;
-    padding-bottom: 6rem;
-  }
-  
-  @media (min-width: 768px) {
-    .section-padding {
-      padding-top: 4.5rem;
-      padding-bottom: 4.5rem;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .section-padding {
-      padding-top: 6rem;
-      padding-bottom: 6rem;
-    }
-  }
-  
-  /* CTA clearance */
-  .cta-clearance {
-    margin-top: 2.5rem;
-    margin-bottom: 2.5rem;
-  }
-  
-  /* Element spacing within sections */
-  .element-spacing > * + * {
-    margin-top: 2.5rem;
-  }
-  
-  @media (min-width: 768px) {
-    .element-spacing > * + * {
-      margin-top: 3rem;
-    }
+    @apply text-lg leading-relaxed;
   }
 }
