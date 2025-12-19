@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 const SiteFooter: React.FC = () => {
   return (
-    <footer className="bg-gray-900 text-white py-12">
+    <footer className="bg-[#1F2937] text-[#9CA3AF] py-12">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         {/* Top section with logo and navigation */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
@@ -15,7 +15,7 @@ const SiteFooter: React.FC = () => {
             >
               FoundIndex
             </Link>
-            <p className="text-sm text-gray-400 mt-1">
+            <p className="text-sm text-[#9CA3AF] mt-1">
               Making websites legible to AI systems
             </p>
           </div>
@@ -26,36 +26,15 @@ const SiteFooter: React.FC = () => {
             className="flex flex-wrap justify-center md:justify-end gap-6"
           >
             <Link
-              to="/methodology"
-              className="text-gray-400 hover:text-white hover:underline transition-colors"
-              aria-label="Learn about our AI readability methodology"
-            >
-              Methodology
-            </Link>
-            <Link
-              to="/pricing"
-              className="text-gray-400 hover:text-white hover:underline transition-colors"
-              aria-label="View pricing for AI readability code package"
-            >
-              Pricing
-            </Link>
-            <Link
-              to="/contact"
-              className="text-gray-400 hover:text-white hover:underline transition-colors"
-              aria-label="Contact FoundIndex support team"
-            >
-              Contact
-            </Link>
-            <Link
               to="/privacy"
-              className="text-gray-400 hover:text-white hover:underline transition-colors"
+              className="text-[#9CA3AF] hover:text-white hover:underline transition-colors"
               aria-label="Read our privacy policy"
             >
               Privacy
             </Link>
             <Link
               to="/privacy#terms"
-              className="text-gray-400 hover:text-white hover:underline transition-colors"
+              className="text-[#9CA3AF] hover:text-white hover:underline transition-colors"
               aria-label="Read our terms of service"
             >
               Terms
@@ -64,26 +43,17 @@ const SiteFooter: React.FC = () => {
         </div>
 
         {/* Divider */}
-        <div className="border-t border-gray-800 pt-8">
+        <div className="border-t border-[#374151] pt-8">
           {/* Attribution and credits */}
-          <div className="text-sm text-gray-400 text-center md:text-left space-y-2">
+          <div className="text-sm text-[#9CA3AF] text-center md:text-left space-y-2">
             <p>
-              Built by Richa Deo • Content Strategist and UX Researcher with 14+ years experience
+              Built by Richa Deo — Product Builder & Founder of FoundMVP
             </p>
-            <p>
-              llms.txt is a community standard by{" "}
-              <a
-                href="https://llmstxt.org"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-violet-400 hover:text-violet-300 hover:underline transition-colors"
-                aria-label="Visit llmstxt.org to learn more about the standard (opens in new tab)"
-              >
-                llmstxt.org
-              </a>
+            <p className="text-[#6B7280]">
+              llms.txt follows the emerging community standard for AI-readable context files
             </p>
-            <p className="text-gray-500">
-              © {new Date().getFullYear()} FoundIndex. All rights reserved.
+            <p className="text-[#6B7280]">
+              © 2025 FoundIndex. All rights reserved.
             </p>
           </div>
         </div>
