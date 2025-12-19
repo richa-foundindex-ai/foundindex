@@ -116,14 +116,6 @@ const Navigation: React.FC<NavigationProps> = ({ onScrollToSection }) => {
               Methodology
             </Link>
             <Link
-              to="/pricing"
-              className={`${linkBaseClasses} ${isActivePage("/pricing") ? linkActiveClasses : linkDefaultClasses}`}
-              aria-label="View pricing for AI readability code package"
-              aria-current={isActivePage("/pricing") ? "page" : undefined}
-            >
-              Pricing
-            </Link>
-            <Link
               to="/contact"
               className={`${linkBaseClasses} ${isActivePage("/contact") ? linkActiveClasses : linkDefaultClasses}`}
               aria-label="Contact FoundIndex support team"
@@ -183,16 +175,6 @@ const Navigation: React.FC<NavigationProps> = ({ onScrollToSection }) => {
             role="menuitem"
           >
             Methodology
-          </Link>
-          <Link
-            to="/pricing"
-            className={`block py-3 ${linkBaseClasses} ${isActivePage("/pricing") ? linkActiveClasses : linkDefaultClasses}`}
-            aria-label="View pricing for AI readability code package"
-            aria-current={isActivePage("/pricing") ? "page" : undefined}
-            onClick={() => setMobileMenuOpen(false)}
-            role="menuitem"
-          >
-            Pricing
           </Link>
           <Link
             to="/contact"
