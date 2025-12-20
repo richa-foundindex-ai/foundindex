@@ -25,9 +25,10 @@ const Header = () => {
         <Link
           to="/"
           onClick={handleHomeClick}
-          className="text-xl font-bold text-foreground hover:text-primary transition-colors"
+          className="text-xl font-bold hover:opacity-80 transition-opacity"
         >
-          Found<span className="relative inline-block">ı<span className="absolute top-[0.15em] left-1/2 -translate-x-1/2 w-1 h-1 bg-red-500 rounded-full"></span></span>ndex
+          <span className="text-foreground">Found</span>
+          <span className="text-[#f13131]">Index</span>
         </Link>
         
         {/* Desktop Navigation */}
