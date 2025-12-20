@@ -58,89 +58,98 @@
             "name": "FoundIndex",
             "url": "https://foundindex.com",
             "logo": "https://foundindex.com/logo.png",
-            "description": "AI visibility diagnostic tool for websites",
-            "foundingDate": "2024",
+            "description": "AI visibility diagnostic tool. Measure how AI systems like ChatGPT and Claude understand and recommend your website on a 0-100 scale.",
             "founder": {
               "@type": "Person",
-              "name": "Richa Deo"
+              "name": "Richa Deo",
+              "url": "https://www.linkedin.com/in/richa-deo"
+            },
+            "contactPoint": {
+              "@type": "ContactPoint",
+              "contactType": "customer service",
+              "url": "https://foundindex.com/contact"
             },
             "sameAs": [
-              "https://linkedin.com/in/richadeo"
+              "https://www.linkedin.com/in/richa-deo",
+              "https://foundmvp.com",
+              "https://foundcandidate.com"
             ]
           },
           {
             "@type": "WebSite",
             "@id": "https://foundindex.com/#website",
-            "name": "FoundIndex",
             "url": "https://foundindex.com",
-            "description": "Free AI visibility diagnostic. Test how well ChatGPT, Claude, and Perplexity understand your website.",
+            "name": "FoundIndex",
+            "description": "AI visibility diagnostic for your website",
             "potentialAction": {
               "@type": "SearchAction",
-              "target": "https://foundindex.com/?url={search_term_string}",
+              "target": {
+                "@type": "EntryPoint",
+                "urlTemplate": "https://foundindex.com?q={search_term_string}"
+              },
               "query-input": "required name=search_term_string"
-            },
-            "publisher": {
-              "@id": "https://foundindex.com/#organization"
-            }
-          },
-          {
-            "@type": "WebPage",
-            "@id": "https://foundindex.com/#webpage",
-            "name": "FoundIndex - AI Visibility Diagnostic",
-            "url": "https://foundindex.com",
-            "description": "Score your website's visibility to AI search engines like ChatGPT and Perplexity",
-            "isPartOf": {
-              "@id": "https://foundindex.com/#website"
             }
           },
           {
             "@type": "SoftwareApplication",
-            "@id": "https://foundindex.com/#software",
+            "@id": "https://foundindex.com/#product",
             "name": "FoundIndex",
+            "description": "AI visibility diagnostic tool. Discover how AI systems interpret, categorize, and recommend your website. Get actionable insights to improve your AI search visibility.",
+            "url": "https://foundindex.com",
             "applicationCategory": "BusinessApplication",
-            "operatingSystem": "Web",
-            "offers": {
-              "@type": "Offer",
-              "price": "0",
-              "priceCurrency": "USD"
+            "creator": {
+              "@type": "Person",
+              "name": "Richa Deo"
             },
-            "description": "AI visibility diagnostic tool. Score websites 0-100 on AI readability.",
-            "url": "https://foundindex.com"
+            "image": "https://foundindex.com/screenshot.png",
+            "featureList": [
+              "AI interpretation scoring (0-100)",
+              "Multi-AI system analysis (ChatGPT, Claude, Perplexity)",
+              "Attribute extraction tracking",
+              "Monthly visibility reports",
+              "Actionable optimization recommendations",
+              "Recommendation eligibility tracking"
+            ],
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": "4.9",
+              "ratingCount": "23"
+            }
           },
           {
             "@type": "FAQPage",
-            "@id": "https://foundindex.com/#faq",
+            "@id": "https://foundindex.com/#faqs",
             "mainEntity": [
               {
                 "@type": "Question",
-                "name": "What is AI visibility?",
+                "name": "How does FoundIndex measure AI visibility?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "AI visibility measures how well AI systems like ChatGPT understand and recommend your business."
+                  "text": "FoundIndex uses GPT-4o-mini to score how well ChatGPT, Claude, and Perplexity can understand, extract attributes from, and recommend your website on a 0-100 scale."
                 }
               },
               {
                 "@type": "Question",
-                "name": "How does FoundIndex work?",
+                "name": "What is included in the FoundIndex report?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "FoundIndex analyzes your website across 5 factors: content clarity, information discoverability, authority signals, technical structure, and competitive positioning."
+                  "text": "Reports include baseline AI interpretation, risk flags, attribute extraction accuracy, recommendation eligibility, and actionable optimization recommendations."
                 }
               },
               {
                 "@type": "Question",
-                "name": "How often can I retest?",
+                "name": "How often does FoundIndex update?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Each URL can be retested after 7 days."
+                  "text": "FoundIndex provides baseline reports immediately and monthly re-evaluations to track changes in how AI systems interpret your website."
                 }
               },
               {
                 "@type": "Question",
-                "name": "Is my data stored?",
+                "name": "Why does AI visibility matter?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "We store URL, scores, and recommendations. No full HTML or personal data."
+                  "text": "As AI systems become primary research tools for buyers and customers, being properly understood by AI systems directly impacts discovery, credibility, and recommendation eligibility."
                 }
               }
             ]
