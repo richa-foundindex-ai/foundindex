@@ -50,6 +50,8 @@ const getConfidenceConfig = (score: number) => {
 };
 
 const AIWebsiteSummary = ({ interpretation, confidenceScore, confidenceBreakdown }: AIWebsiteSummaryProps) => {
+  if (!interpretation) return null;
+
   const config = getConfidenceConfig(confidenceScore);
 
   const checklistItems = [
@@ -67,22 +69,20 @@ const AIWebsiteSummary = ({ interpretation, confidenceScore, confidenceBreakdown
         config.bgColor
       )}
     >
-      {/* Heading */}
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-600 mb-3">
-        AI Thinks This Website Is About...
-      </h3>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-600">
+          AI Thinks This Website Is About...
+        </h3>
+        <span className={cn("text-sm font-medium px-2 py-1 rounded", config.badgeBg, config.textColor)}>
+          {confidenceScore}% {config.label}
+        </span>
+      </div>
 
       {/* Interpretation text */}
       <p className="text-base sm:text-lg leading-relaxed text-gray-800 mb-4">
         {interpretation}
       </p>
-
-      {/* Confidence badge */}
-      <div className="flex items-center gap-2 mb-4">
-        <span className={cn("text-sm font-medium", config.textColor)}>
-          Confidence: {confidenceScore}% - {config.label}
-        </span>
-      </div>
 
       {/* Checklist */}
       {confidenceBreakdown && (
@@ -95,7 +95,7 @@ const AIWebsiteSummary = ({ interpretation, confidenceScore, confidenceBreakdown
                 <XCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
               )}
               <span className={item.value ? "text-gray-700" : "text-gray-500"}>
-                {item.value ? "✓" : "✗"} {item.label}
+                {item.label}
               </span>
             </li>
           ))}
