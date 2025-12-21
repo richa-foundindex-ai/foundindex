@@ -40,3 +40,6 @@ verify_jwt = false
 
 [functions.submit-insights]
 verify_jwt = false
+
+[functions.submit-ai-feedback]
+verify_jwt = false
