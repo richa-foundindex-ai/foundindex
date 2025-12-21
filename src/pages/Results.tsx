@@ -1414,6 +1414,13 @@ const Results = () => {
           />
         )}
 
+        {/* Scroll indicator divider */}
+        <div className="my-12 py-8 border-t border-b border-border text-center">
+          <p className="text-sm text-muted-foreground font-medium">
+            Continue scrolling to see detailed category breakdown and recommendations
+          </p>
+        </div>
+
         {/* Category breakdown */}
         <Card className="mb-8">
           <CardHeader>
