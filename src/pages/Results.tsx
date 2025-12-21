@@ -35,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SchemaMarkupDisplay, SemanticStructureDisplay } from "@/components/results/EnhancedCategoryDisplay";
 import AIInterpretationSection from "@/components/results/AIInterpretationSection";
+import AIWebsiteSummary from "@/components/results/AIWebsiteSummary";
 import DownloadReportDialog from "@/components/results/DownloadReportDialog";
 
 // =============================================================================
@@ -1387,7 +1388,16 @@ const Results = () => {
           </CardContent>
         </Card>
 
-        {/* AI Interpretation Section - Only for homepages, placed after score and before category breakdown */}
+        {/* AI Thinks This Website Is About... Section */}
+        {isHomepage && resultData.aiInterpretation && (
+          <AIWebsiteSummary
+            interpretation={resultData.aiInterpretation.interpretation}
+            confidenceScore={resultData.aiInterpretation.confidenceScore}
+            confidenceBreakdown={resultData.aiInterpretation.confidenceBreakdown}
+          />
+        )}
+
+        {/* AI Interpretation Section - Detailed view with feedback */}
         {isHomepage && resultData.aiInterpretation && (
           <AIInterpretationSection 
             data={resultData.aiInterpretation}
