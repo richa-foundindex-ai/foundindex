@@ -15,9 +15,11 @@ serve(async (req) => {
   try {
     const { testId, feedback } = await req.json();
 
-    if (!testId || !feedback) {
+    // Validate testId
+    if (!testId || typeof testId !== "string" || testId.trim() === "") {
+      console.error("[submit-ai-feedback] Missing or invalid testId");
       return new Response(
-        JSON.stringify({ error: "testId and feedback are required" }),
+        JSON.stringify({ error: "testId is required and must be a non-empty string" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -26,9 +28,10 @@ serve(async (req) => {
     }
 
     // Validate feedback value
-    if (!["accurate", "close", "wrong"].includes(feedback)) {
+    if (!feedback || !["accurate", "close", "wrong"].includes(feedback)) {
+      console.error("[submit-ai-feedback] Invalid feedback value:", feedback);
       return new Response(
-        JSON.stringify({ error: "feedback must be 'accurate', 'close', or 'wrong'" }),
+        JSON.stringify({ error: "feedback must be exactly one of: 'accurate', 'close', or 'wrong'" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -40,7 +43,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error("Missing Supabase credentials");
+      console.error("[submit-ai-feedback] Missing Supabase credentials");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
         {
@@ -52,14 +55,43 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
+    // First check if the record exists
+    const { data: existingRecord, error: selectError } = await supabaseAdmin
+      .from("ai_interpretations")
+      .select("id")
+      .eq("test_id", testId.trim())
+      .maybeSingle();
+
+    if (selectError) {
+      console.error("[submit-ai-feedback] Database select error:", selectError);
+      return new Response(
+        JSON.stringify({ error: "Failed to verify test ID" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    if (!existingRecord) {
+      console.error("[submit-ai-feedback] Test ID not found:", testId);
+      return new Response(
+        JSON.stringify({ error: "Test ID not found" }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     // Update the ai_interpretations record with user feedback
     const { error: updateError } = await supabaseAdmin
       .from("ai_interpretations")
       .update({ user_accuracy_feedback: feedback })
-      .eq("test_id", testId);
+      .eq("test_id", testId.trim());
 
     if (updateError) {
-      console.error("Failed to update AI interpretation feedback:", updateError);
+      console.error("[submit-ai-feedback] Database update error:", updateError);
       return new Response(
         JSON.stringify({ error: "Failed to save feedback" }),
         {
@@ -74,11 +106,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ success: true }),
       {
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
   } catch (error) {
-    console.error("submit-ai-feedback error:", error);
+    console.error("[submit-ai-feedback] Unexpected error:", error);
     return new Response(
       JSON.stringify({ error: "An unexpected error occurred" }),
       {

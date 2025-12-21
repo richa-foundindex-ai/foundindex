@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_interpretations: {
+        Row: {
+          audience: string
+          confidence_breakdown: Json
+          confidence_score: number
+          created_at: string
+          id: string
+          industry: string
+          interpretation: string
+          problem: string
+          solution: string
+          test_id: string
+          updated_at: string
+          url_tested: string
+          user_accuracy_feedback: string | null
+        }
+        Insert: {
+          audience: string
+          confidence_breakdown?: Json
+          confidence_score: number
+          created_at?: string
+          id?: string
+          industry: string
+          interpretation: string
+          problem: string
+          solution: string
+          test_id: string
+          updated_at?: string
+          url_tested: string
+          user_accuracy_feedback?: string | null
+        }
+        Update: {
+          audience?: string
+          confidence_breakdown?: Json
+          confidence_score?: number
+          created_at?: string
+          id?: string
+          industry?: string
+          interpretation?: string
+          problem?: string
+          solution?: string
+          test_id?: string
+          updated_at?: string
+          url_tested?: string
+          user_accuracy_feedback?: string | null
+        }
+        Relationships: []
+      }
       beta_applications: {
         Row: {
           allow_case_study: boolean
