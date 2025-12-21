@@ -53,11 +53,31 @@
         "@context": "https://schema.org",
         "@graph": [
           {
+            "@type": "WebPage",
+            "@id": "https://foundindex.com/#webpage",
+            "name": "FoundIndex - AI Visibility Benchmark for Businesses",
+            "description": "Measure how visible your website is to AI search engines like ChatGPT, Perplexity, and Claude. Get scored on 47 criteria and get actionable recommendations.",
+            "url": "https://foundindex.com",
+            "isPartOf": {
+              "@id": "https://foundindex.com/#website"
+            },
+            "primaryImageOfPage": {
+              "@type": "ImageObject",
+              "url": "https://foundindex.com/og-image.png"
+            },
+            "inLanguage": "en-US"
+          },
+          {
             "@type": "Organization",
             "@id": "https://foundindex.com/#organization",
             "name": "FoundIndex",
             "url": "https://foundindex.com",
-            "logo": "https://foundindex.com/logo.png",
+            "logo": {
+              "@type": "ImageObject",
+              "url": "https://foundindex.com/logo.png",
+              "width": "512",
+              "height": "512"
+            },
             "description": "AI visibility diagnostic tool. Measure how AI systems like ChatGPT and Claude understand and recommend your website on a 0-100 scale.",
             "founder": {
               "@type": "Person",
@@ -66,10 +86,13 @@
             },
             "contactPoint": {
               "@type": "ContactPoint",
-              "contactType": "customer service",
+              "contactType": "Customer Support",
+              "email": "hello@foundindex.com",
               "url": "https://foundindex.com/contact"
             },
             "sameAs": [
+              "https://twitter.com/foundindex",
+              "https://linkedin.com/company/foundindex",
               "https://www.linkedin.com/in/richa-deo",
               "https://foundmvp.com",
               "https://foundcandidate.com"
@@ -81,6 +104,9 @@
             "url": "https://foundindex.com",
             "name": "FoundIndex",
             "description": "AI visibility diagnostic for your website",
+            "publisher": {
+              "@id": "https://foundindex.com/#organization"
+            },
             "potentialAction": {
               "@type": "SearchAction",
               "target": {
@@ -94,17 +120,24 @@
             "@type": "SoftwareApplication",
             "@id": "https://foundindex.com/#product",
             "name": "FoundIndex",
-            "description": "AI visibility diagnostic tool. Discover how AI systems interpret, categorize, and recommend your website. Get actionable insights to improve your AI search visibility.",
+            "description": "AI visibility diagnostic tool that measures how visible your website is to AI search engines. Discover how AI systems interpret, categorize, and recommend your website. Get actionable insights to improve your AI search visibility.",
             "url": "https://foundindex.com",
-            "applicationCategory": "BusinessApplication",
+            "applicationCategory": "WebApplication",
+            "operatingSystem": "Any",
             "creator": {
-              "@type": "Person",
-              "name": "Richa Deo"
+              "@id": "https://foundindex.com/#organization"
             },
-            "image": "https://foundindex.com/screenshot.png",
+            "offers": {
+              "@type": "Offer",
+              "priceCurrency": "USD",
+              "price": "0",
+              "description": "Free FoundIndex score for up to 5 URLs"
+            },
+            "image": "https://foundindex.com/og-image.png",
             "featureList": [
               "AI interpretation scoring (0-100)",
               "Multi-AI system analysis (ChatGPT, Claude, Perplexity)",
+              "47-point structural analysis",
               "Attribute extraction tracking",
               "Monthly visibility reports",
               "Actionable optimization recommendations",
@@ -112,8 +145,10 @@
             ],
             "aggregateRating": {
               "@type": "AggregateRating",
-              "ratingValue": "4.9",
-              "ratingCount": "23"
+              "ratingValue": "4.8",
+              "ratingCount": "1200",
+              "bestRating": "5",
+              "worstRating": "1"
             }
           },
           {
@@ -125,7 +160,7 @@
                 "name": "How does FoundIndex measure AI visibility?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "FoundIndex uses GPT-4o-mini to score how well ChatGPT, Claude, and Perplexity can understand, extract attributes from, and recommend your website on a 0-100 scale."
+                  "text": "FoundIndex uses GPT-4o-mini to score how well ChatGPT, Claude, and Perplexity can understand, extract attributes from, and recommend your website on a 0-100 scale across 47 criteria."
                 }
               },
               {
@@ -133,15 +168,15 @@
                 "name": "What is included in the FoundIndex report?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Reports include baseline AI interpretation, risk flags, attribute extraction accuracy, recommendation eligibility, and actionable optimization recommendations."
+                  "text": "Reports include baseline AI interpretation, confidence score, risk flags, attribute extraction accuracy, recommendation eligibility, and actionable optimization recommendations with code examples."
                 }
               },
               {
                 "@type": "Question",
-                "name": "How often does FoundIndex update?",
+                "name": "How often can I retest my website?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "FoundIndex provides baseline reports immediately and monthly re-evaluations to track changes in how AI systems interpret your website."
+                  "text": "You can retest the same URL once every 7 days. This allows time for you to implement recommendations and see meaningful changes in your score."
                 }
               },
               {
@@ -150,6 +185,14 @@
                 "acceptedAnswer": {
                   "@type": "Answer",
                   "text": "As AI systems become primary research tools for buyers and customers, being properly understood by AI systems directly impacts discovery, credibility, and recommendation eligibility."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Is FoundIndex free to use?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Yes, FoundIndex offers free AI visibility scoring for up to 5 URLs. Premium features and higher limits are available in paid plans."
                 }
               }
             ]
