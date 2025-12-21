@@ -37,3 +37,6 @@ verify_jwt = false
 
 [functions.validate-llms-txt]
 verify_jwt = false
+
+[functions.submit-insights]
+verify_jwt = false

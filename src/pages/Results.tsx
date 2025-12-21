@@ -893,6 +893,214 @@ const RecommendationCard = ({ rec, index, isUnlocked, onUnlock }: Recommendation
 };
 
 // =============================================================================
+// INSIGHTS QUESTION SECTION
+// =============================================================================
+
+interface InsightsQuestionSectionProps {
+  urlTested: string;
+  testId: string;
+}
+
+const SITUATION_OPTIONS = [
+  "AI misunderstands what our business actually does",
+  "AI understands us, but wouldn't confidently recommend us",
+  "AI likely surfaces competitors more clearly than us",
+  "This confirms what I already suspected",
+  "I'm not sure yet",
+];
+
+const InsightsQuestionSection = ({ urlTested, testId }: InsightsQuestionSectionProps) => {
+  const [selectedSituation, setSelectedSituation] = useState<string>("");
+  const [problemDescription, setProblemDescription] = useState("");
+  const [emailConsent, setEmailConsent] = useState(false);
+  const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const { toast } = useToast();
+
+  // Pre-fill email from localStorage on mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("foundindex_user_email");
+    if (savedEmail) {
+      setEmail(savedEmail);
+    }
+  }, []);
+
+  // Get user email from unlock email or fallback
+  const getUserEmail = (): string => {
+    return localStorage.getItem("fi_unlocked_email") || 
+           localStorage.getItem("foundindex_user_email") || 
+           "anonymous";
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedSituation) {
+      toast({
+        title: "Please select an option",
+        description: "Choose which situation feels closest to yours.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const userEmail = getUserEmail();
+      
+      // Save email to localStorage for future pre-fill
+      if (emailConsent && email) {
+        localStorage.setItem("foundindex_user_email", email.trim().toLowerCase());
+      }
+
+      const { error } = await supabase.functions.invoke("submit-insights", {
+        body: {
+          url_tested: urlTested,
+          situation_selected: selectedSituation,
+          problem_description: problemDescription || null,
+          email_consent: emailConsent,
+          email: emailConsent ? email : null,
+          user_email: userEmail,
+        },
+      });
+
+      if (error) {
+        console.error("[InsightsSection] Submit error:", error);
+        throw error;
+      }
+
+      setIsSubmitted(true);
+      toast({
+        title: "Thank you!",
+        description: "Your feedback helps us identify patterns across sites.",
+      });
+    } catch (err) {
+      console.error("[InsightsSection] Error:", err);
+      toast({
+        title: "Failed to submit",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Show confirmation after submission
+  if (isSubmitted) {
+    return (
+      <Card className="mb-8 bg-green-50 border-green-200">
+        <CardContent className="p-6 text-center">
+          <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-3" />
+          <p className="text-green-800 font-medium">
+            Thank you — this helps us identify real patterns across sites.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold">
+          Help us understand what this means for you{" "}
+          <span className="text-muted-foreground font-normal">(optional)</span>
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          When you look at this score and breakdown, which of these feels closest to your situation?
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Radio options */}
+        <RadioGroup value={selectedSituation} onValueChange={setSelectedSituation}>
+          {SITUATION_OPTIONS.map((option) => (
+            <div key={option} className="flex items-center space-x-3">
+              <RadioGroupItem value={option} id={option} />
+              <Label htmlFor={option} className="text-sm cursor-pointer font-normal">
+                {option}
+              </Label>
+            </div>
+          ))}
+        </RadioGroup>
+
+        {/* Reveal text input after selection */}
+        {selectedSituation && (
+          <div className="space-y-4 pt-2 border-t">
+            <div className="space-y-2 pt-4">
+              <Label htmlFor="problem-description" className="text-sm">
+                In one line, how would you describe this problem in your own words?
+              </Label>
+              <Input
+                id="problem-description"
+                value={problemDescription}
+                onChange={(e) => {
+                  if (e.target.value.length <= 120) {
+                    setProblemDescription(e.target.value);
+                  }
+                }}
+                placeholder="e.g. ChatGPT never mentions us"
+                maxLength={120}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                {problemDescription.length}/120 characters
+              </p>
+            </div>
+
+            {/* Email consent checkbox */}
+            <div className="flex items-start space-x-3">
+              <Checkbox
+                id="email-consent"
+                checked={emailConsent}
+                onCheckedChange={(checked) => setEmailConsent(checked as boolean)}
+                className="mt-0.5"
+              />
+              <Label htmlFor="email-consent" className="text-sm font-normal cursor-pointer">
+                Can we email you one follow-up question after reviewing patterns?
+              </Label>
+            </div>
+
+            {/* Email input - only show if consent checked */}
+            {emailConsent && (
+              <div className="space-y-2 ml-6">
+                <Label htmlFor="insights-email" className="text-sm">
+                  Your email
+                </Label>
+                <Input
+                  id="insights-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            {/* Submit button */}
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isSubmitting}
+              className="w-full sm:w-auto"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                "Share input"
+              )}
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// =============================================================================
 // MAIN RESULTS PAGE
 // =============================================================================
 
@@ -1249,6 +1457,11 @@ Generated by FoundIndex.com
           </CardContent>
         </Card>
 
+        {/* Insights Question Section */}
+        <InsightsQuestionSection 
+          urlTested={website}
+          testId={testId || ""}
+        />
 
         {/* CTA */}
         <div className="text-center py-8">

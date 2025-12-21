@@ -122,6 +122,39 @@ export type Database = {
         }
         Relationships: []
       }
+      foundindex_insights: {
+        Row: {
+          created_at: string
+          email: string | null
+          email_consent: boolean
+          id: string
+          problem_description: string | null
+          situation_selected: string
+          url_tested: string
+          user_email: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          email_consent?: boolean
+          id?: string
+          problem_description?: string | null
+          situation_selected: string
+          url_tested: string
+          user_email: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          email_consent?: boolean
+          id?: string
+          problem_description?: string | null
+          situation_selected?: string
+          url_tested?: string
+          user_email?: string
+        }
+        Relationships: []
+      }
       test_history: {
         Row: {
           categories: Json
