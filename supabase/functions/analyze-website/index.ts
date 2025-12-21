@@ -21,6 +21,22 @@ type ErrorType =
   | "API_QUOTA"
   | "GENERAL_ERROR";
 
+// AI Interpretation types
+interface AIInterpretation {
+  interpretation: string;
+  industry: string;
+  audience: string;
+  problem: string;
+  solution: string;
+  confidenceScore: number;
+  confidenceBreakdown: {
+    hasAudience: boolean;
+    hasProblem: boolean;
+    hasSolution: boolean;
+    isSpecific: boolean;
+  };
+}
+
 interface ErrorResponse {
   success: false;
   error_type: ErrorType;
@@ -685,6 +701,156 @@ const analyzeImages = (
   }
 
   return { score: Math.min(score, maxScore), maxScore, details };
+};
+
+// =============================================================================
+// AI INTERPRETATION ANALYSIS
+// =============================================================================
+
+const analyzeAIInterpretation = async (
+  html: string,
+  url: string,
+  openaiApiKey: string,
+  modelName: string
+): Promise<AIInterpretation | null> => {
+  // Extract key content areas: title, meta description, H1, first paragraph, value proposition
+  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  const title = titleMatch ? titleMatch[1].trim() : "";
+  
+  const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i) ||
+                        html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*name=["']description["']/i);
+  const metaDescription = metaDescMatch ? metaDescMatch[1].trim() : "";
+  
+  const h1Match = html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+  const h1 = h1Match ? h1Match[1].replace(/<[^>]+>/g, "").trim() : "";
+  
+  // Extract first meaningful paragraph (skip navigation, headers)
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  const bodyContent = bodyMatch ? bodyMatch[1] : html;
+  
+  // Remove scripts, styles, nav, header, footer for cleaner text extraction
+  let cleanContent = bodyContent
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, "")
+    .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, "")
+    .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, "")
+    .replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, "");
+  
+  // Get first few paragraphs
+  const paragraphs = cleanContent.match(/<p[^>]*>([^<]+)<\/p>/gi) || [];
+  const firstParagraphs = paragraphs.slice(0, 3)
+    .map(p => p.replace(/<[^>]+>/g, "").trim())
+    .filter(p => p.length > 20)
+    .join(" ");
+  
+  // Extract hero section content (common class patterns)
+  const heroPatterns = [
+    /class="[^"]*hero[^"]*"[^>]*>([\s\S]*?)<\/(?:div|section)>/gi,
+    /class="[^"]*banner[^"]*"[^>]*>([\s\S]*?)<\/(?:div|section)>/gi,
+    /class="[^"]*jumbotron[^"]*"[^>]*>([\s\S]*?)<\/(?:div|section)>/gi,
+  ];
+  
+  let heroContent = "";
+  for (const pattern of heroPatterns) {
+    const match = cleanContent.match(pattern);
+    if (match) {
+      heroContent = match[0].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().substring(0, 500);
+      break;
+    }
+  }
+  
+  const contentToAnalyze = `
+URL: ${url}
+Title: ${title}
+Meta Description: ${metaDescription}
+H1: ${h1}
+First Paragraphs: ${firstParagraphs.substring(0, 500)}
+Hero Content: ${heroContent}
+  `.trim();
+
+  const prompt = `Analyze this homepage and extract what an AI system would understand about this business.
+
+${contentToAnalyze}
+
+Extract:
+1. Industry/category (be specific, not generic like "technology")
+2. Primary target audience (who are they helping?)
+3. Core problem they solve (what pain point?)
+4. How they solve it (their method/approach)
+
+Also calculate a confidence score (0-100) based on clarity:
+- Start at 100%
+- Minus 10% if no clear audience mentioned or it's too vague
+- Minus 10% if no clear problem mentioned
+- Minus 10% if no solution method mentioned
+- Minus 15% if opening content is too generic or unclear
+- Minimum score is 50%
+
+Return ONLY valid JSON:
+{
+  "industry": "specific industry/category",
+  "audience": "specific target audience",
+  "problem": "the problem they solve",
+  "solution": "how they solve it",
+  "confidenceScore": number,
+  "confidenceBreakdown": {
+    "hasAudience": boolean,
+    "hasProblem": boolean,
+    "hasSolution": boolean,
+    "isSpecific": boolean
+  }
+}`;
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${openaiApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: modelName,
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [{ role: "user", content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      console.error("AI Interpretation API error:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+    const content = data.choices[0].message.content
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
+      .trim();
+
+    const parsed = JSON.parse(content);
+    
+    // Build the interpretation sentence
+    const interpretation = `AI reads your site as: A ${parsed.industry} company helping ${parsed.audience} solve ${parsed.problem} by ${parsed.solution}.`;
+    
+    return {
+      interpretation,
+      industry: parsed.industry || "Unknown",
+      audience: parsed.audience || "Unknown",
+      problem: parsed.problem || "Unknown",
+      solution: parsed.solution || "Unknown",
+      confidenceScore: Math.max(50, Math.min(100, parsed.confidenceScore || 50)),
+      confidenceBreakdown: {
+        hasAudience: parsed.confidenceBreakdown?.hasAudience ?? false,
+        hasProblem: parsed.confidenceBreakdown?.hasProblem ?? false,
+        hasSolution: parsed.confidenceBreakdown?.hasSolution ?? false,
+        isSpecific: parsed.confidenceBreakdown?.isSpecific ?? false,
+      },
+    };
+  } catch (error) {
+    console.error("AI Interpretation failed:", error);
+    return null;
+  }
 };
 
 // =============================================================================
@@ -1424,6 +1590,36 @@ Return ONLY valid JSON:
       return (priorityOrder[a.priority] ?? 2) - (priorityOrder[b.priority] ?? 2);
     });
 
+    // Run AI interpretation for homepages only
+    let aiInterpretation: AIInterpretation | null = null;
+    if (analysisType === "homepage" && openaiApiKey) {
+      console.log(`[${testId}] Running AI interpretation analysis...`);
+      aiInterpretation = await analyzeAIInterpretation(
+        originalHtml,
+        validatedWebsite,
+        openaiApiKey,
+        modelName
+      );
+      
+      if (aiInterpretation) {
+        console.log(`[${testId}] AI Interpretation: confidence ${aiInterpretation.confidenceScore}%`);
+        
+        // Save to ai_interpretations table
+        const { error: interpretationError } = await supabaseAdmin
+          .from("ai_interpretations")
+          .insert({
+            test_id: testId,
+            url_tested: validatedWebsite,
+            ai_interpretation: aiInterpretation.interpretation,
+            confidence_score: aiInterpretation.confidenceScore,
+          });
+        
+        if (interpretationError) {
+          console.warn(`[${testId}] Failed to save AI interpretation:`, interpretationError.message);
+        }
+      }
+    }
+
     let industryAverage = 58;
     try {
       const { data: avgData } = await supabaseAdmin
@@ -1492,6 +1688,15 @@ Return ONLY valid JSON:
         recommendations: allRecommendations,
         industryAverage,
         criteriaCount: analysisType === "homepage" ? 47 : 52,
+        aiInterpretation: aiInterpretation ? {
+          interpretation: aiInterpretation.interpretation,
+          industry: aiInterpretation.industry,
+          audience: aiInterpretation.audience,
+          problem: aiInterpretation.problem,
+          solution: aiInterpretation.solution,
+          confidenceScore: aiInterpretation.confidenceScore,
+          confidenceBreakdown: aiInterpretation.confidenceBreakdown,
+        } : null,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

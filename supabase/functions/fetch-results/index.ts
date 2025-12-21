@@ -73,6 +73,28 @@ serve(async (req) => {
 
     console.log(`[fetch-results] Found test: ${testData.test_id}, Score: ${testData.score}`);
 
+    // Also fetch AI interpretation if available
+    let aiInterpretation = null;
+    try {
+      const { data: interpretationData } = await supabase
+        .from("ai_interpretations")
+        .select("*")
+        .eq("test_id", testId)
+        .single();
+      
+      if (interpretationData) {
+        aiInterpretation = {
+          interpretation: interpretationData.ai_interpretation,
+          confidenceScore: interpretationData.confidence_score,
+          userFeedback: interpretationData.user_accuracy_feedback,
+        };
+        console.log(`[fetch-results] Found AI interpretation with confidence ${interpretationData.confidence_score}%`);
+      }
+    } catch (e) {
+      // AI interpretation is optional, don't fail if not found
+      console.log(`[fetch-results] No AI interpretation found for test ${testId}`);
+    }
+
     const result = {
       testId: testData.test_id,
       website: testData.website,
@@ -83,6 +105,7 @@ serve(async (req) => {
       categories: testData.categories || {},
       recommendations: testData.recommendations || [],
       createdAt: testData.created_at,
+      aiInterpretation,
     };
 
     console.log(`[fetch-results] Successfully fetched results for test ${testId}`);
