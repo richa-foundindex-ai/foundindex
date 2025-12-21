@@ -4,6 +4,23 @@ const URL_COOLDOWN_DAYS = 30; // Days before same URL can be tested again
 const TEST_LOCK_KEY = 'test_lock';
 const TEST_LOCK_TIMEOUT = 30000; // 30 seconds lock timeout
 
+// ============================================================================
+// DOMAIN ALLOWLIST - Domains that bypass cooldown restrictions (temporary)
+// TODO: Remove or disable before public launch
+// ============================================================================
+const COOLDOWN_BYPASS_DOMAINS = [
+  'foundindex.com',
+  'foundmvp.com',
+  'foundcandidate.com',
+];
+
+const isDomainAllowlisted = (url: string): boolean => {
+  const normalized = normalizeUrl(url);
+  return COOLDOWN_BYPASS_DOMAINS.some(domain => 
+    normalized === domain || normalized.endsWith('.' + domain)
+  );
+};
+
 interface TestRecord {
   url: string;
   score: number;
