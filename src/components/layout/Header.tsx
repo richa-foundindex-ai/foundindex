@@ -8,10 +8,12 @@ const Header = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   
-  const handleHomeClick = () => {
+  const handleLogoClick = () => {
     // Clear stored results URL when navigating to home
     sessionStorage.removeItem('foundindex_results_url');
     setIsOpen(false);
+    // Always scroll to top when clicking logo
+    window.scrollTo(0, 0);
   };
   
   const navLinks = [
@@ -24,7 +26,7 @@ const Header = () => {
       <div className="container mx-auto max-w-7xl flex h-16 items-center justify-between px-4">
         <Link
           to="/"
-          onClick={handleHomeClick}
+          onClick={handleLogoClick}
           className="text-xl font-bold hover:opacity-80 transition-opacity"
         >
           <span className="text-foreground">Found</span>
