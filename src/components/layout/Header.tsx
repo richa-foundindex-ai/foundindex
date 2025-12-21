@@ -46,6 +46,11 @@ const Header = () => {
               {link.label}
             </Link>
           ))}
+          <Link to="/">
+            <Button className="bg-[#f13131] hover:bg-[#d92b2b] text-white font-semibold px-5">
+              Get your FI Score
+            </Button>
+          </Link>
         </nav>
 
         {/* Mobile Navigation */}
@@ -71,6 +76,11 @@ const Header = () => {
                   {link.label}
                 </Link>
               ))}
+              <Link to="/" onClick={() => setIsOpen(false)}>
+                <Button className="bg-[#f13131] hover:bg-[#d92b2b] text-white font-semibold w-full">
+                  Get your FI Score
+                </Button>
+              </Link>
             </nav>
           </SheetContent>
         </Sheet>
