@@ -6,24 +6,24 @@ const Footer = () => {
       <div className="container mx-auto max-w-4xl">
         <div className="text-center space-y-4">
           {/* Line 1: Main tagline */}
-          <p className="text-lg font-bold text-foreground">
-            <span className="text-foreground">Found</span>
-            <span className="text-[#f13131]">Index</span>
-            {" "}• AI visibility diagnostic for your website
+          <p className="text-lg text-foreground">
+            <span className="font-bold text-foreground">Found</span>
+            <span className="font-bold text-[#f13131]">Index</span>
+            {" "}• How AI systems interpret and understand websites
           </p>
           
           {/* Line 2: Links */}
-          <div className="flex justify-center items-center gap-2 flex-wrap text-xs text-muted-foreground">
+          <div className="flex justify-center items-center gap-2 flex-wrap text-sm text-muted-foreground">
             <Link 
               to="/privacy" 
-              className="hover:text-[#f13131] transition-colors"
+              className="hover:text-muted-foreground/80 transition-colors"
             >
               Terms & Privacy
             </Link>
             <span>|</span>
             <Link 
               to="/contact" 
-              className="hover:text-[#f13131] transition-colors"
+              className="hover:text-muted-foreground/80 transition-colors"
             >
               Contact
             </Link>
@@ -32,50 +32,33 @@ const Footer = () => {
               href="https://www.linkedin.com/company/foundindex/"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[#f13131] transition-colors"
+              className="hover:text-muted-foreground/80 transition-colors"
             >
               LinkedIn
-            </a>
-            <span>|</span>
-            <a
-              href="https://foundindex.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[#f13131] transition-colors"
-            >
-              FoundIndex
-            </a>
-            <span>|</span>
-            <a
-              href="https://foundcandidate.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[#f13131] transition-colors"
-            >
-              FoundCandidate
             </a>
             <span>|</span>
             <a
               href="https://foundmvp.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[#f13131] transition-colors"
+              className="hover:text-muted-foreground/80 transition-colors"
             >
               FoundMVP
+            </a>
+            <span>|</span>
+            <a
+              href="https://foundcandidate.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-muted-foreground/80 transition-colors"
+            >
+              FoundCandidate
             </a>
           </div>
           
           {/* Line 3: Copyright */}
-          <p className="text-xs text-muted-foreground">
-            © 2025 FoundIndex • Built by{" "}
-            <a
-              href="https://richadeo.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[#f13131] transition-colors"
-            >
-              Richa Deo
-            </a>
+          <p className="text-sm text-muted-foreground">
+            © 2025 FoundIndex • Built by Richa Deo
           </p>
           
           {/* Line 4: About Richa */}
@@ -85,7 +68,7 @@ const Footer = () => {
           
           {/* Line 5: About FoundIndex */}
           <p className="text-xs text-muted-foreground max-w-2xl mx-auto">
-            FoundIndex measures how AI systems understand and recommend your business on a 0-100 scale. Schema.org compliant, WCAG 2.1 AA accessible, GDPR-structured, TypeScript-based architecture.
+            FoundIndex examines how AI tools interpret website structure and content. It highlights gaps that prevent accurate understanding and visibility in AI-driven search.
           </p>
         </div>
       </div>

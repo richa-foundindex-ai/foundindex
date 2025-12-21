@@ -46,7 +46,7 @@ const FAQ = () => {
     {
       question: "Is this free?",
       answer:
-        "Beta phase. This phase is for listening and learning.",
+        "Yes it is free in the beta phase. This phase is for listening and learning.",
     },
     {
       question: "How can I give feedback?",
