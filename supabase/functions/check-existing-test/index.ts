@@ -11,6 +11,32 @@ const corsHeaders = {
 // ============================================================================
 const TESTING_MODE = true;
 
+// ============================================================================
+// DOMAIN ALLOWLIST - Domains that bypass cooldown restrictions (temporary)
+// TODO: Remove or disable before public launch
+// ============================================================================
+const COOLDOWN_BYPASS_DOMAINS = [
+  'foundindex.com',
+  'foundmvp.com',
+  'foundcandidate.com',
+];
+
+const normalizeUrl = (url: string): string => {
+  let normalized = url.toLowerCase().trim();
+  normalized = normalized.replace(/^\.+/, '');
+  normalized = normalized.replace(/^https?:\/\//, '');
+  normalized = normalized.replace(/^www\./, '');
+  normalized = normalized.replace(/\/+$/, '');
+  return normalized;
+};
+
+const isDomainAllowlisted = (url: string): boolean => {
+  const normalized = normalizeUrl(url);
+  return COOLDOWN_BYPASS_DOMAINS.some(domain => 
+    normalized === domain || normalized.endsWith('.' + domain)
+  );
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -23,6 +49,15 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ error: "Website URL is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check domain allowlist first (bypasses cooldown for owned domains)
+    if (isDomainAllowlisted(website)) {
+      console.log(`[check-existing-test] ALLOWLISTED DOMAIN - bypassing cooldown for: ${website}`);
+      return new Response(
+        JSON.stringify({ exists: false }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
