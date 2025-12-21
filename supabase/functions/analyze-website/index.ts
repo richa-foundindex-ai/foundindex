@@ -199,6 +199,14 @@ const parseSchemaMarkup = (
   html: string,
   pageType: "homepage" | "blog"
 ): SchemaResult => {
+  return parseSchemaMarkupWithLocation(html, pageType, "static");
+};
+
+const parseSchemaMarkupWithLocation = (
+  html: string,
+  pageType: "homepage" | "blog",
+  detectedLocation: "none" | "static" | "javascript" | "both"
+): SchemaResult => {
   const schemas = extractJsonLd(html);
   const scores: SchemaScore[] = [];
 
@@ -213,6 +221,16 @@ const parseSchemaMarkup = (
 
   // Check if ANY schema exists (base points)
   const hasAnySchema = schemas.length > 0;
+  
+  // Use the detected location passed in, or determine from schema presence
+  let schemaLocation: "none" | "static" | "javascript" | "both" = detectedLocation;
+  if (detectedLocation === "none" && hasAnySchema) {
+    schemaLocation = "static"; // If we found schemas and location was 'none', they're in static HTML
+  } else if (!hasAnySchema) {
+    schemaLocation = "none";
+  }
+  
+  console.log(`[parseSchemaMarkup] Found ${schemas.length} schemas, location: ${schemaLocation}`);
   
   if (!hasAnySchema) {
     // No schema at all = 0/20
@@ -230,7 +248,6 @@ const parseSchemaMarkup = (
       maxScore,
       scores,
       schemas: schemaTypes,
-      // New fields for AI visibility display
       schemaLocation: "none",
       aiVisibility: {
         google: false,
@@ -241,18 +258,13 @@ const parseSchemaMarkup = (
     };
   }
 
-  // Schema exists - determine if it's in static HTML (we received static HTML, so it is)
-  // In a real implementation with JS rendering, we'd compare raw HTML vs rendered
-  // For now, if schema exists in the HTML we fetched, it's "static"
-  const schemaLocation: "static" | "javascript" | "both" = "static"; // Could be "static", "javascript", or "both"
-  
   // Score based on schema location
-  // Static HTML: 20/20 (visible to all AI systems)
+  // Static HTML: 18/20 base (visible to all AI systems)
   // JavaScript only: 10/20 (visible to some)
-  // Both: 20/20 (visible to all)
+  // Both: 18/20 (visible to all)
   if (schemaLocation === "static" || schemaLocation === "both") {
     totalScore = 18; // High score for static/both
-  } else {
+  } else if (schemaLocation === "javascript") {
     totalScore = 10; // Partial score for JS-only
   }
 
@@ -356,7 +368,6 @@ const parseSchemaMarkup = (
   });
 
   // AI visibility based on schema location
-  // Since we're detecting schema in static HTML, all AI systems can read it
   const isStaticOrBoth = schemaLocation === "static" || schemaLocation === "both";
   const aiVisibility: AIVisibility = {
     google: true, // Google executes JavaScript
@@ -918,6 +929,7 @@ serve(async (req) => {
     console.log(`[${testId}] Starting analysis for ${testType}: ${validatedWebsite}`);
 
     let websiteHtml = "";
+    let originalHtml = ""; // Keep original for schema extraction
     let fetchSuccess = false;
     let fetchError: Error | null = null;
 
@@ -939,6 +951,7 @@ serve(async (req) => {
 
       if (websiteResponse.ok) {
         websiteHtml = await websiteResponse.text();
+        originalHtml = websiteHtml; // Preserve original HTML for schema extraction
         fetchSuccess = true;
         console.log(`[${testId}] Fetched ${websiteHtml.length} chars`);
       } else {
@@ -979,6 +992,13 @@ serve(async (req) => {
       .trim();
 
     let isLikelyJSRendered = hasSPAMarker && textContent.length < 500;
+    let schemaLocation: "static" | "javascript" | "both" | "none" = "none";
+
+    // Check if schema exists in original static HTML
+    const staticSchemas = extractJsonLd(originalHtml);
+    const hasStaticSchema = staticSchemas.length > 0;
+    
+    console.log(`[${testId}] Static HTML schema check: ${hasStaticSchema ? staticSchemas.length + ' schemas found' : 'no schemas'}`);
 
     if (isLikelyJSRendered) {
       console.log(`[${testId}] JS-rendered detected, trying Jina.ai...`);
@@ -992,14 +1012,29 @@ serve(async (req) => {
           const rendered = await jinaResponse.text();
           if (rendered.length > textContent.length) {
             textContent = rendered;
-            websiteHtml = `<!DOCTYPE html><html><body>${rendered}</body></html>`;
+            // DON'T replace websiteHtml with Jina output - keep original for schema
+            // Only use Jina for text content analysis
+            console.log(`[${testId}] Jina.ai rendered ${rendered.length} chars (kept original HTML for schema)`);
+            
+            // Check if Jina rendered content has additional schema (unlikely but check)
+            const jinaSchemas = extractJsonLd(rendered);
+            if (jinaSchemas.length > 0 && !hasStaticSchema) {
+              schemaLocation = "javascript";
+            } else if (hasStaticSchema && jinaSchemas.length > 0) {
+              schemaLocation = "both";
+            } else if (hasStaticSchema) {
+              schemaLocation = "static";
+            }
+            
             isLikelyJSRendered = false;
-            console.log(`[${testId}] Jina.ai rendered ${rendered.length} chars`);
           }
         }
       } catch (e) {
         console.warn(`[${testId}] Jina.ai failed:`, e);
       }
+    } else {
+      // Not JS-rendered, schema location is static if found
+      schemaLocation = hasStaticSchema ? "static" : "none";
     }
 
     if (isLikelyJSRendered && textContent.length < 200) {
@@ -1022,10 +1057,11 @@ serve(async (req) => {
 
     const analysisType = detectedType;
 
-    const schemaResult = parseSchemaMarkup(websiteHtml, analysisType);
-    const semanticResult = analyzeSemanticHtml(websiteHtml, analysisType);
-    const technicalResult = analyzeTechnical(validatedWebsite, websiteHtml);
-    const imageResult = analyzeImages(websiteHtml, analysisType);
+    // Use ORIGINAL HTML for schema extraction (not Jina-replaced content)
+    const schemaResult = parseSchemaMarkupWithLocation(originalHtml, analysisType, schemaLocation);
+    const semanticResult = analyzeSemanticHtml(originalHtml, analysisType);
+    const technicalResult = analyzeTechnical(validatedWebsite, originalHtml);
+    const imageResult = analyzeImages(originalHtml, analysisType);
 
     const schemaWeight = analysisType === "homepage" ? 20 : 18;
     const semanticWeight = analysisType === "homepage" ? 12 : 14;
