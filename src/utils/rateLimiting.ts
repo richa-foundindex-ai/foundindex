@@ -14,7 +14,20 @@ const COOLDOWN_BYPASS_DOMAINS = [
   'foundcandidate.com',
 ];
 
-const isDomainAllowlisted = (url: string): boolean => {
+const normalizeUrl = (url: string): string => {
+  let normalized = url.toLowerCase().trim();
+  // Remove leading dots
+  normalized = normalized.replace(/^\.+/, '');
+  // Remove protocol
+  normalized = normalized.replace(/^https?:\/\//, '');
+  // Remove www.
+  normalized = normalized.replace(/^www\./, '');
+  // Remove trailing slashes
+  normalized = normalized.replace(/\/+$/, '');
+  return normalized;
+};
+
+export const isDomainAllowlisted = (url: string): boolean => {
   const normalized = normalizeUrl(url);
   return COOLDOWN_BYPASS_DOMAINS.some(domain => 
     normalized === domain || normalized.endsWith('.' + domain)
@@ -33,19 +46,6 @@ interface DeviceTests {
   count: number;
   firstTestDate: string;
 }
-
-const normalizeUrl = (url: string): string => {
-  let normalized = url.toLowerCase().trim();
-  // Remove leading dots
-  normalized = normalized.replace(/^\.+/, '');
-  // Remove protocol
-  normalized = normalized.replace(/^https?:\/\//, '');
-  // Remove www.
-  normalized = normalized.replace(/^www\./, '');
-  // Remove trailing slashes
-  normalized = normalized.replace(/\/+$/, '');
-  return normalized;
-};
 
 const getDeviceId = (): string => {
   let deviceId = localStorage.getItem('device_id');
