@@ -13,7 +13,7 @@ interface AIWebsiteSummaryProps {
 }
 
 const getConfidenceConfig = (score: number) => {
-  if (score >= 90) {
+  if (score >= 85) {
     return {
       label: "Excellent",
       borderColor: "border-l-emerald-500",
