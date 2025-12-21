@@ -392,8 +392,9 @@ const parseSchemaMarkupWithLocation = (
 
 const analyzeSemanticHtml = (
   html: string,
-  pageType: "homepage" | "blog"
-): AnalysisResult & { breakdown: { hasH1: boolean; hasHierarchy: boolean; hasSemanticTags: boolean; hasListStructure: boolean; missingTags: string[] } } => {
+  pageType: "homepage" | "blog",
+  renderedContent?: string // Optional: Jina.ai rendered markdown for JS sites
+): AnalysisResult & { breakdown: { hasH1: boolean; hasHierarchy: boolean; hasSemanticTags: boolean; hasListStructure: boolean; missingTags: string[]; isJSRendered: boolean } } => {
   const details: string[] = [];
   let score = 0;
   const maxScore = 12; // 3 points each for 4 criteria
@@ -405,69 +406,144 @@ const analyzeSemanticHtml = (
     hasSemanticTags: false,
     hasListStructure: false,
     missingTags: [] as string[],
+    isJSRendered: false,
   };
 
-  // 1. Check for H1 tag (3 points)
-  const h1Count = (html.match(/<h1/gi) || []).length;
-  if (h1Count >= 1) {
-    score += 3;
-    breakdown.hasH1 = true;
-    details.push(h1Count === 1 ? "✓ H1 heading present" : `✓ H1 heading present (${h1Count} found)`);
-  } else {
-    details.push("✗ No H1 heading found");
-  }
-
-  // 2. Check for heading hierarchy (3 points)
-  const hasH2 = /<h2/i.test(html);
-  const hasH3 = /<h3/i.test(html);
-  if (hasH2 && hasH3) {
-    score += 3;
-    breakdown.hasHierarchy = true;
-    details.push("✓ Heading hierarchy (H1→H2→H3)");
-  } else if (hasH2 || hasH3) {
-    score += 1.5; // Partial credit
-    breakdown.hasHierarchy = true;
-    details.push("⚠ Partial heading hierarchy");
-  } else {
-    details.push("✗ No heading hierarchy found");
-  }
-
-  // 3. Check for semantic tags (3 points)
-  const semanticTags = [
-    { tag: "header", found: /<header/i.test(html) },
-    { tag: "nav", found: /<nav/i.test(html) },
-    { tag: "main", found: /<main/i.test(html) },
-    { tag: "article", found: /<article/i.test(html) },
-    { tag: "section", found: /<section/i.test(html) },
-    { tag: "footer", found: /<footer/i.test(html) },
-  ];
+  // Check if this is a JS-rendered site (minimal static HTML but has rendered content)
+  const staticTextContent = html
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   
-  const foundSemanticCount = semanticTags.filter(t => t.found).length;
-  const missingSemanticTags = semanticTags.filter(t => !t.found).map(t => `<${t.tag}>`);
-  
-  if (foundSemanticCount >= 4) {
-    score += 3;
-    breakdown.hasSemanticTags = true;
-    details.push("✓ Semantic HTML tags present");
-  } else if (foundSemanticCount >= 2) {
-    score += 1.5; // Partial credit
-    breakdown.hasSemanticTags = true;
-    breakdown.missingTags = missingSemanticTags;
-    details.push(`⚠ Some semantic tags (missing: ${missingSemanticTags.slice(0, 3).join(", ")})`);
-  } else {
-    breakdown.missingTags = missingSemanticTags;
-    details.push("✗ Missing semantic HTML structure");
-  }
+  const isJSRendered = staticTextContent.length < 500 && !!renderedContent && renderedContent.length > 500;
+  breakdown.isJSRendered = isJSRendered;
 
-  // 4. Check for list structure (3 points)
-  const hasUl = /<ul/i.test(html);
-  const hasOl = /<ol/i.test(html);
-  if (hasUl || hasOl) {
-    score += 3;
-    breakdown.hasListStructure = true;
-    details.push("✓ List structure present");
+  if (isJSRendered && renderedContent) {
+    // For JS-rendered sites, analyze the Jina.ai markdown output
+    console.log(`[semantic] Analyzing JS-rendered site via markdown (${renderedContent.length} chars)`);
+    
+    // 1. Check for H1 in markdown (=== underline or # prefix)
+    const hasMarkdownH1 = /^.+\n={3,}/m.test(renderedContent) || /^# [^\n]+/m.test(renderedContent);
+    if (hasMarkdownH1) {
+      score += 3;
+      breakdown.hasH1 = true;
+      details.push("✓ H1 heading present (in rendered content)");
+    } else {
+      details.push("✗ No H1 heading found");
+    }
+
+    // 2. Check for heading hierarchy in markdown (## or ---)
+    const hasMarkdownH2 = /^.+\n-{3,}/m.test(renderedContent) || /^## [^\n]+/m.test(renderedContent);
+    const hasMarkdownH3 = /^### [^\n]+/m.test(renderedContent);
+    if (hasMarkdownH2 && hasMarkdownH3) {
+      score += 3;
+      breakdown.hasHierarchy = true;
+      details.push("✓ Heading hierarchy (H1→H2→H3) in rendered content");
+    } else if (hasMarkdownH2 || hasMarkdownH3) {
+      score += 1.5;
+      breakdown.hasHierarchy = true;
+      details.push("⚠ Partial heading hierarchy in rendered content");
+    } else {
+      details.push("✗ No heading hierarchy found");
+    }
+
+    // 3. For JS sites, semantic tags exist in the virtual DOM - give credit if content is well-structured
+    // Check if there are multiple sections/headers indicating good structure
+    const sectionCount = (renderedContent.match(/^#{1,3} /gm) || []).length + 
+                         (renderedContent.match(/^.+\n[=-]{3,}/gm) || []).length;
+    if (sectionCount >= 4) {
+      score += 3;
+      breakdown.hasSemanticTags = true;
+      details.push("✓ Well-structured content (multiple sections)");
+    } else if (sectionCount >= 2) {
+      score += 1.5;
+      breakdown.hasSemanticTags = true;
+      details.push("⚠ Some content structure present");
+    } else {
+      breakdown.missingTags = ["Content needs more structure"];
+      details.push("✗ Content lacks clear structure");
+    }
+
+    // 4. Check for list structure in markdown
+    const hasLists = /^[-*•] /m.test(renderedContent) || /^\d+\. /m.test(renderedContent) || /^\|.*\|/m.test(renderedContent);
+    if (hasLists) {
+      score += 3;
+      breakdown.hasListStructure = true;
+      details.push("✓ List/table structure present");
+    } else {
+      details.push("✗ No list structure found");
+    }
+
+    // Add note about JS rendering
+    details.push("ℹ️ This is a JavaScript-rendered site - structure detected from rendered content");
+    
   } else {
-    details.push("✗ No list structure found");
+    // Standard HTML analysis for static sites
+    
+    // 1. Check for H1 tag (3 points)
+    const h1Count = (html.match(/<h1/gi) || []).length;
+    if (h1Count >= 1) {
+      score += 3;
+      breakdown.hasH1 = true;
+      details.push(h1Count === 1 ? "✓ H1 heading present" : `✓ H1 heading present (${h1Count} found)`);
+    } else {
+      details.push("✗ No H1 heading found");
+    }
+
+    // 2. Check for heading hierarchy (3 points)
+    const hasH2 = /<h2/i.test(html);
+    const hasH3 = /<h3/i.test(html);
+    if (hasH2 && hasH3) {
+      score += 3;
+      breakdown.hasHierarchy = true;
+      details.push("✓ Heading hierarchy (H1→H2→H3)");
+    } else if (hasH2 || hasH3) {
+      score += 1.5;
+      breakdown.hasHierarchy = true;
+      details.push("⚠ Partial heading hierarchy");
+    } else {
+      details.push("✗ No heading hierarchy found");
+    }
+
+    // 3. Check for semantic tags (3 points)
+    const semanticTags = [
+      { tag: "header", found: /<header/i.test(html) },
+      { tag: "nav", found: /<nav/i.test(html) },
+      { tag: "main", found: /<main/i.test(html) },
+      { tag: "article", found: /<article/i.test(html) },
+      { tag: "section", found: /<section/i.test(html) },
+      { tag: "footer", found: /<footer/i.test(html) },
+    ];
+    
+    const foundSemanticCount = semanticTags.filter(t => t.found).length;
+    const missingSemanticTags = semanticTags.filter(t => !t.found).map(t => `<${t.tag}>`);
+    
+    if (foundSemanticCount >= 4) {
+      score += 3;
+      breakdown.hasSemanticTags = true;
+      details.push("✓ Semantic HTML tags present");
+    } else if (foundSemanticCount >= 2) {
+      score += 1.5;
+      breakdown.hasSemanticTags = true;
+      breakdown.missingTags = missingSemanticTags;
+      details.push(`⚠ Some semantic tags (missing: ${missingSemanticTags.slice(0, 3).join(", ")})`);
+    } else {
+      breakdown.missingTags = missingSemanticTags;
+      details.push("✗ Missing semantic HTML structure");
+    }
+
+    // 4. Check for list structure (3 points)
+    const hasUl = /<ul/i.test(html);
+    const hasOl = /<ol/i.test(html);
+    if (hasUl || hasOl) {
+      score += 3;
+      breakdown.hasListStructure = true;
+      details.push("✓ List structure present");
+    } else {
+      details.push("✗ No list structure found");
+    }
   }
 
   return { 
@@ -993,6 +1069,7 @@ serve(async (req) => {
 
     let isLikelyJSRendered = hasSPAMarker && textContent.length < 500;
     let schemaLocation: "static" | "javascript" | "both" | "none" = "none";
+    let jinaRenderedContent: string | undefined = undefined; // Store Jina output for semantic analysis
 
     // Check if schema exists in original static HTML
     const staticSchemas = extractJsonLd(originalHtml);
@@ -1012,6 +1089,7 @@ serve(async (req) => {
           const rendered = await jinaResponse.text();
           if (rendered.length > textContent.length) {
             textContent = rendered;
+            jinaRenderedContent = rendered; // Store for semantic analysis
             // DON'T replace websiteHtml with Jina output - keep original for schema
             // Only use Jina for text content analysis
             console.log(`[${testId}] Jina.ai rendered ${rendered.length} chars (kept original HTML for schema)`);
@@ -1059,7 +1137,8 @@ serve(async (req) => {
 
     // Use ORIGINAL HTML for schema extraction (not Jina-replaced content)
     const schemaResult = parseSchemaMarkupWithLocation(originalHtml, analysisType, schemaLocation);
-    const semanticResult = analyzeSemanticHtml(originalHtml, analysisType);
+    // Pass Jina rendered content (if available) for semantic analysis of JS sites
+    const semanticResult = analyzeSemanticHtml(originalHtml, analysisType, jinaRenderedContent);
     const technicalResult = analyzeTechnical(validatedWebsite, originalHtml);
     const imageResult = analyzeImages(originalHtml, analysisType);
 
