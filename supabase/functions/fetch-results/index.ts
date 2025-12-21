@@ -84,8 +84,13 @@ serve(async (req) => {
       
       if (interpretationData) {
         aiInterpretation = {
-          interpretation: interpretationData.ai_interpretation,
+          interpretation: interpretationData.interpretation,
+          industry: interpretationData.industry,
+          audience: interpretationData.audience,
+          problem: interpretationData.problem,
+          solution: interpretationData.solution,
           confidenceScore: interpretationData.confidence_score,
+          confidenceBreakdown: interpretationData.confidence_breakdown,
           userFeedback: interpretationData.user_accuracy_feedback,
         };
         console.log(`[fetch-results] Found AI interpretation with confidence ${interpretationData.confidence_score}%`);
