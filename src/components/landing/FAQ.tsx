@@ -44,9 +44,9 @@ const FAQ = () => {
         "Coming Q1 2026: Content rewriting service that maintains your voice while optimizing for AI readability. Based on 15+ years UX research and content strategy experience.",
     },
     {
-      question: "Why is it free?",
+      question: "Is this free?",
       answer:
-        "Beta phase. Free forever for single URL testing. Paid (launching 2026): Weekly monitoring $29/mo, Multi-site + content rewrites $49/mo, API access $99/mo. Early users get lifetime discounts.",
+        "Beta phase. This phase is for listening and learning.",
     },
     {
       question: "How can I give feedback?",
