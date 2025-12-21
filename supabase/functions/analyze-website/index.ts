@@ -53,11 +53,20 @@ interface SchemaScore {
   details: string;
 }
 
+interface AIVisibility {
+  google: boolean;
+  perplexity: boolean;
+  chatgpt: boolean;
+  feedReaders: boolean;
+}
+
 interface SchemaResult {
   totalScore: number;
   maxScore: number;
   scores: SchemaScore[];
   schemas: { type: string; data: Record<string, unknown> }[];
+  schemaLocation?: "none" | "static" | "javascript" | "both";
+  aiVisibility?: AIVisibility;
 }
 
 interface AnalysisResult {
@@ -198,43 +207,96 @@ const parseSchemaMarkup = (
     data: s,
   }));
 
-  // Define required schemas based on page type
+  // NEW SCORING LOGIC: Give credit for ANY valid schema found
+  const maxScore = 20;
+  let totalScore = 0;
+
+  // Check if ANY schema exists (base points)
+  const hasAnySchema = schemas.length > 0;
+  
+  if (!hasAnySchema) {
+    // No schema at all = 0/20
+    scores.push({
+      category: "SchemaPresence",
+      found: false,
+      earnedPoints: 0,
+      maxPoints: 20,
+      missingFields: ["No structured data found"],
+      details: "No JSON-LD schema markup detected. Add schema.org structured data.",
+    });
+    
+    return {
+      totalScore: 0,
+      maxScore,
+      scores,
+      schemas: schemaTypes,
+      // New fields for AI visibility display
+      schemaLocation: "none",
+      aiVisibility: {
+        google: false,
+        perplexity: false,
+        chatgpt: false,
+        feedReaders: false,
+      },
+    };
+  }
+
+  // Schema exists - determine if it's in static HTML (we received static HTML, so it is)
+  // In a real implementation with JS rendering, we'd compare raw HTML vs rendered
+  // For now, if schema exists in the HTML we fetched, it's "static"
+  const schemaLocation: "static" | "javascript" | "both" = "static"; // Could be "static", "javascript", or "both"
+  
+  // Score based on schema location
+  // Static HTML: 20/20 (visible to all AI systems)
+  // JavaScript only: 10/20 (visible to some)
+  // Both: 20/20 (visible to all)
+  if (schemaLocation === "static" || schemaLocation === "both") {
+    totalScore = 18; // High score for static/both
+  } else {
+    totalScore = 10; // Partial score for JS-only
+  }
+
+  // Define required schemas based on page type for quality bonus
   const requiredSchemas =
     pageType === "homepage"
       ? [
           {
             type: "Organization",
-            maxPoints: 5,
+            bonusPoints: 1,
             requiredFields: ["name", "url", "logo"],
           },
           {
             type: "WebSite",
-            maxPoints: 3,
+            bonusPoints: 0.5,
             requiredFields: ["name", "url"],
           },
           {
             type: "WebPage",
-            maxPoints: 2,
+            bonusPoints: 0.5,
             requiredFields: ["name", "description"],
           },
         ]
       : [
           {
             type: "BlogPosting",
-            maxPoints: 6,
+            bonusPoints: 1,
             requiredFields: ["headline", "datePublished", "author"],
             alternativeTypes: ["Article", "NewsArticle", "TechArticle"],
           },
           {
             type: "BreadcrumbList",
-            maxPoints: 2,
+            bonusPoints: 0.5,
             requiredFields: ["itemListElement"],
+          },
+          {
+            type: "Author",
+            bonusPoints: 0.5,
+            requiredFields: ["name"],
+            alternativeTypes: ["Person"],
           },
         ];
 
-  let totalScore = 0;
-  let maxScore = 0;
-
+  // Check for required schemas and add bonus points (up to 2 more points)
   for (const required of requiredSchemas) {
     const alternativeTypes = (required as { alternativeTypes?: string[] })
       .alternativeTypes || [required.type];
@@ -248,23 +310,19 @@ const parseSchemaMarkup = (
       return allTypes.includes(schemaType as string);
     });
 
-    maxScore += required.maxPoints;
-
     if (foundSchema) {
       const missingFields = required.requiredFields.filter(
         (f) => !foundSchema[f]
       );
-      const earnedPoints =
-        required.maxPoints *
-        (1 - missingFields.length / required.requiredFields.length);
-
-      totalScore += earnedPoints;
+      const completeness = 1 - missingFields.length / required.requiredFields.length;
+      const earnedBonus = required.bonusPoints * completeness;
+      totalScore = Math.min(maxScore, totalScore + earnedBonus);
 
       scores.push({
         category: required.type,
         found: true,
-        earnedPoints: Math.round(earnedPoints * 10) / 10,
-        maxPoints: required.maxPoints,
+        earnedPoints: earnedBonus,
+        maxPoints: required.bonusPoints,
         missingFields,
         details:
           missingFields.length > 0
@@ -276,42 +334,44 @@ const parseSchemaMarkup = (
         category: required.type,
         found: false,
         earnedPoints: 0,
-        maxPoints: required.maxPoints,
+        maxPoints: required.bonusPoints,
         missingFields: required.requiredFields,
-        details: `${required.type} schema not found`,
+        details: `${required.type} schema not found (optional bonus)`,
       });
     }
   }
 
-  // Bonus schemas
-  const bonusSchemas = [
-    { type: "FAQPage", points: 4 },
-    { type: "Review", points: 2 },
-    { type: "Product", points: 3 },
-    { type: "SoftwareApplication", points: 6 },
-  ];
+  // Add summary score
+  scores.unshift({
+    category: "SchemaPresence",
+    found: true,
+    earnedPoints: Math.round(totalScore * 10) / 10,
+    maxPoints: maxScore,
+    missingFields: [],
+    details: schemaLocation === "static" 
+      ? "✓ Schema in static HTML - visible to all AI systems"
+      : schemaLocation === "javascript"
+      ? "⚠ Schema only in JavaScript - some AI systems cannot read it"
+      : "✓ Schema in both static HTML and JavaScript",
+  });
 
-  for (const bonus of bonusSchemas) {
-    const found = schemas.some((s) => s["@type"] === bonus.type);
-    if (found) {
-      totalScore += bonus.points;
-      maxScore += bonus.points;
-      scores.push({
-        category: bonus.type,
-        found: true,
-        earnedPoints: bonus.points,
-        maxPoints: bonus.points,
-        missingFields: [],
-        details: `${bonus.type} bonus schema found`,
-      });
-    }
-  }
+  // AI visibility based on schema location
+  // Since we're detecting schema in static HTML, all AI systems can read it
+  const isStaticOrBoth = schemaLocation === "static" || schemaLocation === "both";
+  const aiVisibility: AIVisibility = {
+    google: true, // Google executes JavaScript
+    perplexity: true, // Perplexity executes JavaScript
+    chatgpt: isStaticOrBoth, // ChatGPT has limited JS support
+    feedReaders: isStaticOrBoth, // Feed readers need static HTML
+  };
 
   return {
     totalScore: Math.round(totalScore * 10) / 10,
     maxScore,
     scores,
     schemas: schemaTypes,
+    schemaLocation,
+    aiVisibility,
   };
 };
 
@@ -322,54 +382,89 @@ const parseSchemaMarkup = (
 const analyzeSemanticHtml = (
   html: string,
   pageType: "homepage" | "blog"
-): AnalysisResult => {
+): AnalysisResult & { breakdown: { hasH1: boolean; hasHierarchy: boolean; hasSemanticTags: boolean; hasListStructure: boolean; missingTags: string[] } } => {
   const details: string[] = [];
   let score = 0;
-  const maxScore = pageType === "homepage" ? 12 : 14;
+  const maxScore = 12; // 3 points each for 4 criteria
 
-  // Check for semantic elements
-  const semanticChecks = [
-    { tag: "<header", points: 1, name: "Header element" },
-    { tag: "<nav", points: 1, name: "Navigation element" },
-    { tag: "<main", points: 2, name: "Main element" },
-    { tag: "<article", points: 2, name: "Article element" },
-    { tag: "<section", points: 1, name: "Section elements" },
-    { tag: "<footer", points: 1, name: "Footer element" },
-  ];
+  // Track what's found for detailed display
+  const breakdown = {
+    hasH1: false,
+    hasHierarchy: false,
+    hasSemanticTags: false,
+    hasListStructure: false,
+    missingTags: [] as string[],
+  };
 
-  for (const check of semanticChecks) {
-    if (html.toLowerCase().includes(check.tag)) {
-      score += check.points;
-      details.push(`✓ ${check.name} found`);
-    } else {
-      details.push(`✗ ${check.name} missing`);
-    }
-  }
-
-  // Check heading hierarchy
+  // 1. Check for H1 tag (3 points)
   const h1Count = (html.match(/<h1/gi) || []).length;
-  if (h1Count === 1) {
-    score += 2;
-    details.push("✓ Single H1 tag (correct)");
-  } else if (h1Count === 0) {
-    details.push("✗ No H1 tag found");
+  if (h1Count >= 1) {
+    score += 3;
+    breakdown.hasH1 = true;
+    details.push(h1Count === 1 ? "✓ H1 heading present" : `✓ H1 heading present (${h1Count} found)`);
   } else {
-    score += 1;
-    details.push(`⚠ Multiple H1 tags (${h1Count} found)`);
+    details.push("✗ No H1 heading found");
   }
 
-  // Check for proper heading structure
+  // 2. Check for heading hierarchy (3 points)
   const hasH2 = /<h2/i.test(html);
   const hasH3 = /<h3/i.test(html);
   if (hasH2 && hasH3) {
-    score += 2;
-    details.push("✓ Good heading hierarchy (H2, H3)");
+    score += 3;
+    breakdown.hasHierarchy = true;
+    details.push("✓ Heading hierarchy (H1→H2→H3)");
   } else if (hasH2 || hasH3) {
-    score += 1;
+    score += 1.5; // Partial credit
+    breakdown.hasHierarchy = true;
     details.push("⚠ Partial heading hierarchy");
+  } else {
+    details.push("✗ No heading hierarchy found");
   }
 
-  return { score: Math.min(score, maxScore), maxScore, details };
+  // 3. Check for semantic tags (3 points)
+  const semanticTags = [
+    { tag: "header", found: /<header/i.test(html) },
+    { tag: "nav", found: /<nav/i.test(html) },
+    { tag: "main", found: /<main/i.test(html) },
+    { tag: "article", found: /<article/i.test(html) },
+    { tag: "section", found: /<section/i.test(html) },
+    { tag: "footer", found: /<footer/i.test(html) },
+  ];
+  
+  const foundSemanticCount = semanticTags.filter(t => t.found).length;
+  const missingSemanticTags = semanticTags.filter(t => !t.found).map(t => `<${t.tag}>`);
+  
+  if (foundSemanticCount >= 4) {
+    score += 3;
+    breakdown.hasSemanticTags = true;
+    details.push("✓ Semantic HTML tags present");
+  } else if (foundSemanticCount >= 2) {
+    score += 1.5; // Partial credit
+    breakdown.hasSemanticTags = true;
+    breakdown.missingTags = missingSemanticTags;
+    details.push(`⚠ Some semantic tags (missing: ${missingSemanticTags.slice(0, 3).join(", ")})`);
+  } else {
+    breakdown.missingTags = missingSemanticTags;
+    details.push("✗ Missing semantic HTML structure");
+  }
+
+  // 4. Check for list structure (3 points)
+  const hasUl = /<ul/i.test(html);
+  const hasOl = /<ol/i.test(html);
+  if (hasUl || hasOl) {
+    score += 3;
+    breakdown.hasListStructure = true;
+    details.push("✓ List structure present");
+  } else {
+    details.push("✗ No list structure found");
+  }
+
+  return { 
+    score: Math.round(score * 10) / 10, 
+    maxScore, 
+    details,
+    breakdown,
+  };
 };
 
 // =============================================================================
@@ -1122,6 +1217,7 @@ Return ONLY valid JSON:
         max: semanticWeight,
         percentage: semanticWeight > 0 ? Math.round((safeSemanticScore / semanticWeight) * 100) : 0,
         details: semanticResult.details,
+        breakdown: semanticResult.breakdown,
       },
       technicalFoundation: {
         score: Math.round(safeTechnicalScore * 10) / 10,
