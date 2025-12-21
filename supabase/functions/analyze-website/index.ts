@@ -1610,8 +1610,13 @@ Return ONLY valid JSON:
           .insert({
             test_id: testId,
             url_tested: validatedWebsite,
-            ai_interpretation: aiInterpretation.interpretation,
+            interpretation: aiInterpretation.interpretation,
+            industry: aiInterpretation.industry,
+            audience: aiInterpretation.audience,
+            problem: aiInterpretation.problem,
+            solution: aiInterpretation.solution,
             confidence_score: aiInterpretation.confidenceScore,
+            confidence_breakdown: aiInterpretation.confidenceBreakdown,
           });
         
         if (interpretationError) {
