@@ -46,7 +46,14 @@ const Header = () => {
               {link.label}
             </Link>
           ))}
-          <Link to="/">
+          <Link 
+            to="/" 
+            onClick={() => {
+              setTimeout(() => {
+                document.getElementById('url-input-section')?.scrollIntoView({ behavior: 'smooth' });
+              }, 100);
+            }}
+          >
             <Button className="bg-[#f13131] hover:bg-[#d92b2b] text-white font-semibold px-5">
               Get your FI Score
             </Button>
@@ -76,7 +83,15 @@ const Header = () => {
                   {link.label}
                 </Link>
               ))}
-              <Link to="/" onClick={() => setIsOpen(false)}>
+              <Link 
+                to="/" 
+                onClick={() => {
+                  setIsOpen(false);
+                  setTimeout(() => {
+                    document.getElementById('url-input-section')?.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                }}
+              >
                 <Button className="bg-[#f13131] hover:bg-[#d92b2b] text-white font-semibold w-full">
                   Get your FI Score
                 </Button>

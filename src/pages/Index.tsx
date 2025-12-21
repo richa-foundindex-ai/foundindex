@@ -4,6 +4,7 @@ import Header from "@/components/layout/Header";
 import SEOSchema from "@/components/SEOSchema";
 import Testimonials from "@/components/landing/Testimonials";
 import FAQ from "@/components/landing/FAQ";
+import Footer from "@/components/landing/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -518,7 +519,7 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="container mx-auto px-4 py-12 md:py-16">
+        <section id="url-input-section" className="container mx-auto px-4 py-12 md:py-16 scroll-mt-20">
           <div
             id="test-section"
             className="flex flex-col md:grid md:grid-cols-2 gap-6 md:gap-8 max-w-5xl mx-auto scroll-mt-8"
@@ -673,36 +674,7 @@ const Index = () => {
 
         <Testimonials />
         <FAQ />
-
-        <footer className="border-t border-border bg-muted py-8">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground text-center md:text-left">
-              <div className="order-2 md:order-1">
-                Built by{" "}
-                <a
-                  href="https://richadeo.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-primary hover:underline"
-                >
-                  Richa Deo
-                </a>
-              </div>
-              <div className="flex flex-wrap justify-center gap-4 md:gap-6 order-1 md:order-2">
-                <a href="/privacy" className="hover:text-foreground transition-colors">
-                  Privacy
-                </a>
-                <a href="/privacy" className="hover:text-foreground transition-colors">
-                  Terms
-                </a>
-                <a href="/contact" className="hover:text-foreground transition-colors">
-                  Contact
-                </a>
-              </div>
-              <div className="order-3">© 2025 FoundIndex</div>
-            </div>
-          </div>
-        </footer>
+        <Footer />
       </div>
 
       {retestModalData && (
