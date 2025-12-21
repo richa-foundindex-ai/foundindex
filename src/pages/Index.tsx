@@ -479,6 +479,9 @@ const Index = () => {
               Test your site free
             </Button>
           </a>
+          <p className="text-sm md:text-base text-muted-foreground mt-4 max-w-2xl mx-auto px-4">
+            This test shows structural issues that prevent AI from understanding your website. It does not track citations or do traditional SEO.
+          </p>
         </header>
 
         {/* Comparison Section */}
