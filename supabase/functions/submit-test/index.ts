@@ -128,6 +128,12 @@ const industryQueries: Record<string, string[]> = {
 const RATE_LIMIT_TESTS_PER_PERIOD = 10; // 10 tests per period
 const RATE_LIMIT_PERIOD_HOURS = 24; // 24 hour rolling window
 
+// ============================================================================
+// TESTING MODE FLAG - Set to true to disable all rate limiting
+// TODO: Set back to false before production launch
+// ============================================================================
+const TESTING_MODE = true;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -149,35 +155,39 @@ serve(async (req) => {
 
     const clientIP = req.headers.get("x-forwarded-for")?.split(",")[0] || req.headers.get("x-real-ip") || "unknown";
 
-    // SERVER-SIDE RATE LIMITING
-    const rateLimitCutoff = new Date(Date.now() - RATE_LIMIT_PERIOD_HOURS * 60 * 60 * 1000).toISOString();
-    
-    const { count: recentTestCount, error: countError } = await supabaseAdmin
-      .from("test_submissions")
-      .select("*", { count: "exact", head: true })
-      .eq("ip_address", clientIP)
-      .gte("created_at", rateLimitCutoff);
+    // SERVER-SIDE RATE LIMITING - BYPASSED IN TESTING MODE
+    if (TESTING_MODE) {
+      console.log(`[rate-limit] TESTING MODE ENABLED - bypassing all rate limits for IP: ${clientIP}`);
+    } else {
+      const rateLimitCutoff = new Date(Date.now() - RATE_LIMIT_PERIOD_HOURS * 60 * 60 * 1000).toISOString();
+      
+      const { count: recentTestCount, error: countError } = await supabaseAdmin
+        .from("test_submissions")
+        .select("*", { count: "exact", head: true })
+        .eq("ip_address", clientIP)
+        .gte("created_at", rateLimitCutoff);
 
-    if (countError) {
-      console.error("Rate limit check failed:", countError);
-      // Continue anyway - don't block users due to internal errors
-    } else if (recentTestCount !== null && recentTestCount >= RATE_LIMIT_TESTS_PER_PERIOD) {
-      console.warn(`[rate-limit] IP ${clientIP} exceeded limit: ${recentTestCount} tests in last ${RATE_LIMIT_PERIOD_HOURS}h`);
-      return new Response(
-        JSON.stringify({
-          error: `Rate limit exceeded. You can run ${RATE_LIMIT_TESTS_PER_PERIOD} tests per ${RATE_LIMIT_PERIOD_HOURS} hours. Please try again later.`,
-          errorType: "rate_limit_exceeded",
-          testsUsed: recentTestCount,
-          testsAllowed: RATE_LIMIT_TESTS_PER_PERIOD,
-        }),
-        {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      if (countError) {
+        console.error("Rate limit check failed:", countError);
+        // Continue anyway - don't block users due to internal errors
+      } else if (recentTestCount !== null && recentTestCount >= RATE_LIMIT_TESTS_PER_PERIOD) {
+        console.warn(`[rate-limit] IP ${clientIP} exceeded limit: ${recentTestCount} tests in last ${RATE_LIMIT_PERIOD_HOURS}h`);
+        return new Response(
+          JSON.stringify({
+            error: `Rate limit exceeded. You can run ${RATE_LIMIT_TESTS_PER_PERIOD} tests per ${RATE_LIMIT_PERIOD_HOURS} hours. Please try again later.`,
+            errorType: "rate_limit_exceeded",
+            testsUsed: recentTestCount,
+            testsAllowed: RATE_LIMIT_TESTS_PER_PERIOD,
+          }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      console.log(`[rate-limit] IP ${clientIP} has ${recentTestCount || 0}/${RATE_LIMIT_TESTS_PER_PERIOD} tests in period`);
     }
-
-    console.log(`[rate-limit] IP ${clientIP} has ${recentTestCount || 0}/${RATE_LIMIT_TESTS_PER_PERIOD} tests in period`);
 
     const testId = crypto.randomUUID();
     const testDate = new Date().toISOString();

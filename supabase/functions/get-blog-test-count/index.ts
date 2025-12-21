@@ -8,7 +8,33 @@ const corsHeaders = {
 const BLOG_LIMIT = 3;
 const ROLLING_WINDOW_DAYS = 7;
 
+// ============================================================================
+// TESTING MODE FLAG - Set to true to disable all rate limiting
+// TODO: Set back to false before production launch
+// ============================================================================
+const TESTING_MODE = true;
+
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  // TESTING MODE - Return unlimited tests
+  if (TESTING_MODE) {
+    console.log("[get-blog-test-count] TESTING MODE ENABLED - returning unlimited tests");
+    return new Response(
+      JSON.stringify({
+        success: true,
+        testsUsed: 0,
+        testsRemaining: 999,
+        resetDate: null,
+        limit: 999,
+        windowDays: ROLLING_WINDOW_DAYS,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
