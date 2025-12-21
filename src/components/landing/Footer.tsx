@@ -29,7 +29,7 @@ const Footer = () => {
             </Link>
             <span>|</span>
             <a
-              href="https://www.linkedin.com/company/foundindex/"
+              href="https://www.linkedin.com/in/richa-deo/"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-muted-foreground/80 transition-colors"

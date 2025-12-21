@@ -37,7 +37,7 @@ export default function Privacy() {
                 <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-4">
                   <li>Generate your AI visibility analysis</li>
                   <li>Calculate industry averages</li>
-                  <li>Improve our scoring algorithms</li>
+                  <li>Improve our analysis and scoring methodology</li>
                   <li>Send you results and updates (if opted in)</li>
                 </ul>
               </div>
@@ -73,8 +73,7 @@ export default function Privacy() {
               <div>
                 <h3 className="text-lg font-semibold mb-2">1. Service description</h3>
                 <p className="text-muted-foreground">
-                  FoundIndex provides AI visibility scoring for websites. We analyze publicly accessible web pages and
-                  provide recommendations to improve how AI search engines understand your content.
+                  FoundIndex provides AI visibility analysis for websites. We analyze publicly accessible web pages to evaluate how AI systems interpret and understand website content.
                 </p>
               </div>
 
@@ -95,7 +94,7 @@ export default function Privacy() {
                   <li>Attempt to circumvent rate limits</li>
                   <li>Use automated tools for bulk submissions</li>
                   <li>Reverse engineer our scoring algorithms</li>
-                  <li>Misrepresent FoundIndex scores as official rankings</li>
+                  <li>Misrepresent FoundIndex scores as official rankings or authoritative endorsements by AI platforms</li>
                 </ul>
               </div>
 
