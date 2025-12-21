@@ -593,6 +593,31 @@ const createUrlCooldownResponse = (payload: {
 // RATE LIMITING WITH CACHING
 // =============================================================================
 
+// ============================================================================
+// DOMAIN ALLOWLIST - Domains that bypass cooldown restrictions (temporary)
+// TODO: Remove or disable before public launch
+// ============================================================================
+const COOLDOWN_BYPASS_DOMAINS = [
+  'foundindex.com',
+  'foundmvp.com',
+  'foundcandidate.com',
+];
+
+const normalizeUrlForAllowlist = (url: string): string => {
+  let normalized = url.toLowerCase().trim();
+  normalized = normalized.replace(/^https?:\/\//, '');
+  normalized = normalized.replace(/^www\./, '');
+  normalized = normalized.replace(/\/.*$/, ''); // Remove path
+  return normalized;
+};
+
+const isDomainAllowlisted = (url: string): boolean => {
+  const normalized = normalizeUrlForAllowlist(url);
+  return COOLDOWN_BYPASS_DOMAINS.some(domain => 
+    normalized === domain || normalized.endsWith('.' + domain)
+  );
+};
+
 interface CachedTestResult {
   allowed: boolean;
   daysRemaining?: number;
@@ -607,6 +632,12 @@ const checkRateLimitWithCache = async (
   url: string
 ): Promise<CachedTestResult> => {
   const COOLDOWN_DAYS = 7;
+
+  // Check allowlist first - bypass cooldown for owned domains
+  if (isDomainAllowlisted(url)) {
+    console.log(`[rate-limit] ALLOWLISTED DOMAIN - bypassing cooldown for: ${url}`);
+    return { allowed: true };
+  }
 
   try {
     const { data, error } = await supabase
