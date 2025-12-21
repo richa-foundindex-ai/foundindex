@@ -18,10 +18,10 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
     
-    /* Primary Red - Used sparingly for CTAs */
-    --primary: 0 72% 51%;
+    /* Primary Red - Brand color (#f13131) */
+    --primary: 0 87% 57%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 0 68% 42%;
+    --primary-hover: 0 87% 50%;
     
     /* Subtle Gray for secondary text */
     --secondary: 0 0% 22%;
@@ -40,12 +40,12 @@ All colors MUST be HSL.
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 10%;
     
-    --destructive: 0 72% 51%;
+    --destructive: 0 87% 57%;
     --destructive-foreground: 0 0% 100%;
     
     --border: 0 0% 89%;
     --input: 0 0% 89%;
-    --ring: 0 72% 51%;
+    --ring: 0 87% 57%;
     
     --radius: 0.5rem;
     
@@ -55,10 +55,10 @@ All colors MUST be HSL.
     /* Light gray background for methodology */
     --accent-gray-light: 0 0% 98%;
     
-    /* Link colors - Blue for text links */
-    --link: 217 91% 60%;
-    --link-hover: 217 91% 50%;
-    --link-visited: 217 91% 40%;
+    /* Link colors - Brand red */
+    --link: 0 87% 57%;
+    --link-hover: 0 87% 50%;
+    --link-visited: 0 87% 45%;
     
     /* Beta Launch Colors */
     --blue: 217 91% 60%;

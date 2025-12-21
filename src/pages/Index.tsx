@@ -474,7 +474,7 @@ const Index = () => {
           >
             <Button
               size="lg"
-              className="h-14 px-10 text-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+              className="h-14 px-10 text-lg font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
             >
               Test your site free
             </Button>
@@ -576,7 +576,7 @@ const Index = () => {
                   </div>
                   <Button
                     type="submit"
-                    className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700 text-white"
+                    className="w-full h-12 text-base bg-primary hover:bg-primary/90 text-primary-foreground"
                     disabled={isLoadingHomepage}
                   >
                     {isLoadingHomepage ? (
@@ -645,7 +645,7 @@ const Index = () => {
                   </div>
                   <Button
                     type="submit"
-                    className="w-full h-12 text-base bg-purple-600 hover:bg-purple-700 text-white"
+                    className="w-full h-12 text-base bg-primary hover:bg-primary/90 text-primary-foreground"
                     disabled={isLoadingBlog}
                   >
                     {isLoadingBlog ? (
